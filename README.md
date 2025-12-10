@@ -85,7 +85,7 @@ You’ll be asked:
 Enter a name for your LAN arcade (e.g. 'GannanNet', 'SmithNet', 'Magical LAN') [GannanNet]:
 ```
 
-Whatever you type becomes the <title> and <h1> on the homepage
+Whatever you type becomes the ```<title>``` and ```<h1>``` on the homepage
 (e.g. SmithNet LAN Arcade). Press Enter to accept the default.
 
 The script will then:
