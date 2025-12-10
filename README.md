@@ -2,6 +2,10 @@
 
 Self-hosted **offline browser game arcade** that sets itself up with a single script.
 
+LAN Arcade is a small project I built so my kids can enjoy fun browser games and a taste of what the old web used to feel like – without all the ads, tracking, loot boxes and “please sign up” pop-ups that come with the modern internet. Everything runs locally on our own network, no accounts needed and no data going anywhere.
+
+It’s lightweight enough to host on a Raspberry Pi or tiny VM, so you can throw it in a bag for long road trips or holidays. Power it up, connect devices to its Wi-Fi or LAN, and the kids get a fast, ad-free game portal that works even when there’s no internet at all.
+
 This repo contains:
 
 - `setup_lan_arcade.sh` – installer + HTML generator
@@ -103,7 +107,6 @@ http://<server-ip>/mirrors/games/
 If you access it from the server itself you can usually use:
 ```
 http://localhost/mirrors/games/
-
 ```
 You should see a grid of cards with:
 - Game title
