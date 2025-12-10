@@ -6,6 +6,8 @@ LAN Arcade is a small project I built so my kids can enjoy fun browser games and
 
 It’s lightweight enough to host on a Raspberry Pi or tiny VM, so you can throw it in a bag for long road trips or holidays. Power it up, connect devices to its Wi-Fi or LAN, and the kids get a fast, ad-free game portal that works even when there’s no internet at all.
 
+**This is unfinished BETA - assume nothing works**
+
 This repo contains:
 
 - `setup_lan_arcade.sh` – installer + HTML generator
