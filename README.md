@@ -16,7 +16,7 @@ So anyone on your LAN can visit:
 
 ```text
 http://<server-ip>/mirrors/games/
-
+```
 
 # Features
 
