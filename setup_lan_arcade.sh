@@ -118,6 +118,10 @@ for GAME in "${!GAMES[@]}"; do
   fi
 
   chown -R www-data:www-data "$TARGET"
+    # IdleAnt expects to be hosted at /IdleAnt/ (GitHub Pages base path) — provide an alias.
+  if [ "$GAME" = "IdleAnt" ]; then
+    ln -sfn "$TARGET" "/var/www/html/IdleAnt"
+  fi
 done
 
 # ---------- Build pretty index.html ----------

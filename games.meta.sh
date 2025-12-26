@@ -7,6 +7,7 @@ declare -A GAMES=(
   # Educational / typing
   ["typing-test"]="ZIP_GITHUB_REPO"
   ["balloon-pop-maths"]="https://richardhenyash.github.io/balloon-pop-maths/"
+  ["IdleAnt"]="https://scorzy.github.io/IdleAnt/"
 
   # Idle JS collection
   ["solaris"]="https://idle-js-games.github.io/solaris/"
@@ -42,6 +43,15 @@ declare -A GAMES=(
   ["technomancy"]="https://idle-js-games.github.io/Technomancy/Technomancy/"
   ["happyking"]="https://idle-js-games.github.io/happyking/"
   ["incremancer"]="https://idle-js-games.github.io/incremancer/"
+    # Classics / arcade
+  ["hextris"]="https://hextris.github.io/hextris/"
+  ["2048"]="https://gabrielecirulli.github.io/2048/"
+  ["tetris"]="https://jdiemke.github.io/tetris/"
+  ["floppybird"]="https://nebezb.com/floppybird/"
+  ["pacman"]="https://pacman.platzh1rsch.ch/"
+  ["snake"]="https://icethecoder.github.io/snake/"
+    ["supertasball"]="https://supertasball.amos.me/"
+
 )
 
 # ---------- Pretty card metadata ----------
@@ -49,6 +59,7 @@ declare -A GAMES=(
 declare -A GAME_INFO=(
   ["typing-test"]="Typing Test|⌨️|Typing · Speed Test|Simple browser-based typing test to measure words per minute and accuracy over short runs.|Skill,WPM trainer"
   ["balloon-pop-maths"]="Balloon Pop Maths|🎈|Maths · Educational|Kid-friendly balloon popping maths game with multiple difficulty modes.|Kids,Maths practice"
+  ["IdleAnt"]="Idle Ant|🐜|Colony · Incremental|Grow an ant colony: buy units, unlock research, and scale into absurd production.|Ants,Colony,Long haul"
 
   ["solaris"]="Solaris|☀️|Space · Idle|Grow a sci-fi colony, harvest resources and expand across the system.|Space,Colony"
   ["goomyclicker"]="Goomy Clicker|🐌|Clicker · Cute|Click for goomies, buy upgrades and watch numbers climb.|Clicker,Casual"
@@ -83,4 +94,12 @@ declare -A GAME_INFO=(
   ["technomancy"]="Technomancy|🔮|Tech tree · Incremental|Research technologies and unlock a sprawling chain of systems.|Tech tree,Incremental"
   ["happyking"]="Happy King|👑|Kingdom · Idle management|Rule a tiny kingdom, juggle resources and keep your realm thriving.|Kingdom sim,Light management"
   ["incremancer"]="Incremancer|🧟|Zombie idle · Necromancer|Raise the dead, send zombie hordes and grow a necromancer empire.|Zombie horde,Clicker idle"
+  ["hextris"]="Hextris|🧩|Puzzle · Arcade|Fast, addictive hexagon puzzle inspired by Tetris.|Puzzle,Arcade,Mobile-friendly"
+  ["2048"]="2048|🔢|Puzzle · Swipe|Combine tiles to reach 2048 (and keep going). Great on phones/tablets.|Puzzle,Swipe,Classic"
+  ["tetris"]="Tetris|🧱|Arcade · Classic|Clean browser Tetris clone with keyboard controls.|Classic,Arcade,Skill"
+  ["floppybird"]="Floppy Bird|🐤|Arcade · Tap/Space|Flappy-bird-style rage game. Tap/click/space to fly.|Mobile-friendly,Arcade,Reflex"
+  ["pacman"]="Pac-Man|🟡|Arcade · Maze|Classic Pac-Man remake in HTML5 (includes sound).|Classic,Arcade,Mobile-friendly"
+  ["snake"]="Snake|🐍|Arcade · Classic|Simple Snake with smooth movement (great on touch devices).|Classic,Mobile-friendly,Quick play"
+  ["supertasball"]="Super TASball|🎱|Pinball · Idle|Open-source pinball idle game where you “program” shots and build up your run over time.|Pinball,Idle,Strategy"
+
 )
