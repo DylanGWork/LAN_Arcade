@@ -30,6 +30,7 @@ http://<server-ip>/mirrors/games/
 - 🎨 Pretty UI – card-based public index generated from `catalog.json`
 - 🗂 Category-aware – public category chips + admin filters across educational, ages 5+/10+/13+, maths, english, typing, and genre categories
 - 🔐 Admin controls – password-protected admin page to disable full categories or individual games
+- 📚 Offline wiki – local wiki page with docs + searchable game catalog at `/mirrors/games/wiki/`
 - 🔁 Idempotent – safe to rerun; completed game folders are skipped via marker files
 - 🧩 Easy to extend – update URLs, card data, and categories in `games.meta.sh`
 
@@ -104,8 +105,9 @@ The script will then:
 3. Mirror each configured game into /var/www/html/mirrors/<game>/
 4. Build `/var/www/html/mirrors/games/catalog.json`
 5. Regenerate `/var/www/html/mirrors/games/index.html` (public page)
-6. Regenerate `/var/www/html/mirrors/games/admin/index.html` + save endpoint
-7. Configure Apache Basic Auth for `/mirrors/games/admin/`
+6. Regenerate `/var/www/html/mirrors/games/wiki/index.html` (offline wiki page)
+7. Regenerate `/var/www/html/mirrors/games/admin/index.html` + save endpoint
+8. Configure Apache Basic Auth for `/mirrors/games/admin/`
     🔧 You do not run games.meta.sh yourself.
     It’s automatically loaded by setup_lan_arcade.sh and used as a config file.
 
@@ -136,6 +138,16 @@ Use it to disable:
 - Individual games
 
 The public index automatically applies those saved filters.
+
+Offline wiki (no login required):
+```text
+http://<server-ip>/mirrors/games/wiki/
+```
+Use it as a LAN-local reference for:
+- Game list + search/filter
+- Category/tag overview
+- Admin control instructions
+- Important files/paths
 
 # Admin controls
 

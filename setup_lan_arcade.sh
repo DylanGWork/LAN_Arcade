@@ -153,6 +153,8 @@ INDEX_DIR="$MIRRORS_DIR/games"
 INDEX_FILE="$INDEX_DIR/index.html"
 CATALOG_FILE="$INDEX_DIR/catalog.json"
 FILTERS_FILE="$INDEX_DIR/admin.filters.json"
+WIKI_DIR="$INDEX_DIR/wiki"
+WIKI_INDEX_FILE="$WIKI_DIR/index.html"
 ADMIN_DIR="$INDEX_DIR/admin"
 ADMIN_INDEX_FILE="$ADMIN_DIR/index.html"
 ADMIN_CGI_FILE="$ADMIN_DIR/save_filters.cgi"
@@ -187,7 +189,7 @@ if command -v systemctl >/dev/null 2>&1; then
   systemctl enable --now apache2 || true
 fi
 
-mkdir -p "$MIRRORS_DIR" "$INDEX_DIR" "$ADMIN_DIR"
+mkdir -p "$MIRRORS_DIR" "$INDEX_DIR" "$WIKI_DIR" "$ADMIN_DIR"
 chown -R "$LOCAL_USER:$LOCAL_USER" "$MIRRORS_DIR"
 
 # ---------- Helper to flatten wget mirror ----------
@@ -703,6 +705,7 @@ write_public_index() {
       Tap a game to launch it in your browser or add to home screen on mobile.
     </div>
     <div class="toolbar">
+      <a class="toolbar-link" href="./wiki/">Offline Wiki</a>
       <a class="toolbar-link" href="./admin/">Admin Panel</a>
     </div>
   </header>
@@ -916,6 +919,514 @@ write_public_index() {
         state.filters = normalizeFilters(results[1]);
         state.activeCategory = "";
         render(state.catalog, state.filters);
+      });
+    })();
+  </script>
+</body>
+</html>
+HTML
+}
+
+write_wiki_index() {
+  local arcade_name_html
+  arcade_name_html="$(html_escape "$ARCADE_NAME_USE")"
+
+  cat > "$WIKI_INDEX_FILE" <<HTML
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>${arcade_name_html} LAN Arcade Wiki</title>
+  <style>
+    :root {
+      --bg: #0a1420;
+      --panel: #122235;
+      --panel-soft: #0f1d2e;
+      --text: #eef4fa;
+      --muted: #a2b0bf;
+      --accent: #6bcf78;
+      --accent-soft: rgba(107, 207, 120, 0.15);
+      --border: #213245;
+      --danger: #ff8a80;
+      --radius: 12px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: radial-gradient(circle at top left, #10253a 0, #07101a 52%, #040a10 100%);
+      color: var(--text);
+    }
+    .wrap {
+      max-width: 1150px;
+      margin: 0 auto;
+      padding: 1.4rem;
+    }
+    h1 {
+      margin: 0 0 0.45rem;
+      font-size: 1.9rem;
+    }
+    .subtitle {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.4;
+    }
+    .toolbar {
+      margin-top: 1rem;
+      display: flex;
+      gap: 0.55rem;
+      flex-wrap: wrap;
+    }
+    .link-btn {
+      text-decoration: none;
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 0.4rem 0.9rem;
+      background: rgba(14, 26, 40, 0.85);
+      font-size: 0.84rem;
+      display: inline-flex;
+      align-items: center;
+    }
+    .link-btn:hover { border-color: var(--accent); }
+    .grid {
+      margin-top: 1rem;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 0.85rem;
+    }
+    .panel {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: linear-gradient(160deg, var(--panel-soft), #0c1826);
+      padding: 0.9rem;
+    }
+    .panel h2 {
+      margin: 0 0 0.55rem;
+      font-size: 1.05rem;
+    }
+    .panel p, .panel li {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.45;
+      font-size: 0.92rem;
+    }
+    .panel ul, .panel ol {
+      margin: 0.4rem 0 0;
+      padding-left: 1rem;
+      display: grid;
+      gap: 0.35rem;
+    }
+    code {
+      background: rgba(162, 176, 191, 0.15);
+      color: #d7e7f6;
+      border-radius: 6px;
+      padding: 0.1rem 0.3rem;
+      font-size: 0.85em;
+    }
+    .library {
+      margin-top: 1rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: linear-gradient(160deg, #0d1d2d, #0a1622);
+      padding: 0.9rem;
+    }
+    .library-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: end;
+      gap: 0.8rem;
+      flex-wrap: wrap;
+      margin-bottom: 0.75rem;
+    }
+    .library h2 {
+      margin: 0;
+      font-size: 1.1rem;
+    }
+    .summary {
+      color: var(--muted);
+      font-size: 0.88rem;
+    }
+    .controls {
+      display: grid;
+      grid-template-columns: 1fr 220px auto;
+      gap: 0.5rem;
+      margin-bottom: 0.7rem;
+      align-items: center;
+    }
+    .controls input[type="search"], .controls select {
+      width: 100%;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--panel);
+      color: var(--text);
+      padding: 0.48rem 0.6rem;
+    }
+    .controls label {
+      color: var(--muted);
+      font-size: 0.86rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      white-space: nowrap;
+    }
+    .table-wrap {
+      overflow: auto;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 800px;
+    }
+    thead th {
+      text-align: left;
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: var(--muted);
+      background: rgba(13, 25, 38, 0.95);
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+    th, td {
+      border-bottom: 1px solid rgba(33, 50, 69, 0.7);
+      padding: 0.55rem 0.6rem;
+      vertical-align: top;
+      font-size: 0.86rem;
+    }
+    tbody tr:hover {
+      background: rgba(107, 207, 120, 0.06);
+    }
+    .game-link {
+      color: #c8f7d0;
+      text-decoration: none;
+      font-weight: 600;
+    }
+    .game-link:hover { text-decoration: underline; }
+    .hidden-yes { color: var(--danger); font-weight: 600; }
+    .hidden-no { color: #b9f6ca; }
+    .chip-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.3rem;
+    }
+    .chip {
+      border-radius: 999px;
+      padding: 0.1rem 0.45rem;
+      background: rgba(162, 176, 191, 0.16);
+      color: var(--muted);
+      font-size: 0.75rem;
+      line-height: 1.35;
+    }
+    .chip--category {
+      background: var(--accent-soft);
+      color: #d9f8df;
+    }
+    @media (max-width: 900px) {
+      .controls {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>${arcade_name_html} LAN Arcade Wiki</h1>
+    <p class="subtitle">
+      Offline documentation and searchable game catalog for this LAN Arcade install.
+    </p>
+
+    <div class="toolbar">
+      <a class="link-btn" href="../">Back To Arcade</a>
+      <a class="link-btn" href="../admin/">Admin Controls</a>
+    </div>
+
+    <section class="grid">
+      <article class="panel">
+        <h2>Admin Controls</h2>
+        <ol>
+          <li>Open <code>/mirrors/games/admin/</code> and sign in.</li>
+          <li>Tick categories and games you want disabled.</li>
+          <li>Click <strong>Save Changes</strong> to write <code>admin.filters.json</code>.</li>
+          <li>Public arcade updates immediately using those filters.</li>
+        </ol>
+      </article>
+
+      <article class="panel">
+        <h2>Core Files</h2>
+        <ul>
+          <li><code>/mirrors/games/catalog.json</code> - generated game data + categories.</li>
+          <li><code>/mirrors/games/admin.filters.json</code> - disabled categories and games.</li>
+          <li><code>/mirrors/games/index.html</code> - public arcade page.</li>
+          <li><code>/mirrors/games/wiki/index.html</code> - this offline wiki page.</li>
+        </ul>
+      </article>
+
+      <article class="panel">
+        <h2>Update Flow</h2>
+        <ul>
+          <li>Edit <code>games.meta.sh</code> for new games or metadata.</li>
+          <li>Run <code>sudo ./setup_lan_arcade.sh</code> again.</li>
+          <li>Catalog, pages, and admin controls are regenerated.</li>
+          <li>Game folders with completion markers are skipped safely.</li>
+        </ul>
+      </article>
+    </section>
+
+    <section class="library">
+      <div class="library-head">
+        <h2>Game Library</h2>
+        <div id="gamesSummary" class="summary">Loading game catalog...</div>
+      </div>
+
+      <div class="controls">
+        <input id="searchInput" type="search" placeholder="Search title, id, tags, categories, description...">
+        <select id="categoryFilter">
+          <option value="">All categories</option>
+        </select>
+        <label><input id="showHiddenToggle" type="checkbox" checked> Show admin-hidden games</label>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Game</th>
+              <th>Categories</th>
+              <th>Tags</th>
+              <th>Admin Hidden</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody id="gamesBody"></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    (function () {
+      "use strict";
+
+      var state = {
+        catalog: { categories: [], games: [] },
+        filters: { disabled_categories: [], disabled_games: [] },
+        query: "",
+        category: "",
+        showHidden: true
+      };
+
+      function toStringArray(value) {
+        if (!Array.isArray(value)) return [];
+        return value.map(function (item) { return String(item).trim(); }).filter(function (item) { return item.length > 0; });
+      }
+
+      function uniqueArray(items) {
+        var seen = Object.create(null);
+        var output = [];
+        items.forEach(function (item) {
+          if (!seen[item]) {
+            seen[item] = true;
+            output.push(item);
+          }
+        });
+        return output;
+      }
+
+      function normalizeFilters(raw) {
+        var source = raw || {};
+        return {
+          disabled_categories: uniqueArray(toStringArray(source.disabled_categories)),
+          disabled_games: uniqueArray(toStringArray(source.disabled_games))
+        };
+      }
+
+      function fetchJson(url, fallbackValue) {
+        return fetch(url, { cache: "no-store" })
+          .then(function (response) {
+            if (!response.ok) throw new Error("HTTP " + response.status);
+            return response.json();
+          })
+          .catch(function () {
+            return fallbackValue;
+          });
+      }
+
+      function categoryLabelMap() {
+        var map = Object.create(null);
+        (Array.isArray(state.catalog.categories) ? state.catalog.categories : []).forEach(function (category) {
+          if (!category || !category.id) return;
+          map[String(category.id)] = category.label ? String(category.label) : String(category.id);
+        });
+        return map;
+      }
+
+      function hiddenByAdmin(game) {
+        var disabledGames = new Set(state.filters.disabled_games);
+        var disabledCategories = new Set(state.filters.disabled_categories);
+        if (disabledGames.has(String(game.id || ""))) return true;
+        return toStringArray(game.categories).some(function (categoryId) {
+          return disabledCategories.has(categoryId);
+        });
+      }
+
+      function clearChildren(el) {
+        el.textContent = "";
+      }
+
+      function populateCategoryFilter() {
+        var select = document.getElementById("categoryFilter");
+        var used = new Set();
+        var labelMap = categoryLabelMap();
+        state.catalog.games.forEach(function (game) {
+          toStringArray(game.categories).forEach(function (categoryId) {
+            used.add(categoryId);
+          });
+        });
+
+        clearChildren(select);
+        var allOption = document.createElement("option");
+        allOption.value = "";
+        allOption.textContent = "All categories";
+        select.appendChild(allOption);
+
+        (Array.isArray(state.catalog.categories) ? state.catalog.categories : []).forEach(function (category) {
+          var id = String(category && category.id ? category.id : "");
+          if (!id || !used.has(id)) return;
+          var option = document.createElement("option");
+          option.value = id;
+          option.textContent = labelMap[id] || id;
+          select.appendChild(option);
+        });
+
+        select.value = state.category || "";
+      }
+
+      function createChipRow(values, map, extraClass) {
+        var wrap = document.createElement("div");
+        wrap.className = "chip-row";
+        values.forEach(function (value) {
+          var chip = document.createElement("span");
+          chip.className = "chip" + (extraClass ? " " + extraClass : "");
+          chip.textContent = map && map[value] ? map[value] : value;
+          wrap.appendChild(chip);
+        });
+        return wrap;
+      }
+
+      function renderGames() {
+        var body = document.getElementById("gamesBody");
+        var summary = document.getElementById("gamesSummary");
+        var labelMap = categoryLabelMap();
+        var games = Array.isArray(state.catalog.games) ? state.catalog.games.slice() : [];
+
+        games.sort(function (a, b) {
+          return String(a.title || a.id).localeCompare(String(b.title || b.id));
+        });
+
+        var filtered = games.filter(function (game) {
+          var categories = toStringArray(game.categories);
+          var tags = toStringArray(game.tags);
+          var searchable = [
+            String(game.id || ""),
+            String(game.title || ""),
+            String(game.description || ""),
+            tags.join(" "),
+            categories.join(" ")
+          ].join(" ").toLowerCase();
+
+          if (state.query && searchable.indexOf(state.query) < 0) return false;
+          if (state.category && categories.indexOf(state.category) < 0) return false;
+          if (!state.showHidden && hiddenByAdmin(game)) return false;
+          return true;
+        });
+
+        clearChildren(body);
+        var hiddenInView = 0;
+
+        filtered.forEach(function (game) {
+          var isHidden = hiddenByAdmin(game);
+          if (isHidden) hiddenInView += 1;
+
+          var tr = document.createElement("tr");
+
+          var gameTd = document.createElement("td");
+          var link = document.createElement("a");
+          link.className = "game-link";
+          link.href = "../" + encodeURIComponent(String(game.id || "")) + "/";
+          link.textContent = String(game.title || game.id || "Unknown");
+          gameTd.appendChild(link);
+          var idText = document.createElement("div");
+          idText.style.color = "var(--muted)";
+          idText.style.fontSize = "0.77rem";
+          idText.textContent = String(game.id || "");
+          gameTd.appendChild(idText);
+          tr.appendChild(gameTd);
+
+          var categoriesTd = document.createElement("td");
+          categoriesTd.appendChild(createChipRow(toStringArray(game.categories), labelMap, "chip--category"));
+          tr.appendChild(categoriesTd);
+
+          var tagsTd = document.createElement("td");
+          tagsTd.appendChild(createChipRow(toStringArray(game.tags), null, ""));
+          tr.appendChild(tagsTd);
+
+          var hiddenTd = document.createElement("td");
+          hiddenTd.className = isHidden ? "hidden-yes" : "hidden-no";
+          hiddenTd.textContent = isHidden ? "Yes" : "No";
+          tr.appendChild(hiddenTd);
+
+          var descTd = document.createElement("td");
+          descTd.textContent = String(game.description || "");
+          tr.appendChild(descTd);
+
+          body.appendChild(tr);
+        });
+
+        if (filtered.length === 0) {
+          var emptyRow = document.createElement("tr");
+          var emptyCell = document.createElement("td");
+          emptyCell.colSpan = 5;
+          emptyCell.style.color = "var(--muted)";
+          emptyCell.textContent = "No games match the current filters.";
+          emptyRow.appendChild(emptyCell);
+          body.appendChild(emptyRow);
+        }
+
+        summary.textContent =
+          "Showing " + filtered.length + " of " + games.length + " games." +
+          " Hidden by admin in this view: " + hiddenInView + ".";
+      }
+
+      Promise.all([
+        fetchJson("../catalog.json", { categories: [], games: [] }),
+        fetchJson("../admin.filters.json", { disabled_categories: [], disabled_games: [] })
+      ]).then(function (results) {
+        state.catalog = results[0] || { categories: [], games: [] };
+        state.filters = normalizeFilters(results[1]);
+        populateCategoryFilter();
+        renderGames();
+      }).catch(function () {
+        document.getElementById("gamesSummary").textContent = "Failed to load game catalog.";
+      });
+
+      document.getElementById("searchInput").addEventListener("input", function (event) {
+        state.query = String(event.target.value || "").toLowerCase().trim();
+        renderGames();
+      });
+
+      document.getElementById("categoryFilter").addEventListener("change", function (event) {
+        state.category = String(event.target.value || "");
+        renderGames();
+      });
+
+      document.getElementById("showHiddenToggle").addEventListener("change", function (event) {
+        state.showHidden = !!event.target.checked;
+        renderGames();
       });
     })();
   </script>
@@ -1210,6 +1721,7 @@ write_admin_index() {
       <button id="saveBtn" type="button">Save Changes</button>
       <button id="enableAllBtn" type="button">Enable All</button>
       <button id="reloadBtn" type="button">Reload From Disk</button>
+      <a class="link-btn" href="../wiki/">Wiki</a>
       <a class="link-btn" href="../">Back To Arcade</a>
     </div>
 
@@ -1608,11 +2120,13 @@ echo "===== Building catalog and pages in $INDEX_DIR ====="
 build_catalog_json
 ensure_filters_file
 write_public_index
+write_wiki_index
 write_admin_cgi
 write_admin_index
 configure_admin_auth
 
 chown -R www-data:www-data "$INDEX_DIR"
+chmod 755 "$WIKI_DIR"
 chmod 755 "$ADMIN_DIR"
 chmod 755 "$ADMIN_CGI_FILE"
 
@@ -1625,4 +2139,5 @@ fi
 echo
 echo "Done."
 echo "Arcade: http://<your-server-ip>/mirrors/games/"
+echo "Wiki:   http://<your-server-ip>/mirrors/games/wiki/"
 echo "Admin:  http://<your-server-ip>/mirrors/games/admin/ (HTTP Basic Auth)"
