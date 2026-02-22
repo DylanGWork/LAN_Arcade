@@ -103,3 +103,56 @@ declare -A GAME_INFO=(
   ["supertasball"]="Super TASball|🎱|Pinball · Idle|Open-source pinball idle game where you “program” shots and build up your run over time.|Pinball,Idle,Strategy"
 
 )
+
+# ---------- Category metadata ----------
+# folder_name => comma-separated category slugs
+# Age categories:
+#   - age-5-plus
+#   - age-10-plus
+#   - age-13-plus
+declare -A GAME_CATEGORIES=(
+  ["typing-test"]="educational,english,typing,age-10-plus,family"
+  ["balloon-pop-maths"]="educational,maths,age-5-plus,family,casual"
+  ["IdleAnt"]="idle,strategy,management,age-10-plus"
+
+  ["solaris"]="idle,space,strategy,age-10-plus"
+  ["goomyclicker"]="clicker,idle,casual,age-5-plus"
+  ["watercompany"]="idle,management,simulation,age-10-plus"
+  ["electric-clicker"]="idle,clicker,simulation,science,age-10-plus"
+  ["idle-traveller"]="idle,adventure,casual,age-10-plus"
+  ["devlife"]="simulation,idle,strategy,age-13-plus"
+  ["level13"]="idle,adventure,strategy,age-13-plus"
+  ["BuildASpaceShip"]="idle,space,strategy,age-10-plus"
+  ["CSGOClicker"]="clicker,idle,age-13-plus"
+  ["particle-clicker"]="educational,science,idle,clicker,age-10-plus"
+  ["second-derivative-clicker"]="educational,maths,idle,age-13-plus"
+  ["confectionery-collector"]="idle,clicker,casual,age-5-plus"
+  ["cityclicker"]="idle,city-builder,management,age-10-plus"
+  ["koutoftimer-idle-miner"]="idle,strategy,management,age-10-plus"
+  ["incremental-kaloyanz"]="idle,clicker,casual,age-10-plus"
+  ["dolla_idle_game"]="idle,clicker,management,age-10-plus"
+  ["citygame-clicker"]="idle,city-builder,management,age-10-plus"
+  ["realmofdecay"]="idle,fantasy,rpg,strategy,age-13-plus"
+  ["racing-clicker"]="idle,clicker,racing,age-10-plus"
+  ["space-idle"]="idle,space,strategy,age-10-plus"
+  ["santas-workshop"]="idle,seasonal,management,family,age-5-plus"
+  ["idlepunk"]="idle,simulation,strategy,age-13-plus"
+  ["cookieclicker"]="idle,clicker,casual,age-5-plus"
+  ["c64clicker"]="idle,clicker,retro,age-10-plus"
+  ["goomyclicker2"]="idle,clicker,casual,age-5-plus"
+  ["incremental-rpg"]="idle,rpg,fantasy,age-10-plus"
+  ["fallen-warrior"]="idle,rpg,fantasy,age-10-plus"
+  ["idlecraft"]="idle,simulation,strategy,age-10-plus"
+  ["sandcastle-builder"]="idle,clicker,casual,family,age-5-plus"
+  ["farm-clicker"]="idle,clicker,casual,simulation,age-5-plus"
+  ["technomancy"]="idle,science,strategy,age-13-plus"
+  ["happyking"]="idle,management,strategy,simulation,age-10-plus"
+  ["incremancer"]="idle,fantasy,strategy,age-13-plus"
+  ["hextris"]="puzzle,arcade,mobile-friendly,age-10-plus"
+  ["2048"]="puzzle,maths,mobile-friendly,age-5-plus"
+  ["tetris"]="arcade,puzzle,retro,age-10-plus"
+  ["floppybird"]="arcade,casual,mobile-friendly,age-5-plus"
+  ["pacman"]="arcade,retro,mobile-friendly,age-5-plus"
+  ["snake"]="arcade,retro,mobile-friendly,age-5-plus"
+  ["supertasball"]="idle,strategy,arcade,age-10-plus"
+)

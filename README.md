@@ -11,7 +11,7 @@ It’s lightweight enough to host on a Raspberry Pi or tiny VM, so you can throw
 This repo contains:
 
 - `setup_lan_arcade.sh` – installer + HTML generator
-- `games.meta.sh` – list of games and their metadata (titles, icons, descriptions, tags)
+- `games.meta.sh` – list of games and metadata (titles, icons, descriptions, tags, categories)
 
 The script mirrors a bunch of HTML/JS games (mostly idle / clicker / educational) into
 `/var/www/html/mirrors/` and builds a nice card-based homepage at:
@@ -27,10 +27,11 @@ http://<server-ip>/mirrors/games/
 # Features
 
 - 🕹 Offline-friendly – games are mirrored locally with wget
-- 🎨 Pretty UI – cards with icons, genre line, description and tags
-- 🔁 Idempotent – safe to rerun; existing game folders are skipped
-- 🧩 Easy to extend – add more games by editing a single metadata file
-- 🧪 Realistic deployment – edit locally, push via git, pull on a VM/RPi
+- 🎨 Pretty UI – card-based public index generated from `catalog.json`
+- 🗂 Category-aware – public category chips + admin filters across educational, ages 5+/10+/13+, maths, english, typing, and genre categories
+- 🔐 Admin controls – password-protected admin page to disable full categories or individual games
+- 🔁 Idempotent – safe to rerun; completed game folders are skipped via marker files
+- 🧩 Easy to extend – update URLs, card data, and categories in `games.meta.sh`
 
 # Requirements
 On the machine you’re deploying to:
@@ -40,10 +41,11 @@ On the machine you’re deploying to:
 - git installed
 The script will install these packages automatically:
 - apache2
+- apache2-utils
 - wget
 - unzip
 It’s been used on:
-- A Debian VM 
+- A Debian VM
 - Raspberry Pi-class hardware should also be fine
 
 # Quick start – install on your server
@@ -91,13 +93,19 @@ You’ll be asked:
 Enter a name for your LAN arcade (e.g. 'GannanNet', 'SmithNet', 'Magical LAN') [GannanNet]:
 ```
 
+On first run you’ll also be asked to set an admin password for the protected admin panel.
+
 Whatever you type becomes the ```<title>``` and ```<h1>``` on the homepage
 (e.g. SmithNet LAN Arcade). Press Enter to accept the default.
 
 The script will then:
 1. Install Apache + helper tools (if they’re not already installed)
-2. Mirror each configured game into /var/www/html/mirrors/<game>/
-3. Regenerate /var/www/html/mirrors/games/index.html with pretty cards
+2. Create or reuse admin credentials
+3. Mirror each configured game into /var/www/html/mirrors/<game>/
+4. Build `/var/www/html/mirrors/games/catalog.json`
+5. Regenerate `/var/www/html/mirrors/games/index.html` (public page)
+6. Regenerate `/var/www/html/mirrors/games/admin/index.html` + save endpoint
+7. Configure Apache Basic Auth for `/mirrors/games/admin/`
     🔧 You do not run games.meta.sh yourself.
     It’s automatically loaded by setup_lan_arcade.sh and used as a config file.
 
@@ -115,8 +123,50 @@ You should see a grid of cards with:
 - Genre meta line (e.g. UTILITY · INCREMENTAL)
 - Short description
 - Tag “pills”
+- Category filter chips at the top of the page
 - Play button with a little emoji
 Click a card to launch the game.
+
+Admin panel (login required):
+```text
+http://<server-ip>/mirrors/games/admin/
+```
+Use it to disable:
+- Whole categories (e.g. `age-13-plus`, `maths`, `typing`)
+- Individual games
+
+The public index automatically applies those saved filters.
+
+# Admin controls
+
+Admin URL (HTTP Basic Auth):
+```text
+http://<server-ip>/mirrors/games/admin/
+```
+
+The admin page has three main actions:
+- **Save Changes**: writes your current checkbox selections to `/var/www/html/mirrors/games/admin.filters.json`.
+- **Enable All**: unchecks all category/game disables in the UI. Click **Save Changes** after this to persist.
+- **Reload From Disk**: reloads catalog + filters from disk and discards unsaved UI state.
+
+Recommended workflow:
+1. Disable categories and/or individual games.
+2. Click **Save Changes**.
+3. Open the public page and verify visibility.
+4. If you want to undo all filtering, click **Enable All** then **Save Changes**.
+
+Credential behavior:
+- First setup prompts for admin password unless `ADMIN_PASSWORD` is already provided.
+- On reruns, existing credentials are reused if `ADMIN_PASSWORD` is not set.
+- To rotate password:
+```
+ADMIN_PASSWORD="new-strong-password" sudo ./setup_lan_arcade.sh
+```
+- To rotate username + password:
+```
+ADMIN_USER="newadmin" ADMIN_PASSWORD="new-strong-password" sudo ./setup_lan_arcade.sh
+```
+- `ADMIN_USER` allows letters, numbers, `.`, `_`, and `-`.
 
 # Updating / redeploying
 
@@ -129,7 +179,7 @@ sudo ./setup_lan_arcade.sh
 
 The script is safe to rerun:
 - Existing game folders are left in place (no re-download unless you delete them)
-- The homepage HTML is rebuilt every time so new games appear automatically
+- Catalog and pages are rebuilt every run so metadata/category changes appear automatically
 
 # Customisation
 Change the arcade name (title/header)
@@ -140,6 +190,15 @@ Two options:
 ```
 ARCADE_NAME="Magical LAN" sudo ./setup_lan_arcade.sh
 ```
+
+Set admin credentials non-interactively:
+```
+ADMIN_USER="arcadeadmin" ADMIN_PASSWORD="strong-password" sudo ./setup_lan_arcade.sh
+```
+
+If admin credentials already exist and `ADMIN_PASSWORD` is omitted, existing credentials are kept.
+If you run in a non-interactive environment and credentials do not exist yet, you must set `ADMIN_PASSWORD`.
+
 # Add or edit games (for people hacking on the repo)
 
 All game definitions live in games.meta.sh.
@@ -169,10 +228,21 @@ In the GAME_INFO array, add a line using:
 - Description – short blurb for the card
 - Tags – comma-separated list. First tag gets the highlighted pill style.
 
+3. Add categories used by admin filtering
+In the GAME_CATEGORIES array:
+```
+["my-new-game"]="educational,typing,english,age-10-plus"
+```
+
+Suggested category style:
+- Audience: `age-5-plus`, `age-10-plus`, `age-13-plus`
+- Learning: `educational`, `maths`, `english`, `typing`
+- Genre/theme: `arcade`, `puzzle`, `idle`, `strategy`, `simulation`, `rpg`, etc.
+
 If a folder exists under /var/www/html/mirrors/ but isn’t in GAME_INFO,
 the script falls back to a generic “HTML5 · Offline” card for that folder.
 
-3. Run the setup script again
+4. Run the setup script again
 
 After editing games.meta.sh and committing/pushing if you’re using git:
 ```
