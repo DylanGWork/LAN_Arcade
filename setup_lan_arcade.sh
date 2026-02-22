@@ -1508,6 +1508,17 @@ for GAME in "${!GAMES[@]}"; do
           mv "$src_dir"/* "$TARGET"/ 2>/dev/null || true
           shopt -u dotglob nullglob
           rm -rf "$src_dir"
+
+          # Some repos ship a differently named HTML entrypoint; promote one to index.html.
+          if [ ! -f "$TARGET/index.html" ]; then
+            fallback_html="$(find "$TARGET" -maxdepth 1 -type f -iname '*.html' | LC_ALL=C sort | head -n1 || true)"
+            if [ -z "$fallback_html" ]; then
+              fallback_html="$(find "$TARGET" -type f -iname '*.html' | LC_ALL=C sort | head -n1 || true)"
+            fi
+            if [ -n "$fallback_html" ] && [ -f "$fallback_html" ]; then
+              cp "$fallback_html" "$TARGET/index.html"
+            fi
+          fi
         else
           echo "⚠️ Could not locate extracted repo folder for $GAME ($zip_repo@$zip_branch)."
           download_ok=0

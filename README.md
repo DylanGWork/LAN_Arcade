@@ -217,6 +217,7 @@ Special cases:
 - `ZIP_GITHUB_REPO::owner/repo::branch` downloads a repo ZIP and copies its extracted files into the game folder.
 - `ZIP_GITHUB_REPO` remains as a legacy shortcut for the existing `typing-test` source.
 - `ZIP_GITHUB_FILE::owner/repo::branch::path/to/file.html` downloads a repo ZIP and promotes that file to `index.html`.
+- For `ZIP_GITHUB_REPO::...`, if the repo has no `index.html`, the first discovered HTML file is copied to `index.html`.
 
 Example:
 ```
