@@ -17,40 +17,68 @@ LOCAL_USER="${SUDO_USER:-$(id -un)}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 META_FILE="$SCRIPT_DIR/games.meta.sh"
 
-# Load metadata in a separate shell. If running via sudo, execute as the
-# invoking non-root user so metadata cannot run with root privileges.
+# Parse metadata as data instead of sourcing it, so repository content is never
+# executed as shell code.
 declare -A GAMES=()
 declare -A GAME_INFO=()
 
-load_metadata() {
-  local dump quoted_meta
-  local -a runner=()
+load_assoc_array() {
+  local array_name="$1"
+  local in_block=0
+  local line key value
 
+  while IFS= read -r line || [ -n "$line" ]; do
+    line="${line%$'\r'}"
+
+    if [ "$in_block" -eq 0 ]; then
+      if [[ "$line" =~ ^[[:space:]]*declare[[:space:]]+-A[[:space:]]+$array_name=\([[:space:]]*$ ]]; then
+        in_block=1
+      fi
+      continue
+    fi
+
+    if [[ "$line" =~ ^[[:space:]]*\)[[:space:]]*$ ]]; then
+      return 0
+    fi
+
+    if [[ "$line" =~ ^[[:space:]]*$ ]] || [[ "$line" =~ ^[[:space:]]*# ]]; then
+      continue
+    fi
+
+    if [[ "$line" =~ ^[[:space:]]*\[\"([^\"]+)\"\]=\"(.*)\"[[:space:]]*$ ]]; then
+      key="${BASH_REMATCH[1]}"
+      value="${BASH_REMATCH[2]}"
+      if [ "$array_name" = "GAMES" ]; then
+        GAMES["$key"]="$value"
+      else
+        GAME_INFO["$key"]="$value"
+      fi
+    else
+      echo "Invalid $array_name entry in $META_FILE:"
+      echo "$line"
+      exit 1
+    fi
+  done < "$META_FILE"
+
+  echo "Could not find complete $array_name block in $META_FILE"
+  exit 1
+}
+
+load_metadata() {
   if [ ! -f "$META_FILE" ]; then
     echo "Metadata file not found: $META_FILE"
     exit 1
   fi
 
-  quoted_meta="$(printf '%q' "$META_FILE")"
+  GAMES=()
+  GAME_INFO=()
+  load_assoc_array "GAMES"
+  load_assoc_array "GAME_INFO"
 
-  if [ -n "${SUDO_USER:-}" ] && [ "$SUDO_USER" != "root" ] && command -v sudo >/dev/null 2>&1; then
-    runner=(sudo -u "$SUDO_USER")
-  fi
-
-  if ! dump="$("${runner[@]}" bash -lc "set -euo pipefail; source $quoted_meta; declare -p GAMES GAME_INFO" 2>&1)"; then
-    echo "Failed to load metadata from $META_FILE"
-    echo "$dump"
+  if [ "${#GAMES[@]}" -eq 0 ]; then
+    echo "No game sources found in $META_FILE"
     exit 1
   fi
-
-  if ! printf '%s\n' "$dump" | grep -q '^declare -A GAMES=' \
-    || ! printf '%s\n' "$dump" | grep -q '^declare -A GAME_INFO='; then
-    echo "Unexpected metadata output from $META_FILE"
-    exit 1
-  fi
-
-  # shellcheck disable=SC1090
-  eval "$dump"
 }
 
 load_metadata
