@@ -65,7 +65,7 @@ cd /opt/lan-arcade
 ```
 3. Clone the repo
 ```
-git clone https://github.com/DylanGWork/LAN_Arcade.git
+git clone https://github.com/DylanGWork/LAN_Arcade.git .
 ```
 
 You should now see:

@@ -15,13 +15,50 @@ fi
 
 LOCAL_USER="${SUDO_USER:-$(id -un)}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+META_FILE="$SCRIPT_DIR/games.meta.sh"
 
-# Pull in GAMES and GAME_INFO
-source "$SCRIPT_DIR/games.meta.sh"
+# Load metadata in a separate shell. If running via sudo, execute as the
+# invoking non-root user so metadata cannot run with root privileges.
+declare -A GAMES=()
+declare -A GAME_INFO=()
+
+load_metadata() {
+  local dump quoted_meta
+  local -a runner=()
+
+  if [ ! -f "$META_FILE" ]; then
+    echo "Metadata file not found: $META_FILE"
+    exit 1
+  fi
+
+  quoted_meta="$(printf '%q' "$META_FILE")"
+
+  if [ -n "${SUDO_USER:-}" ] && [ "$SUDO_USER" != "root" ] && command -v sudo >/dev/null 2>&1; then
+    runner=(sudo -u "$SUDO_USER")
+  fi
+
+  if ! dump="$("${runner[@]}" bash -lc "set -euo pipefail; source $quoted_meta; declare -p GAMES GAME_INFO" 2>&1)"; then
+    echo "Failed to load metadata from $META_FILE"
+    echo "$dump"
+    exit 1
+  fi
+
+  if ! printf '%s\n' "$dump" | grep -q '^declare -A GAMES=' \
+    || ! printf '%s\n' "$dump" | grep -q '^declare -A GAME_INFO='; then
+    echo "Unexpected metadata output from $META_FILE"
+    exit 1
+  fi
+
+  # shellcheck disable=SC1090
+  eval "$dump"
+}
+
+load_metadata
 
 MIRRORS_DIR="/var/www/html/mirrors"
 INDEX_DIR="$MIRRORS_DIR/games"
 INDEX_FILE="$INDEX_DIR/index.html"
+READY_MARKER=".mirror_ok"
 
 # ---------- Arcade name prompt ----------
 DEFAULT_ARCADE_NAME="GannanNet"
@@ -77,22 +114,39 @@ flatten_mirror() {
   fi
 }
 
+html_escape() {
+  local text="$1"
+  text="${text//&/&amp;}"
+  text="${text//</&lt;}"
+  text="${text//>/&gt;}"
+  text="${text//\"/&quot;}"
+  text="${text//\'/&#39;}"
+  printf '%s' "$text"
+}
+
 # ---------- Mirror each game ----------
 echo "===== Mirroring games into $MIRRORS_DIR ====="
 
 for GAME in "${!GAMES[@]}"; do
   URL="${GAMES[$GAME]}"
   TARGET="$MIRRORS_DIR/$GAME"
+  MARKER="$TARGET/$READY_MARKER"
 
-  if [ -d "$TARGET" ] && [ -n "$(ls -A "$TARGET" 2>/dev/null || true)" ]; then
+  if [ -f "$MARKER" ]; then
     echo "✅ $GAME already exists, skipping download"
     continue
+  fi
+
+  if [ -d "$TARGET" ] && [ -n "$(find "$TARGET" -mindepth 1 ! -name "$READY_MARKER" -print -quit 2>/dev/null || true)" ]; then
+    echo "⚠️  $GAME has partial content but no completion marker; re-downloading."
+    rm -rf "$TARGET"
   fi
 
   echo "🌐 Downloading $GAME from $URL"
   mkdir -p "$TARGET"
   chown "$LOCAL_USER:$LOCAL_USER" "$TARGET"
   cd "$TARGET"
+  download_ok=1
 
   if [ "$URL" = "ZIP_GITHUB_REPO" ] && [ "$GAME" = "typing-test" ]; then
     wget -O typing-test.zip "https://github.com/KDvs123/Typing-Test/archive/refs/heads/main.zip"
@@ -106,19 +160,29 @@ for GAME in "${!GAMES[@]}"; do
     fi
     rm -f typing-test.zip
   else
-    wget \
+    if ! wget \
       --mirror \
       --convert-links \
       --adjust-extension \
       --page-requisites \
       --no-parent \
-      "$URL" || echo "⚠️ wget reported an error for $GAME; check manually if needed."
+      "$URL"; then
+      echo "⚠️ wget reported an error for $GAME; check manually if needed."
+      download_ok=0
+    fi
 
     flatten_mirror "$URL" "$TARGET"
   fi
 
+  if [ "$download_ok" -eq 1 ] && [ -n "$(find "$TARGET" -mindepth 1 ! -name "$READY_MARKER" -print -quit 2>/dev/null || true)" ]; then
+    touch "$MARKER"
+  else
+    rm -f "$MARKER"
+    echo "⚠️ $GAME did not complete successfully; it will be retried next run."
+  fi
+
   chown -R www-data:www-data "$TARGET"
-    # IdleAnt expects to be hosted at /IdleAnt/ (GitHub Pages base path) — provide an alias.
+  # IdleAnt expects to be hosted at /IdleAnt/ (GitHub Pages base path); provide an alias.
   if [ "$GAME" = "IdleAnt" ]; then
     ln -sfn "$TARGET" "/var/www/html/IdleAnt"
   fi
@@ -127,12 +191,14 @@ done
 # ---------- Build pretty index.html ----------
 echo "===== Rebuilding index at $INDEX_FILE ====="
 
+ARCADE_NAME_HTML="$(html_escape "$ARCADE_NAME_USE")"
+
 cat > "$INDEX_FILE" <<HTML
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>${ARCADE_NAME_USE} LAN Arcade</title>
+  <title>${ARCADE_NAME_HTML} LAN Arcade</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
     :root {
@@ -283,10 +349,10 @@ cat > "$INDEX_FILE" <<HTML
 </head>
 <body>
   <header>
-    <h1>${ARCADE_NAME_USE} LAN Arcade</h1>
+    <h1>${ARCADE_NAME_HTML} LAN Arcade</h1>
     <div class="subtitle">
       Offline-friendly games hosted on your home server.<br>
-      Tap a game to launch it in your browser or “Add to Home Screen” on mobile.
+      Tap a game to launch it in your browser or 'Add to Home Screen' on mobile.
     </div>
   </header>
   <main>
@@ -294,52 +360,60 @@ cat > "$INDEX_FILE" <<HTML
 HTML
 
 # Append a card for each folder under /var/www/html/mirrors
-for DIR in $(ls -1 "$MIRRORS_DIR" | sort); do
-  [ -d "$MIRRORS_DIR/$DIR" ] || continue
+while IFS= read -r DIR; do
+  [ "$DIR" = "games" ] && continue
 
   info="${GAME_INFO[$DIR]:-}"
   if [ -n "$info" ]; then
     IFS='|' read -r title icon meta desc tags <<< "$info"
   else
     title="$(echo "$DIR" | tr '-' ' ')"
-    icon="▶"
-    meta="HTML5 · Offline"
+    icon="Play"
+    meta="HTML5 / Offline"
     desc="Offline-friendly browser game mirrored in the \"$DIR\" folder."
     tags="Offline"
   fi
 
-  echo "      <a class=\"game-card\" href=\"../$DIR/\">" >> "$INDEX_FILE"
-  echo "        <div class=\"game-title\">$title</div>" >> "$INDEX_FILE"
-  echo "        <div class=\"game-meta\">$meta</div>" >> "$INDEX_FILE"
+  dir_html="$(html_escape "$DIR")"
+  title_html="$(html_escape "$title")"
+  icon_html="$(html_escape "$icon")"
+  meta_html="$(html_escape "$meta")"
+  desc_html="$(html_escape "$desc")"
+
+  echo "      <a class=\"game-card\" href=\"../$dir_html/\">" >> "$INDEX_FILE"
+  echo "        <div class=\"game-title\">$title_html</div>" >> "$INDEX_FILE"
+  echo "        <div class=\"game-meta\">$meta_html</div>" >> "$INDEX_FILE"
   echo "        <div class=\"game-desc\">" >> "$INDEX_FILE"
-  echo "          $desc" >> "$INDEX_FILE"
+  echo "          $desc_html" >> "$INDEX_FILE"
   echo "        </div>" >> "$INDEX_FILE"
   echo "        <div class=\"pill-row\">" >> "$INDEX_FILE"
 
   IFS=',' read -ra tag_arr <<< "$tags"
   first_tag=1
   for tag in "${tag_arr[@]}"; do
-    trimmed="$(echo "$tag" | sed 's/^ *//;s/ *$//')"
+    trimmed="${tag#"${tag%%[![:space:]]*}"}"
+    trimmed="${trimmed%"${trimmed##*[![:space:]]}"}"
     [ -z "$trimmed" ] && continue
+    tag_html="$(html_escape "$trimmed")"
     if [ "$first_tag" -eq 1 ]; then
-      echo "          <div class=\"pill pill--primary\">$trimmed</div>" >> "$INDEX_FILE"
+      echo "          <div class=\"pill pill--primary\">$tag_html</div>" >> "$INDEX_FILE"
       first_tag=0
     else
-      echo "          <div class=\"pill\">$trimmed</div>" >> "$INDEX_FILE"
+      echo "          <div class=\"pill\">$tag_html</div>" >> "$INDEX_FILE"
     fi
   done
 
   echo "        </div>" >> "$INDEX_FILE"
   echo "        <div class=\"play-row\">" >> "$INDEX_FILE"
-  echo "          <button class=\"play-btn\" type=\"button\">" >> "$INDEX_FILE"
-  echo "            <span>$icon</span> Play" >> "$INDEX_FILE"
-  echo "          </button>" >> "$INDEX_FILE"
+  echo "          <span class=\"play-btn\" aria-hidden=\"true\">" >> "$INDEX_FILE"
+  echo "            <span>$icon_html</span> Play" >> "$INDEX_FILE"
+  echo "          </span>" >> "$INDEX_FILE"
   echo "          <span style=\"font-size:0.75rem;color:var(--muted);\">" >> "$INDEX_FILE"
-  echo "            /mirrors/$DIR/..." >> "$INDEX_FILE"
+  echo "            /mirrors/$dir_html/..." >> "$INDEX_FILE"
   echo "          </span>" >> "$INDEX_FILE"
   echo "        </div>" >> "$INDEX_FILE"
   echo "      </a>" >> "$INDEX_FILE"
-done
+done < <(find "$MIRRORS_DIR" -mindepth 1 -maxdepth 1 -type d -printf '%f\n' | LC_ALL=C sort)
 
 cat >> "$INDEX_FILE" <<'HTML'
     </section>
