@@ -1478,17 +1478,92 @@ for GAME in "${!GAMES[@]}"; do
   cd "$TARGET"
   download_ok=1
 
+  zip_repo=""
+  zip_branch=""
   if [ "$URL" = "ZIP_GITHUB_REPO" ] && [ "$GAME" = "typing-test" ]; then
-    wget -O typing-test.zip "https://github.com/KDvs123/Typing-Test/archive/refs/heads/main.zip"
-    unzip -q typing-test.zip
-    src_dir="$(find . -maxdepth 1 -type d -name 'Typing-Test*' | head -n1 || true)"
-    if [ -n "$src_dir" ]; then
-      shopt -s dotglob nullglob
-      mv "$src_dir"/* "$TARGET"/ 2>/dev/null || true
-      shopt -u dotglob nullglob
-      rm -rf "$src_dir"
+    zip_repo="KDvs123/Typing-Test"
+    zip_branch="main"
+  elif [[ "$URL" == ZIP_GITHUB_REPO::* ]]; then
+    zip_spec="${URL#ZIP_GITHUB_REPO::}"
+    zip_repo="${zip_spec%%::*}"
+    zip_rest="${zip_spec#*::}"
+    if [ "$zip_rest" != "$zip_spec" ]; then
+      zip_branch="$zip_rest"
     fi
-    rm -f typing-test.zip
+  fi
+
+  if [ -n "$zip_repo" ]; then
+    if [ -z "$zip_branch" ]; then
+      zip_branch="main"
+    fi
+    repo_name="${zip_repo##*/}"
+    archive_name="${GAME}.zip"
+    archive_url="https://github.com/$zip_repo/archive/refs/heads/$zip_branch.zip"
+
+    if wget -O "$archive_name" "$archive_url"; then
+      if unzip -q "$archive_name"; then
+        src_dir="$(find . -maxdepth 1 -type d -name "${repo_name}-${zip_branch}*" | head -n1 || true)"
+        if [ -n "$src_dir" ] && [ -d "$src_dir" ]; then
+          shopt -s dotglob nullglob
+          mv "$src_dir"/* "$TARGET"/ 2>/dev/null || true
+          shopt -u dotglob nullglob
+          rm -rf "$src_dir"
+        else
+          echo "⚠️ Could not locate extracted repo folder for $GAME ($zip_repo@$zip_branch)."
+          download_ok=0
+        fi
+      else
+        echo "⚠️ Failed to extract archive for $GAME ($archive_url)."
+        download_ok=0
+      fi
+      rm -f "$archive_name"
+    else
+      echo "⚠️ Failed to download archive for $GAME ($archive_url)."
+      download_ok=0
+    fi
+  elif [[ "$URL" == ZIP_GITHUB_FILE::* ]]; then
+    spec="${URL#ZIP_GITHUB_FILE::}"
+    repo="${spec%%::*}"
+    rest="${spec#*::}"
+    branch="${rest%%::*}"
+    file_path="${rest#*::}"
+
+    if [ -z "$repo" ] || [ "$rest" = "$spec" ] || [ -z "$branch" ] || [ "$file_path" = "$rest" ] || [ -z "$file_path" ]; then
+      echo "⚠️ Invalid ZIP_GITHUB_FILE source for $GAME: $URL"
+      download_ok=0
+    else
+      repo_name="${repo##*/}"
+      archive_name="${GAME}.zip"
+      archive_url="https://github.com/$repo/archive/refs/heads/$branch.zip"
+
+      if wget -O "$archive_name" "$archive_url"; then
+        if unzip -q "$archive_name"; then
+          src_dir="$(find . -maxdepth 1 -type d -name "${repo_name}-${branch}*" | head -n1 || true)"
+          src_file=""
+          if [ -n "$src_dir" ] && [ -f "$src_dir/$file_path" ]; then
+            src_file="$src_dir/$file_path"
+          elif [ -n "$src_dir" ]; then
+            src_file="$(find "$src_dir" -type f -name "$(basename "$file_path")" | head -n1 || true)"
+          fi
+
+          if [ -n "$src_file" ] && [ -f "$src_file" ]; then
+            cp "$src_file" "$TARGET/index.html"
+          else
+            echo "⚠️ Could not locate '$file_path' in $repo@$branch for $GAME."
+            download_ok=0
+          fi
+
+          [ -n "$src_dir" ] && rm -rf "$src_dir"
+        else
+          echo "⚠️ Failed to extract archive for $GAME ($archive_url)."
+          download_ok=0
+        fi
+        rm -f "$archive_name"
+      else
+        echo "⚠️ Failed to download archive for $GAME ($archive_url)."
+        download_ok=0
+      fi
+    fi
   else
     if ! wget \
       --mirror \

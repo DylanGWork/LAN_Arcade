@@ -213,9 +213,16 @@ declare -A GAMES=(
 )
 ```
 
-Special case: some games can be pulled from a GitHub ZIP.
-For those you can use a magic value (e.g. ZIP_GITHUB_REPO) and handle them
-inside setup_lan_arcade.sh (see the typing-test example in the script).
+Special cases:
+- `ZIP_GITHUB_REPO::owner/repo::branch` downloads a repo ZIP and copies its extracted files into the game folder.
+- `ZIP_GITHUB_REPO` remains as a legacy shortcut for the existing `typing-test` source.
+- `ZIP_GITHUB_FILE::owner/repo::branch::path/to/file.html` downloads a repo ZIP and promotes that file to `index.html`.
+
+Example:
+```
+["crossword-classic"]="ZIP_GITHUB_REPO::deepakshajan/Crossword-Puzzle::master"
+["game-of-sums"]="ZIP_GITHUB_FILE::jkanev/educational-html-games::master::game-of-sums.html"
+```
 
 2. Add pretty card metadata
 In the GAME_INFO array, add a line using:

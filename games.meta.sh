@@ -2,11 +2,23 @@
 # All game URLs + pretty card metadata used by setup_lan_arcade.sh
 
 # ---------- Game source URLs ----------
-# folder_name => source URL (or special flag like ZIP_GITHUB_REPO)
+# folder_name => source URL (or special flag like ZIP_GITHUB_REPO / ZIP_GITHUB_FILE)
 declare -A GAMES=(
   # Educational / typing
   ["typing-test"]="ZIP_GITHUB_REPO"
   ["balloon-pop-maths"]="https://richardhenyash.github.io/balloon-pop-maths/"
+  ["edukiz"]="https://timmalich.github.io/edukiz_live/"
+  ["set-sizes-animals"]="ZIP_GITHUB_FILE::jkanev/educational-html-games::master::set-sizes-animals.html"
+  ["set-sizes-shapes"]="ZIP_GITHUB_FILE::jkanev/educational-html-games::master::set-sizes-shapes.html"
+  ["triple-number-memory"]="ZIP_GITHUB_FILE::jkanev/educational-html-games::master::triple-number-memory.html"
+  ["game-of-sums"]="ZIP_GITHUB_FILE::jkanev/educational-html-games::master::game-of-sums.html"
+  ["game-of-differences"]="ZIP_GITHUB_FILE::jkanev/educational-html-games::master::game-of-differences.html"
+  ["game-of-triplets"]="ZIP_GITHUB_FILE::jkanev/educational-html-games::master::game-of-triplets.html"
+  ["hangman-reading"]="https://ravichandranjv.github.io/Hangman/"
+  ["wordsearch-reading"]="https://wanderingstan.github.io/wordsearch/"
+  ["sudoku"]="https://sudoku.tn1ck.com/"
+  ["crossword-puzzle-maker"]="https://papauschek.github.io/crossword-puzzle-maker/"
+  ["crossword-classic"]="ZIP_GITHUB_REPO::deepakshajan/Crossword-Puzzle::master"
   ["IdleAnt"]="https://scorzy.github.io/IdleAnt/"
 
   # Idle JS collection
@@ -59,6 +71,18 @@ declare -A GAMES=(
 declare -A GAME_INFO=(
   ["typing-test"]="Typing Test|⌨️|Typing · Speed Test|Simple browser-based typing test to measure words per minute and accuracy over short runs.|Skill,WPM trainer"
   ["balloon-pop-maths"]="Balloon Pop Maths|🎈|Maths · Educational|Kid-friendly balloon popping maths game with multiple difficulty modes.|Kids,Maths practice"
+  ["edukiz"]="Edukiz Kids Suite|BOOK|Educational - Maths/Letters|Open-source educational mini-game suite with number, letter, and early arithmetic activities for children.|Kids,Maths,Letters"
+  ["set-sizes-animals"]="Set Sizes (Animals)|PAWS|Maths - Number Sense|Estimate group sizes quickly without counting in an animal-themed number sense game.|Number sense,Quick maths,Kids"
+  ["set-sizes-shapes"]="Set Sizes (Shapes)|SHAPES|Maths - Number Sense|Fast shape-counting challenge that trains visual quantity recognition and early maths fluency.|Visual maths,Kids,Quick play"
+  ["triple-number-memory"]="Triple Number Memory|CARDS|Maths - Memory|Match number triplets across digits, symbols, and words to build memory and number understanding.|Memory,Numbers,English"
+  ["game-of-sums"]="Game of Sums|PLUS|Maths - Mental Arithmetic|Two-player arithmetic duel where players build valid addition equations from limited number cards.|Addition,Strategy,Classroom"
+  ["game-of-differences"]="Game of Differences|MINUS|Maths - Mental Arithmetic|Subtraction-focused variant of the equation duel, designed for fast mental maths practice.|Subtraction,Strategy,Classroom"
+  ["game-of-triplets"]="Game of Triplets|TRIPLE|Maths - Equation Builder|Build full equations from numbers and operators to score points in a deeper arithmetic strategy game.|Equations,Logic,Strategy"
+  ["hangman-reading"]="Hangman Reading|HANG|Reading - Vocabulary|Classic hangman word-guessing game that reinforces spelling and vocabulary recall.|Vocabulary,Spelling,English"
+  ["wordsearch-reading"]="Word Search|WORDS|Reading - Word Hunt|Find hidden words in a grid to build scanning speed, vocabulary, and pattern recognition.|Word hunt,English,Puzzle"
+  ["sudoku"]="Sudoku|SUDOKU|Puzzle - Logic & Numbers|Classic Sudoku logic puzzle for number placement and reasoning practice.|Logic,Maths,Brain training"
+  ["crossword-puzzle-maker"]="Crossword Puzzle Maker|CROSS|Reading - Crossword Builder|Build and play crossword puzzles in the browser for vocabulary and clue-solving practice.|Crossword,English,Classroom"
+  ["crossword-classic"]="Crossword Classic|CLUE|Reading - Crossword Puzzle|Classic crossword puzzle gameplay with clues and grid entry mechanics.|Crossword,English,Wordplay"
   ["IdleAnt"]="Idle Ant|🐜|Colony · Incremental|Grow an ant colony: buy units, unlock research, and scale into absurd production.|Ants,Colony,Long haul"
 
   ["solaris"]="Solaris|☀️|Space · Idle|Grow a sci-fi colony, harvest resources and expand across the system.|Space,Colony"
@@ -113,6 +137,18 @@ declare -A GAME_INFO=(
 declare -A GAME_CATEGORIES=(
   ["typing-test"]="educational,english,typing,age-10-plus,family"
   ["balloon-pop-maths"]="educational,maths,age-5-plus,family,casual"
+  ["edukiz"]="educational,maths,english,typing,age-5-plus,family"
+  ["set-sizes-animals"]="educational,maths,age-5-plus,family,casual"
+  ["set-sizes-shapes"]="educational,maths,age-5-plus,family,casual"
+  ["triple-number-memory"]="educational,maths,english,puzzle,age-5-plus,family"
+  ["game-of-sums"]="educational,maths,english,puzzle,strategy,age-10-plus,family"
+  ["game-of-differences"]="educational,maths,english,puzzle,strategy,age-10-plus,family"
+  ["game-of-triplets"]="educational,maths,english,puzzle,strategy,age-10-plus,family"
+  ["hangman-reading"]="educational,english,puzzle,age-10-plus,family"
+  ["wordsearch-reading"]="educational,english,puzzle,age-5-plus,family"
+  ["sudoku"]="puzzle,maths,strategy,age-10-plus,family"
+  ["crossword-puzzle-maker"]="educational,english,puzzle,age-10-plus,family"
+  ["crossword-classic"]="educational,english,puzzle,age-10-plus,family"
   ["IdleAnt"]="idle,strategy,management,age-10-plus"
 
   ["solaris"]="idle,space,strategy,age-10-plus"
