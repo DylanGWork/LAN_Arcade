@@ -162,6 +162,7 @@ ADMIN_HTPASSWD="/etc/apache2/.lan_arcade_admin_htpasswd"
 ADMIN_APACHE_CONF="/etc/apache2/conf-available/lan-arcade-admin.conf"
 DEFAULT_ADMIN_USER="arcadeadmin"
 READY_MARKER=".mirror_ok"
+MIRROR_MISSING_REF_FAIL_THRESHOLD="${MIRROR_MISSING_REF_FAIL_THRESHOLD:-3}"
 
 # ---------- Arcade name prompt ----------
 DEFAULT_ARCADE_NAME="GannanNet"
@@ -300,6 +301,91 @@ split_csv_unique() {
       out_ref+=("$normalized")
     fi
   done
+}
+
+extract_html_refs() {
+  local html_file="$1"
+  grep -Eoi "(src|href)=['\"][^'\"]+['\"]" "$html_file" \
+    | sed -E "s/^(src|href)=['\"]([^'\"]+)['\"]$/\\2/" \
+    | sort -u || true
+}
+
+find_mirror_entrypoint() {
+  local target_dir="$1"
+  local candidate
+
+  for candidate in "$target_dir/index.html" "$target_dir/index.htm"; do
+    if [ -f "$candidate" ]; then
+      printf '%s\n' "$candidate"
+      return 0
+    fi
+  done
+
+  candidate="$(find "$target_dir" -maxdepth 2 -type f \( -iname '*.html' -o -iname '*.htm' \) | head -n1 || true)"
+  if [ -n "$candidate" ]; then
+    printf '%s\n' "$candidate"
+    return 0
+  fi
+
+  return 1
+}
+
+mirror_content_is_complete() {
+  local game_name="$1"
+  local target_dir="$2"
+  local entry_html entry_dir raw_ref ref resolved
+  local missing_ref_count=0
+  local has_any_content=""
+
+  if [ ! -d "$target_dir" ]; then
+    return 1
+  fi
+
+  has_any_content="$(find "$target_dir" -mindepth 1 ! -name "$READY_MARKER" -print -quit 2>/dev/null || true)"
+  if [ -z "$has_any_content" ]; then
+    return 1
+  fi
+
+  entry_html="$(find_mirror_entrypoint "$target_dir" || true)"
+  if [ -z "$entry_html" ]; then
+    echo "WARN $game_name has no HTML entrypoint in $target_dir."
+    return 1
+  fi
+
+  entry_dir="$(dirname "$entry_html")"
+
+  while IFS= read -r raw_ref; do
+    ref="$(trim_whitespace "$raw_ref")"
+    ref="${ref%%\#*}"
+    ref="${ref%%\?*}"
+    [ -z "$ref" ] && continue
+
+    case "$ref" in
+      \#*|data:*|javascript:*|mailto:*|tel:*|http://*|https://*|//*)
+        continue
+        ;;
+    esac
+
+    if [[ "$ref" == /* ]]; then
+      resolved="/var/www/html$ref"
+    else
+      resolved="$entry_dir/$ref"
+    fi
+
+    if [ ! -e "$resolved" ]; then
+      missing_ref_count=$((missing_ref_count + 1))
+      if [ "$missing_ref_count" -le 3 ]; then
+        echo "WARN $game_name missing local asset: $ref"
+      fi
+    fi
+  done < <(extract_html_refs "$entry_html")
+
+  if [ "$missing_ref_count" -ge "$MIRROR_MISSING_REF_FAIL_THRESHOLD" ]; then
+    echo "WARN $game_name failed mirror validation ($missing_ref_count missing local assets from entry HTML)."
+    return 1
+  fi
+
+  return 0
 }
 
 discover_mirror_dirs() {
@@ -1975,8 +2061,12 @@ for GAME in "${!GAMES[@]}"; do
   MARKER="$TARGET/$READY_MARKER"
 
   if [ -f "$MARKER" ]; then
-    echo "✅ $GAME already exists, skipping download"
-    continue
+    if mirror_content_is_complete "$GAME" "$TARGET"; then
+      echo "OK   $GAME already exists, skipping download"
+      continue
+    fi
+    echo "WARN $GAME has a stale completion marker; re-downloading."
+    rm -f "$MARKER"
   fi
 
   if [ -d "$TARGET" ] && [ -n "$(find "$TARGET" -mindepth 1 ! -name "$READY_MARKER" -print -quit 2>/dev/null || true)" ]; then
@@ -2102,7 +2192,7 @@ for GAME in "${!GAMES[@]}"; do
     flatten_mirror "$URL" "$TARGET"
   fi
 
-  if [ "$download_ok" -eq 1 ] && [ -n "$(find "$TARGET" -mindepth 1 ! -name "$READY_MARKER" -print -quit 2>/dev/null || true)" ]; then
+  if [ "$download_ok" -eq 1 ] && mirror_content_is_complete "$GAME" "$TARGET"; then
     touch "$MARKER"
   else
     rm -f "$MARKER"
