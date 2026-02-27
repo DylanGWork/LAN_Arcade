@@ -184,7 +184,7 @@ echo
 
 # ---------- Base packages ----------
 apt-get update -y
-apt-get install -y apache2 apache2-utils wget unzip
+apt-get install -y apache2 apache2-utils wget unzip git
 
 if command -v systemctl >/dev/null 2>&1; then
   systemctl enable --now apache2 || true
@@ -215,6 +215,22 @@ flatten_mirror() {
     mv "$src"/* "$target"/ 2>/dev/null || true
     shopt -u dotglob nullglob
     rm -rf "$root_dir"
+  fi
+}
+
+promote_entrypoint_if_missing() {
+  local target_dir="$1"
+  local fallback_html=""
+  if [ -f "$target_dir/index.html" ]; then
+    return 0
+  fi
+
+  fallback_html="$(find "$target_dir" -maxdepth 1 -type f -iname '*.html' | LC_ALL=C sort | head -n1 || true)"
+  if [ -z "$fallback_html" ]; then
+    fallback_html="$(find "$target_dir" -type f -iname '*.html' | LC_ALL=C sort | head -n1 || true)"
+  fi
+  if [ -n "$fallback_html" ] && [ -f "$fallback_html" ]; then
+    cp "$fallback_html" "$target_dir/index.html"
   fi
 }
 
@@ -2080,6 +2096,17 @@ for GAME in "${!GAMES[@]}"; do
   cd "$TARGET"
   download_ok=1
 
+  git_repo=""
+  git_branch=""
+  if [[ "$URL" == GIT_GITHUB_REPO::* ]]; then
+    git_spec="${URL#GIT_GITHUB_REPO::}"
+    git_repo="${git_spec%%::*}"
+    git_rest="${git_spec#*::}"
+    if [ "$git_rest" != "$git_spec" ]; then
+      git_branch="$git_rest"
+    fi
+  fi
+
   zip_repo=""
   zip_branch=""
   if [ "$URL" = "ZIP_GITHUB_REPO" ] && [ "$GAME" = "typing-test" ]; then
@@ -2094,7 +2121,30 @@ for GAME in "${!GAMES[@]}"; do
     fi
   fi
 
-  if [ -n "$zip_repo" ]; then
+  if [ -n "$git_repo" ]; then
+    if [ -z "$git_branch" ]; then
+      git_branch="main"
+    fi
+    clone_url="https://github.com/$git_repo.git"
+    tmp_clone_dir="$(mktemp -d)"
+
+    if git clone --depth 1 --branch "$git_branch" --recurse-submodules "$clone_url" "$tmp_clone_dir"; then
+      shopt -s dotglob nullglob
+      mv "$tmp_clone_dir"/* "$TARGET"/ 2>/dev/null || true
+      shopt -u dotglob nullglob
+      rm -rf "$tmp_clone_dir"
+
+      # Remove git internals from mirrored content.
+      find "$TARGET" -type d -name '.git' -prune -exec rm -rf {} + 2>/dev/null || true
+      find "$TARGET" -type f -name '.git' -delete 2>/dev/null || true
+
+      promote_entrypoint_if_missing "$TARGET"
+    else
+      echo "âš ï¸ Failed to clone repository for $GAME ($git_repo@$git_branch)."
+      rm -rf "$tmp_clone_dir"
+      download_ok=0
+    fi
+  elif [ -n "$zip_repo" ]; then
     if [ -z "$zip_branch" ]; then
       zip_branch="main"
     fi
@@ -2112,15 +2162,7 @@ for GAME in "${!GAMES[@]}"; do
           rm -rf "$src_dir"
 
           # Some repos ship a differently named HTML entrypoint; promote one to index.html.
-          if [ ! -f "$TARGET/index.html" ]; then
-            fallback_html="$(find "$TARGET" -maxdepth 1 -type f -iname '*.html' | LC_ALL=C sort | head -n1 || true)"
-            if [ -z "$fallback_html" ]; then
-              fallback_html="$(find "$TARGET" -type f -iname '*.html' | LC_ALL=C sort | head -n1 || true)"
-            fi
-            if [ -n "$fallback_html" ] && [ -f "$fallback_html" ]; then
-              cp "$fallback_html" "$TARGET/index.html"
-            fi
-          fi
+          promote_entrypoint_if_missing "$TARGET"
         else
           echo "⚠️ Could not locate extracted repo folder for $GAME ($zip_repo@$zip_branch)."
           download_ok=0
