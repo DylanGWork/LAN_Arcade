@@ -2227,8 +2227,7 @@ for GAME in "${!GAMES[@]}"; do
       --page-requisites \
       --no-parent \
       "$URL"; then
-      echo "⚠️ wget reported an error for $GAME; check manually if needed."
-      download_ok=0
+      echo "WARN wget reported fetch errors for $GAME; validating mirrored content before deciding completion."
     fi
 
     flatten_mirror "$URL" "$TARGET"
