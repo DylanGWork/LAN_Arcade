@@ -6,7 +6,7 @@
 declare -A GAMES=(
   # Educational / typing
   ["typing-test"]="ZIP_GITHUB_REPO"
-  ["balloon-pop-maths"]="https://richardhenyash.github.io/balloon-pop-maths/"
+  ["balloon-pop-maths"]="ZIP_GITHUB_REPO::richardhenyash/balloon-pop-maths::master"
   ["edukiz"]="https://timmalich.github.io/edukiz_live/"
   ["set-sizes-animals"]="ZIP_GITHUB_FILE::jkanev/educational-html-games::master::set-sizes-animals.html"
   ["set-sizes-shapes"]="ZIP_GITHUB_FILE::jkanev/educational-html-games::master::set-sizes-shapes.html"
