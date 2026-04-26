@@ -1,0 +1,23 @@
+services:
+  lan-arcade-api:
+    build:
+      context: ..
+      dockerfile: services/arcade-api/Dockerfile
+    container_name: lan-arcade-api
+    restart: unless-stopped
+    environment:
+      ARCADE_NAME: GannanNet
+      ARCADE_API_HOST: 0.0.0.0
+      ARCADE_API_PORT: "3100"
+      LAN_ARCADE_DB_PATH: /var/lib/lan-arcade/lan-arcade.sqlite
+      LAN_ARCADE_CATALOG_PATH: /var/www/html/mirrors/games/catalog.json
+      LAN_ARCADE_FILTERS_PATH: /var/www/html/mirrors/games/admin.filters.json
+    volumes:
+      - /var/www/html/mirrors:/var/www/html/mirrors
+      - /var/lib/lan-arcade:/var/lib/lan-arcade
+    networks:
+      - wordpress_app-network
+
+networks:
+  wordpress_app-network:
+    external: true

@@ -1,0 +1,32 @@
+{
+  "name": "lan-arcade",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Offline LAN arcade mirror tooling and QA checks.",
+  "workspaces": [
+    "apps/*",
+    "services/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm run build -w @lan-arcade/shared && npm run build -w @lan-arcade/arcade-api && npm run build -w @lan-arcade/companion",
+    "test": "npm run test -w @lan-arcade/shared && npm run test -w @lan-arcade/arcade-api && npm run test -w @lan-arcade/companion",
+    "dev:api": "npm run dev -w @lan-arcade/arcade-api",
+    "dev:companion": "npm run dev -w @lan-arcade/companion",
+    "qa:static": "./audit_mirrors.sh ${MIRRORS_DIR:-/var/www/html/mirrors}",
+    "qa:smoke": "node qa/arcade-smoke.mjs",
+    "qa:smoke:catalog": "node qa/arcade-smoke.mjs --catalog",
+    "qa:smoke:mobile": "node qa/arcade-smoke.mjs --mobile --report-dir qa/reports/latest-mobile",
+    "qa:smoke:sample": "node qa/arcade-smoke.mjs --limit 5",
+    "qa:companion": "node qa/companion-smoke.mjs",
+    "qa:quarantine-blockers": "node qa/quarantine-blockers.mjs",
+    "qa": "npm run qa:static && npm run qa:smoke"
+  },
+  "devDependencies": {
+    "@types/node": "20.19.1",
+    "playwright": "1.59.1"
+  },
+  "overrides": {
+    "tar": "7.5.13"
+  }
+}

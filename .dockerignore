@@ -1,0 +1,11 @@
+node_modules
+apps/companion/node_modules
+apps/companion/dist
+apps/companion/android/app/build
+apps/companion/android/build
+apps/companion/android/.gradle
+packages/shared/dist
+services/arcade-api/dist
+qa/reports
+.git
+npm-debug.log*

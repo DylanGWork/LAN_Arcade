@@ -1,0 +1,31 @@
+{
+  "name": "@lan-arcade/companion",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "npm run build -w @lan-arcade/shared && vite --host 0.0.0.0",
+    "build": "npm run build -w @lan-arcade/shared && tsc -b && vite build",
+    "preview": "vite preview --host 0.0.0.0",
+    "test": "npm run build -w @lan-arcade/shared && tsx --test src/games/trailguard/*.test.ts src/games/camp-colony/*.test.ts",
+    "cap:sync": "capacitor sync android",
+    "cap:build": "npm run build && capacitor sync android"
+  },
+  "dependencies": {
+    "@capacitor/android": "6.2.1",
+    "@capacitor/core": "6.2.1",
+    "@lan-arcade/shared": "0.1.0",
+    "phaser": "3.90.0",
+    "react": "19.2.1",
+    "react-dom": "19.2.1"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "6.2.1",
+    "@types/react": "19.2.7",
+    "@types/react-dom": "19.2.3",
+    "@vitejs/plugin-react": "4.7.0",
+    "tsx": "4.21.0",
+    "typescript": "5.9.3",
+    "vite": "5.4.21"
+  }
+}

@@ -4,6 +4,8 @@ set -euo pipefail
 
 MIRRORS_DIR="${1:-/var/www/html/mirrors}"
 WEB_ROOT="${WEB_ROOT:-/var/www/html}"
+CATALOG_FILE="${CATALOG_FILE:-$MIRRORS_DIR/games/catalog.json}"
+AUDIT_SOURCE="${LAN_ARCADE_AUDIT_SOURCE:-catalog}"
 
 if [ ! -d "$MIRRORS_DIR" ]; then
   echo "Mirrors directory not found: $MIRRORS_DIR" >&2
@@ -43,13 +45,57 @@ resolve_local_path() {
   realpath -m "$target"
 }
 
+list_game_dirs() {
+  if [ "$AUDIT_SOURCE" = "catalog" ] && [ -f "$CATALOG_FILE" ] && command -v node >/dev/null 2>&1; then
+    node - "$CATALOG_FILE" "$MIRRORS_DIR" <<'NODE'
+const fs = require('node:fs');
+const path = require('node:path');
+
+const catalogFile = process.argv[2];
+const mirrorsDir = process.argv[3];
+const baseUrl = 'http://lan-arcade.invalid/mirrors/games/';
+
+let catalog = { games: [] };
+try {
+  catalog = JSON.parse(fs.readFileSync(catalogFile, 'utf8'));
+} catch {
+  catalog = { games: [] };
+}
+
+for (const game of Array.isArray(catalog.games) ? catalog.games : []) {
+  const id = String(game.id || '').trim();
+  if (!id) continue;
+  const gamePath = String(game.path || `../${id}/`);
+  let url;
+  try {
+    url = new URL(gamePath, baseUrl);
+  } catch {
+    continue;
+  }
+  const relPath = decodeURIComponent(url.pathname).replace(/^\/mirrors\/?/, '').replace(/\/$/, '');
+  const dir = path.join(mirrorsDir, relPath);
+  console.log(`${id}|${dir}`);
+}
+NODE
+    return
+  fi
+
+  while IFS= read -r dir; do
+    [ "$(basename "$dir")" = "games" ] && continue
+    printf '%s|%s\n' "$(basename "$dir")" "$dir"
+  done < <(find "$MIRRORS_DIR" -mindepth 1 -maxdepth 1 -type d | LC_ALL=C sort)
+}
+
 check_game_dir() {
   local game_dir="$1"
-  local game_name html_file html_dir
+  local game_name="${2:-}"
+  local html_file html_dir
   local missing_count external_count
   local raw_ref ref resolved
 
-  game_name="$(basename "$game_dir")"
+  if [ -z "$game_name" ]; then
+    game_name="$(basename "$game_dir")"
+  fi
   missing_count=0
   external_count=0
 
@@ -101,13 +147,16 @@ check_game_dir() {
   fi
 }
 
-while IFS= read -r dir; do
-  [ "$(basename "$dir")" = "games" ] && continue
-  check_game_dir "$dir"
-done < <(find "$MIRRORS_DIR" -mindepth 1 -maxdepth 1 -type d | LC_ALL=C sort)
+while IFS='|' read -r game_name dir; do
+  [ -z "$game_name" ] && continue
+  [ -z "$dir" ] && continue
+  check_game_dir "$dir" "$game_name"
+done < <(list_game_dirs)
 
 echo "=== LAN Arcade Mirror Audit ==="
 echo "Mirrors dir: $MIRRORS_DIR"
+echo "Audit source: $AUDIT_SOURCE"
+[ "$AUDIT_SOURCE" = "catalog" ] && echo "Catalog: $CATALOG_FILE"
 echo
 
 total_games="$(wc -l < "$tmp_status" | tr -d ' ')"

@@ -12,6 +12,11 @@ This repo contains:
 
 - `setup_lan_arcade.sh` – installer + HTML generator
 - `games.meta.sh` – list of games and metadata (titles, icons, descriptions, tags, categories)
+- `apps/companion` – React/Capacitor companion app for Android + browser/PWA
+- `services/arcade-api` – local Node/SQLite API for profiles, scores, leaderboards, and challenges
+- `services/mindustry` – optional Pi-hosted Mindustry dedicated server container
+- `services/unciv` – optional Pi-hosted Unciv multiplayer turn-file server container
+- `packages/shared` – shared app/API contracts
 
 The script mirrors a bunch of HTML/JS games (mostly idle / clicker / educational) into
 `/var/www/html/mirrors/` and builds a nice card-based homepage at:
@@ -192,6 +197,113 @@ sudo ./setup_lan_arcade.sh
 The script is safe to rerun:
 - Existing game folders are left in place (no re-download unless you delete them)
 - Catalog and pages are rebuilt every run so metadata/category changes appear automatically
+
+# QA / offline validation
+
+This repo includes a first-pass QA harness for checking whether mirrored games actually load and tolerate basic interaction in a browser.
+
+Install QA dependencies:
+```
+npm install
+npx playwright install chromium
+```
+
+Static mirror audit:
+```
+npm run qa:static
+```
+
+Browser smoke test:
+```
+npm run qa:smoke
+```
+
+Catalog smoke test, including games hidden by admin filters:
+```
+npm run qa:smoke:catalog
+```
+
+Mobile/touch smoke test:
+```
+npm run qa:smoke:mobile
+```
+
+Quarantine blocker games from the latest catalog report:
+```
+node qa/quarantine-blockers.mjs \
+  --report qa/reports/latest-regenerated/smoke-report.json \
+  --filters /var/www/html/mirrors/games/admin.filters.json
+```
+
+The browser smoke test blocks outbound internet requests by default. Reports are written to:
+```
+qa/reports/latest/
+```
+
+On the current VM, nginx already serves `/var/www/html/mirrors`, so use the safe regeneration command in `docs/VM_DEVELOPMENT_AND_QA.md` when you only want to rebuild catalog/pages without changing web-server packages or Apache auth.
+
+See `docs/VM_DEVELOPMENT_AND_QA.md` for the VM notes, current baseline, safe regeneration command, and the recommended game admission process.
+
+# Companion app
+
+This repo now includes a first-pass LAN Arcade Companion app. It connects to a selectable LAN Arcade server, shows the existing mirrored game catalog, creates local player profiles, tracks scores, and includes bundled app-only games:
+
+- `Trailguard TD` – original Phaser tower defense game with seeded challenge leaderboards.
+- `Camp Colony` – original turn-based base-builder with seeded challenge leaderboards.
+- `Number Splash` – simple counting game for younger kids.
+- `Mindustry LAN Server` – optional Pi-hosted native multiplayer server card for Android/desktop Mindustry clients.
+- `Unciv LAN Server` – optional Pi-hosted turn-strategy server card for Android/desktop Unciv clients.
+
+The handoff is intentionally similar to the PestSense WiFi provisioning app pattern:
+keep a direct APK artifact in the repo and expose it on the LAN server so phones
+can install it without hunting through build folders.
+
+Current APK:
+
+```text
+releases/android/lan-arcade-companion-debug.apk
+```
+
+After `sudo ./setup_lan_arcade.sh`, the APK is copied to the offline download page:
+
+```text
+http://<server-ip>/mirrors/games/downloads/
+http://<server-ip>/mirrors/games/downloads/lan-arcade-companion-debug.apk
+```
+
+On Android, install the APK and set the server field to:
+
+```text
+http://<server-ip>/arcade-api/
+```
+
+Screenshots:
+
+![Companion catalog](docs/assets/companion-catalog.png)
+
+![Trailguard TD](docs/assets/companion-trailguard.png)
+
+![Unciv LAN Server card](docs/assets/companion-unciv-service.png)
+
+Useful commands:
+
+```
+npm run dev:api
+npm run dev:companion
+npm run qa:companion
+npm test
+npm run build
+```
+
+Android SDK/JDK setup and APK build:
+
+```
+scripts/setup_android_sdk.sh
+scripts/build_companion_apk.sh
+scripts/publish_companion_apk.sh
+```
+
+See `docs/COMPANION_APP.md` for API endpoints, nginx deployment notes, Android status, and QA details. See `docs/STRATEGY_GAME_SPIKE.md` for the Freeciv-web and Unciv strategy-game spike notes.
 
 # Customisation
 Change the arcade name (title/header)

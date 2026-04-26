@@ -8,9 +8,23 @@
 
 set -euo pipefail
 
-if [ "${EUID:-$(id -u)}" -ne 0 ]; then
-  echo "Please run this script as root, e.g.: sudo bash $0"
-  exit 1
+LAN_ARCADE_SKIP_PACKAGE_INSTALL="${LAN_ARCADE_SKIP_PACKAGE_INSTALL:-0}"
+LAN_ARCADE_SKIP_MIRROR="${LAN_ARCADE_SKIP_MIRROR:-0}"
+LAN_ARCADE_SKIP_ADMIN_AUTH="${LAN_ARCADE_SKIP_ADMIN_AUTH:-0}"
+LAN_ARCADE_CATALOG_SOURCE="${LAN_ARCADE_CATALOG_SOURCE:-all-dirs}"
+
+RUNNING_AS_ROOT=0
+if [ "$(id -u)" -eq 0 ]; then
+  RUNNING_AS_ROOT=1
+fi
+
+if [ "$RUNNING_AS_ROOT" -ne 1 ]; then
+  if [ "$LAN_ARCADE_SKIP_PACKAGE_INSTALL" != "1" ] || [ "$LAN_ARCADE_SKIP_ADMIN_AUTH" != "1" ]; then
+    echo "Please run this script as root, e.g.: sudo bash $0"
+    echo "Non-root mode requires LAN_ARCADE_SKIP_PACKAGE_INSTALL=1 and LAN_ARCADE_SKIP_ADMIN_AUTH=1."
+    exit 1
+  fi
+  echo "Running in unprivileged generation mode."
 fi
 
 LOCAL_USER="${SUDO_USER:-$(id -un)}"
@@ -155,6 +169,11 @@ CATALOG_FILE="$INDEX_DIR/catalog.json"
 FILTERS_FILE="$INDEX_DIR/admin.filters.json"
 WIKI_DIR="$INDEX_DIR/wiki"
 WIKI_INDEX_FILE="$WIKI_DIR/index.html"
+DOWNLOADS_DIR="$INDEX_DIR/downloads"
+DOWNLOADS_INDEX_FILE="$DOWNLOADS_DIR/index.html"
+DOWNLOAD_SCREENSHOTS_DIR="$DOWNLOADS_DIR/screenshots"
+COMPANION_APK_REPO_FILE="$SCRIPT_DIR/releases/android/lan-arcade-companion-debug.apk"
+DOC_ASSETS_DIR="$SCRIPT_DIR/docs/assets"
 ADMIN_DIR="$INDEX_DIR/admin"
 ADMIN_INDEX_FILE="$ADMIN_DIR/index.html"
 ADMIN_CGI_FILE="$ADMIN_DIR/save_filters.cgi"
@@ -183,15 +202,21 @@ echo "Using arcade name: $ARCADE_NAME_USE"
 echo
 
 # ---------- Base packages ----------
-apt-get update -y
-apt-get install -y apache2 apache2-utils wget unzip git
+if [ "$LAN_ARCADE_SKIP_PACKAGE_INSTALL" = "1" ]; then
+  echo "Skipping package installation because LAN_ARCADE_SKIP_PACKAGE_INSTALL=1"
+else
+  apt-get update -y
+  apt-get install -y apache2 apache2-utils wget unzip git
 
-if command -v systemctl >/dev/null 2>&1; then
-  systemctl enable --now apache2 || true
+  if command -v systemctl >/dev/null 2>&1; then
+    systemctl enable --now apache2 || true
+  fi
 fi
 
 mkdir -p "$MIRRORS_DIR" "$INDEX_DIR" "$WIKI_DIR" "$ADMIN_DIR"
-chown -R "$LOCAL_USER:$LOCAL_USER" "$MIRRORS_DIR"
+if [ "$RUNNING_AS_ROOT" -eq 1 ]; then
+  chown -R "$LOCAL_USER:$LOCAL_USER" "$MIRRORS_DIR"
+fi
 
 # ---------- Helper to flatten wget mirror ----------
 flatten_mirror() {
@@ -337,7 +362,7 @@ find_mirror_entrypoint() {
     fi
   done
 
-  candidate="$(find "$target_dir" -maxdepth 2 -type f \( -iname '*.html' -o -iname '*.htm' \) | head -n1 || true)"
+  candidate="$(find "$target_dir" -maxdepth 2 -type f \( -iname '*.html' -o -iname '*.htm' \) | LC_ALL=C sort | head -n1 || true)"
   if [ -n "$candidate" ]; then
     printf '%s\n' "$candidate"
     return 0
@@ -406,15 +431,31 @@ mirror_content_is_complete() {
 
 discover_mirror_dirs() {
   local -n out_ref="$1"
+  local dir_name
   out_ref=()
-  while IFS= read -r dir_name; do
-    [ "$dir_name" = "games" ] && continue
-    out_ref+=("$dir_name")
-  done < <(find "$MIRRORS_DIR" -mindepth 1 -maxdepth 1 -type d -printf '%f\n' | LC_ALL=C sort)
+
+  case "$LAN_ARCADE_CATALOG_SOURCE" in
+    all-dirs)
+      while IFS= read -r dir_name; do
+        [ "$dir_name" = "games" ] && continue
+        out_ref+=("$dir_name")
+      done < <(find "$MIRRORS_DIR" -mindepth 1 -maxdepth 1 -type d -printf '%f\n' | LC_ALL=C sort)
+      ;;
+    metadata-existing)
+      while IFS= read -r dir_name; do
+        [ -d "$MIRRORS_DIR/$dir_name" ] && out_ref+=("$dir_name")
+      done < <(printf '%s\n' "${!GAMES[@]}" | LC_ALL=C sort)
+      ;;
+    *)
+      echo "Invalid LAN_ARCADE_CATALOG_SOURCE '$LAN_ARCADE_CATALOG_SOURCE'. Use all-dirs or metadata-existing."
+      exit 1
+      ;;
+  esac
 }
 
 ensure_filters_file() {
   if [ -f "$FILTERS_FILE" ]; then
+    chmod 644 "$FILTERS_FILE"
     return 0
   fi
 
@@ -424,6 +465,7 @@ ensure_filters_file() {
   "disabled_games": []
 }
 JSON
+  chmod 644 "$FILTERS_FILE"
 }
 
 configure_admin_credentials() {
@@ -501,12 +543,21 @@ build_catalog_json() {
   local -a ordered_categories=()
   local -a extra_categories=()
   local dir_name info title icon meta desc tags categories
+  local entry_html rel_entry_dir play_path
   local tags_json categories_json game_json
   local generated_at tmp_file idx category_id category_label
 
   discover_mirror_dirs mirror_dirs
 
   for dir_name in "${mirror_dirs[@]}"; do
+    entry_html="$(find_mirror_entrypoint "$MIRRORS_DIR/$dir_name" || true)"
+    if [ -z "$entry_html" ]; then
+      echo "WARN skipping $dir_name in catalog: no HTML entrypoint found."
+      continue
+    fi
+    rel_entry_dir="$(dirname "${entry_html#"$MIRRORS_DIR/"}")"
+    play_path="../$rel_entry_dir/"
+
     info="${GAME_INFO[$dir_name]:-}"
     if [ -n "$info" ]; then
       IFS='|' read -r title icon meta desc tags <<< "$info"
@@ -531,7 +582,7 @@ build_catalog_json() {
 
     tags_json="$(json_array_from_values "${tags_values[@]}")"
     categories_json="$(json_array_from_values "${category_values[@]}")"
-    game_json="{\"id\":\"$(json_escape "$dir_name")\",\"title\":\"$(json_escape "$title")\",\"icon\":\"$(json_escape "$icon")\",\"meta\":\"$(json_escape "$meta")\",\"description\":\"$(json_escape "$desc")\",\"tags\":[${tags_json}],\"categories\":[${categories_json}]}"
+    game_json="{\"id\":\"$(json_escape "$dir_name")\",\"title\":\"$(json_escape "$title")\",\"icon\":\"$(json_escape "$icon")\",\"meta\":\"$(json_escape "$meta")\",\"description\":\"$(json_escape "$desc")\",\"tags\":[${tags_json}],\"categories\":[${categories_json}],\"path\":\"$(json_escape "$play_path")\"}"
     game_json_items+=("$game_json")
   done
 
@@ -587,6 +638,7 @@ build_catalog_json() {
   } > "$tmp_file"
 
   mv "$tmp_file" "$CATALOG_FILE"
+  chmod 644 "$CATALOG_FILE"
 }
 
 write_public_index() {
@@ -892,7 +944,7 @@ write_public_index() {
       function buildCard(game) {
         var card = document.createElement("a");
         card.className = "game-card";
-        card.href = "../" + encodeURIComponent(game.id) + "/";
+        card.href = game.path ? String(game.path) : "../" + encodeURIComponent(game.id) + "/";
 
         var title = document.createElement("div");
         title.className = "game-title";
@@ -930,7 +982,7 @@ write_public_index() {
         var pathHint = document.createElement("span");
         pathHint.style.fontSize = "0.75rem";
         pathHint.style.color = "var(--muted)";
-        pathHint.textContent = "/mirrors/" + game.id + "/...";
+        pathHint.textContent = card.getAttribute("href").replace(/^\.\.\//, "/mirrors/");
         playRow.appendChild(pathHint);
 
         card.appendChild(playRow);
@@ -1029,6 +1081,69 @@ write_public_index() {
 HTML
 }
 
+publish_companion_downloads() {
+  mkdir -p "$DOWNLOADS_DIR" "$DOWNLOAD_SCREENSHOTS_DIR"
+
+  if [ -f "$COMPANION_APK_REPO_FILE" ]; then
+    cp "$COMPANION_APK_REPO_FILE" "$DOWNLOADS_DIR/lan-arcade-companion-debug.apk"
+    chmod 644 "$DOWNLOADS_DIR/lan-arcade-companion-debug.apk"
+  fi
+
+  if [ -d "$DOC_ASSETS_DIR" ]; then
+    for screenshot in \
+      companion-catalog.png \
+      companion-trailguard.png \
+      companion-unciv-service.png \
+      companion-mindustry-service.png; do
+      if [ -f "$DOC_ASSETS_DIR/$screenshot" ]; then
+        cp "$DOC_ASSETS_DIR/$screenshot" "$DOWNLOAD_SCREENSHOTS_DIR/$screenshot"
+        chmod 644 "$DOWNLOAD_SCREENSHOTS_DIR/$screenshot"
+      fi
+    done
+  fi
+
+  cat > "$DOWNLOADS_INDEX_FILE" <<'HTML'
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LAN Arcade Downloads</title>
+  <style>
+    :root { color-scheme: dark; --bg: #07101a; --panel: #101b2b; --text: #eef4fa; --muted: #a2b0bf; --line: #213245; --accent: #5de4c7; }
+    body { margin: 0; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: var(--bg); color: var(--text); }
+    main { width: min(980px, calc(100vw - 24px)); margin: 0 auto; padding: 1.5rem 0 2rem; }
+    a { color: var(--accent); font-weight: 800; }
+    .card { border: 1px solid var(--line); border-radius: 8px; background: var(--panel); padding: 1rem; margin-top: 1rem; }
+    .muted { color: var(--muted); }
+    .screens { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.75rem; margin-top: 0.75rem; }
+    .screens img { width: 100%; border: 1px solid var(--line); border-radius: 8px; background: #050b12; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>LAN Arcade Downloads</h1>
+    <p class="muted">Local files for phones and tablets on this offline network.</p>
+    <section class="card">
+      <h2>Android Companion APK</h2>
+      <p><a href="./lan-arcade-companion-debug.apk">Download lan-arcade-companion-debug.apk</a></p>
+      <p class="muted">Install this on Android phones that will connect to the LAN Arcade server.</p>
+    </section>
+    <section class="card">
+      <h2>Screenshots</h2>
+      <div class="screens">
+        <a href="./screenshots/companion-catalog.png"><img src="./screenshots/companion-catalog.png" alt="Companion catalog screenshot"></a>
+        <a href="./screenshots/companion-trailguard.png"><img src="./screenshots/companion-trailguard.png" alt="Trailguard TD screenshot"></a>
+        <a href="./screenshots/companion-unciv-service.png"><img src="./screenshots/companion-unciv-service.png" alt="Unciv LAN Server screenshot"></a>
+        <a href="./screenshots/companion-mindustry-service.png"><img src="./screenshots/companion-mindustry-service.png" alt="Mindustry LAN Server screenshot"></a>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
+HTML
+}
+
 write_wiki_index() {
   local arcade_name_html
   arcade_name_html="$(html_escape "$ARCADE_NAME_USE")"
@@ -1097,6 +1212,27 @@ write_wiki_index() {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
       gap: 0.85rem;
+    }
+    .screenshots {
+      margin-top: 1rem;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 0.75rem;
+    }
+    .screenshots a {
+      display: block;
+      color: var(--text);
+      text-decoration: none;
+      font-size: 0.82rem;
+      font-weight: 700;
+    }
+    .screenshots img {
+      width: 100%;
+      display: block;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: #050b12;
+      margin-bottom: 0.35rem;
     }
     .panel {
       border: 1px solid var(--border);
@@ -1245,6 +1381,8 @@ write_wiki_index() {
     <div class="toolbar">
       <a class="link-btn" href="../">Back To Arcade</a>
       <a class="link-btn" href="../admin/">Admin Controls</a>
+      <a class="link-btn" href="../downloads/">Downloads</a>
+      <a class="link-btn" href="../downloads/lan-arcade-companion-debug.apk">Companion APK</a>
     </div>
 
     <section class="grid">
@@ -1265,6 +1403,17 @@ write_wiki_index() {
           <li><code>/mirrors/games/admin.filters.json</code> - disabled categories and games.</li>
           <li><code>/mirrors/games/index.html</code> - public arcade page.</li>
           <li><code>/mirrors/games/wiki/index.html</code> - this offline wiki page.</li>
+          <li><code>/mirrors/games/downloads/</code> - Android APK and companion screenshots.</li>
+        </ul>
+      </article>
+
+      <article class="panel">
+        <h2>Companion App</h2>
+        <ul>
+          <li>Android APK: <code>/mirrors/games/downloads/lan-arcade-companion-debug.apk</code>.</li>
+          <li>Server URL on phones: <code>http://&lt;pi-ip&gt;/arcade-api/</code>.</li>
+          <li>Includes app-only games, local profiles, scores, and Pi service cards.</li>
+          <li>Mirrors the PestSense WiFi provisioning app handoff style: a direct APK download plus simple local instructions.</li>
         </ul>
       </article>
 
@@ -1277,6 +1426,17 @@ write_wiki_index() {
           <li>Game folders with completion markers are skipped safely.</li>
         </ul>
       </article>
+    </section>
+
+    <section class="panel">
+      <h2>Companion Screenshots</h2>
+      <p>These screenshots are copied into the offline downloads folder when setup runs.</p>
+      <div class="screenshots">
+        <a href="../downloads/screenshots/companion-catalog.png"><img src="../downloads/screenshots/companion-catalog.png" alt="Companion catalog screenshot">Catalog and profiles</a>
+        <a href="../downloads/screenshots/companion-trailguard.png"><img src="../downloads/screenshots/companion-trailguard.png" alt="Trailguard TD screenshot">Trailguard TD</a>
+        <a href="../downloads/screenshots/companion-unciv-service.png"><img src="../downloads/screenshots/companion-unciv-service.png" alt="Unciv service screenshot">Unciv service card</a>
+        <a href="../downloads/screenshots/companion-mindustry-service.png"><img src="../downloads/screenshots/companion-mindustry-service.png" alt="Mindustry service screenshot">Mindustry service card</a>
+      </div>
     </section>
 
     <section class="library">
@@ -1459,7 +1619,7 @@ write_wiki_index() {
           var gameTd = document.createElement("td");
           var link = document.createElement("a");
           link.className = "game-link";
-          link.href = "../" + encodeURIComponent(String(game.id || "")) + "/";
+          link.href = game.path ? String(game.path) : "../" + encodeURIComponent(String(game.id || "")) + "/";
           link.textContent = String(game.title || game.id || "Unknown");
           gameTd.appendChild(link);
           var idText = document.createElement("div");
@@ -1671,6 +1831,7 @@ tmp_file="$(mktemp "$SCRIPT_DIR/../admin.filters.json.tmp.XXXXXX")"
 } > "$tmp_file"
 
 mv "$tmp_file" "$FILTERS_FILE"
+chmod 644 "$FILTERS_FILE"
 
 respond_json "200 OK" "{\"ok\":true,\"disabled_categories\":${#disabled_categories[@]},\"disabled_games\":${#disabled_games[@]}}"
 CGI
@@ -2065,150 +2226,117 @@ write_admin_index() {
 HTML
 }
 
-echo "===== Preparing admin access ====="
-configure_admin_credentials
+if [ "$LAN_ARCADE_SKIP_ADMIN_AUTH" = "1" ]; then
+  echo "===== Skipping admin access setup because LAN_ARCADE_SKIP_ADMIN_AUTH=1 ====="
+else
+  echo "===== Preparing admin access ====="
+  configure_admin_credentials
+fi
 
 # ---------- Mirror each game ----------
-echo "===== Mirroring games into $MIRRORS_DIR ====="
+if [ "$LAN_ARCADE_SKIP_MIRROR" = "1" ]; then
+  echo "===== Skipping game mirroring because LAN_ARCADE_SKIP_MIRROR=1 ====="
+else
+  echo "===== Mirroring games into $MIRRORS_DIR ====="
 
-for GAME in "${!GAMES[@]}"; do
-  URL="${GAMES[$GAME]}"
-  TARGET="$MIRRORS_DIR/$GAME"
-  MARKER="$TARGET/$READY_MARKER"
+  for GAME in "${!GAMES[@]}"; do
+    URL="${GAMES[$GAME]}"
+    TARGET="$MIRRORS_DIR/$GAME"
+    MARKER="$TARGET/$READY_MARKER"
 
-  if [ -f "$MARKER" ]; then
-    if mirror_content_is_complete "$GAME" "$TARGET"; then
-      echo "OK   $GAME already exists, skipping download"
-      continue
+    if [ -f "$MARKER" ]; then
+      if mirror_content_is_complete "$GAME" "$TARGET"; then
+        echo "OK   $GAME already exists, skipping download"
+        continue
+      fi
+      echo "WARN $GAME has a stale completion marker; re-downloading."
+      rm -f "$MARKER"
     fi
-    echo "WARN $GAME has a stale completion marker; re-downloading."
-    rm -f "$MARKER"
-  fi
 
-  if [ -d "$TARGET" ] && [ -n "$(find "$TARGET" -mindepth 1 ! -name "$READY_MARKER" -print -quit 2>/dev/null || true)" ]; then
-    echo "⚠️  $GAME has partial content but no completion marker; re-downloading."
-    rm -rf "$TARGET"
-  fi
-
-  echo "🌐 Downloading $GAME from $URL"
-  mkdir -p "$TARGET"
-  chown "$LOCAL_USER:$LOCAL_USER" "$TARGET"
-  cd "$TARGET"
-  download_ok=1
-
-  git_repo=""
-  git_branch=""
-  if [[ "$URL" == GIT_GITHUB_REPO::* ]]; then
-    git_spec="${URL#GIT_GITHUB_REPO::}"
-    git_repo="${git_spec%%::*}"
-    git_rest="${git_spec#*::}"
-    if [ "$git_rest" != "$git_spec" ]; then
-      git_branch="$git_rest"
+    if [ -d "$TARGET" ] && [ -n "$(find "$TARGET" -mindepth 1 ! -name "$READY_MARKER" -print -quit 2>/dev/null || true)" ]; then
+      echo "⚠️  $GAME has partial content but no completion marker; re-downloading."
+      rm -rf "$TARGET"
     fi
-  fi
 
-  zip_repo=""
-  zip_branch=""
-  if [ "$URL" = "ZIP_GITHUB_REPO" ] && [ "$GAME" = "typing-test" ]; then
-    zip_repo="KDvs123/Typing-Test"
-    zip_branch="main"
-  elif [[ "$URL" == ZIP_GITHUB_REPO::* ]]; then
-    zip_spec="${URL#ZIP_GITHUB_REPO::}"
-    zip_repo="${zip_spec%%::*}"
-    zip_rest="${zip_spec#*::}"
-    if [ "$zip_rest" != "$zip_spec" ]; then
-      zip_branch="$zip_rest"
+    echo "🌐 Downloading $GAME from $URL"
+    mkdir -p "$TARGET"
+    if [ "$RUNNING_AS_ROOT" -eq 1 ]; then
+      chown "$LOCAL_USER:$LOCAL_USER" "$TARGET"
     fi
-  fi
+    cd "$TARGET"
+    download_ok=1
 
-  if [ -n "$git_repo" ]; then
-    if [ -z "$git_branch" ]; then
-      git_branch="main"
+    git_repo=""
+    git_branch=""
+    if [[ "$URL" == GIT_GITHUB_REPO::* ]]; then
+      git_spec="${URL#GIT_GITHUB_REPO::}"
+      git_repo="${git_spec%%::*}"
+      git_rest="${git_spec#*::}"
+      if [ "$git_rest" != "$git_spec" ]; then
+        git_branch="$git_rest"
+      fi
     fi
-    clone_url="https://github.com/$git_repo.git"
-    tmp_clone_dir="$(mktemp -d)"
 
-    if git clone --depth 1 --branch "$git_branch" --recurse-submodules "$clone_url" "$tmp_clone_dir"; then
-      shopt -s dotglob nullglob
-      mv "$tmp_clone_dir"/* "$TARGET"/ 2>/dev/null || true
-      shopt -u dotglob nullglob
-      rm -rf "$tmp_clone_dir"
-
-      # Remove git internals from mirrored content.
-      find "$TARGET" -type d -name '.git' -prune -exec rm -rf {} + 2>/dev/null || true
-      find "$TARGET" -type f -name '.git' -delete 2>/dev/null || true
-
-      promote_entrypoint_if_missing "$TARGET"
-    else
-      echo "âš ï¸ Failed to clone repository for $GAME ($git_repo@$git_branch)."
-      rm -rf "$tmp_clone_dir"
-      download_ok=0
-    fi
-  elif [ -n "$zip_repo" ]; then
-    if [ -z "$zip_branch" ]; then
+    zip_repo=""
+    zip_branch=""
+    if [ "$URL" = "ZIP_GITHUB_REPO" ] && [ "$GAME" = "typing-test" ]; then
+      zip_repo="KDvs123/Typing-Test"
       zip_branch="main"
+    elif [[ "$URL" == ZIP_GITHUB_REPO::* ]]; then
+      zip_spec="${URL#ZIP_GITHUB_REPO::}"
+      zip_repo="${zip_spec%%::*}"
+      zip_rest="${zip_spec#*::}"
+      if [ "$zip_rest" != "$zip_spec" ]; then
+        zip_branch="$zip_rest"
+      fi
     fi
-    repo_name="${zip_repo##*/}"
-    archive_name="${GAME}.zip"
-    archive_url="https://github.com/$zip_repo/archive/refs/heads/$zip_branch.zip"
 
-    if wget -O "$archive_name" "$archive_url"; then
-      if unzip -q "$archive_name"; then
-        src_dir="$(find . -maxdepth 1 -type d -name "${repo_name}-${zip_branch}*" | head -n1 || true)"
-        if [ -n "$src_dir" ] && [ -d "$src_dir" ]; then
-          shopt -s dotglob nullglob
-          mv "$src_dir"/* "$TARGET"/ 2>/dev/null || true
-          shopt -u dotglob nullglob
-          rm -rf "$src_dir"
+    if [ -n "$git_repo" ]; then
+      if [ -z "$git_branch" ]; then
+        git_branch="main"
+      fi
+      clone_url="https://github.com/$git_repo.git"
+      tmp_clone_dir="$(mktemp -d)"
 
-          # Some repos ship a differently named HTML entrypoint; promote one to index.html.
-          promote_entrypoint_if_missing "$TARGET"
-        else
-          echo "⚠️ Could not locate extracted repo folder for $GAME ($zip_repo@$zip_branch)."
-          download_ok=0
-        fi
+      if git clone --depth 1 --branch "$git_branch" --recurse-submodules "$clone_url" "$tmp_clone_dir"; then
+        shopt -s dotglob nullglob
+        mv "$tmp_clone_dir"/* "$TARGET"/ 2>/dev/null || true
+        shopt -u dotglob nullglob
+        rm -rf "$tmp_clone_dir"
+
+        # Remove git internals from mirrored content.
+        find "$TARGET" -type d -name '.git' -prune -exec rm -rf {} + 2>/dev/null || true
+        find "$TARGET" -type f -name '.git' -delete 2>/dev/null || true
+
+        promote_entrypoint_if_missing "$TARGET"
       else
-        echo "⚠️ Failed to extract archive for $GAME ($archive_url)."
+        echo "⚠️ Failed to clone repository for $GAME ($git_repo@$git_branch)."
+        rm -rf "$tmp_clone_dir"
         download_ok=0
       fi
-      rm -f "$archive_name"
-    else
-      echo "⚠️ Failed to download archive for $GAME ($archive_url)."
-      download_ok=0
-    fi
-  elif [[ "$URL" == ZIP_GITHUB_FILE::* ]]; then
-    spec="${URL#ZIP_GITHUB_FILE::}"
-    repo="${spec%%::*}"
-    rest="${spec#*::}"
-    branch="${rest%%::*}"
-    file_path="${rest#*::}"
-
-    if [ -z "$repo" ] || [ "$rest" = "$spec" ] || [ -z "$branch" ] || [ "$file_path" = "$rest" ] || [ -z "$file_path" ]; then
-      echo "⚠️ Invalid ZIP_GITHUB_FILE source for $GAME: $URL"
-      download_ok=0
-    else
-      repo_name="${repo##*/}"
+    elif [ -n "$zip_repo" ]; then
+      if [ -z "$zip_branch" ]; then
+        zip_branch="main"
+      fi
+      repo_name="${zip_repo##*/}"
       archive_name="${GAME}.zip"
-      archive_url="https://github.com/$repo/archive/refs/heads/$branch.zip"
+      archive_url="https://github.com/$zip_repo/archive/refs/heads/$zip_branch.zip"
 
       if wget -O "$archive_name" "$archive_url"; then
         if unzip -q "$archive_name"; then
-          src_dir="$(find . -maxdepth 1 -type d -name "${repo_name}-${branch}*" | head -n1 || true)"
-          src_file=""
-          if [ -n "$src_dir" ] && [ -f "$src_dir/$file_path" ]; then
-            src_file="$src_dir/$file_path"
-          elif [ -n "$src_dir" ]; then
-            src_file="$(find "$src_dir" -type f -name "$(basename "$file_path")" | head -n1 || true)"
-          fi
+          src_dir="$(find . -maxdepth 1 -type d -name "${repo_name}-${zip_branch}*" | head -n1 || true)"
+          if [ -n "$src_dir" ] && [ -d "$src_dir" ]; then
+            shopt -s dotglob nullglob
+            mv "$src_dir"/* "$TARGET"/ 2>/dev/null || true
+            shopt -u dotglob nullglob
+            rm -rf "$src_dir"
 
-          if [ -n "$src_file" ] && [ -f "$src_file" ]; then
-            cp "$src_file" "$TARGET/index.html"
+            # Some repos ship a differently named HTML entrypoint; promote one to index.html.
+            promote_entrypoint_if_missing "$TARGET"
           else
-            echo "⚠️ Could not locate '$file_path' in $repo@$branch for $GAME."
+            echo "⚠️ Could not locate extracted repo folder for $GAME ($zip_repo@$zip_branch)."
             download_ok=0
           fi
-
-          [ -n "$src_dir" ] && rm -rf "$src_dir"
         else
           echo "⚠️ Failed to extract archive for $GAME ($archive_url)."
           download_ok=0
@@ -2218,53 +2346,115 @@ for GAME in "${!GAMES[@]}"; do
         echo "⚠️ Failed to download archive for $GAME ($archive_url)."
         download_ok=0
       fi
+    elif [[ "$URL" == ZIP_GITHUB_FILE::* ]]; then
+      spec="${URL#ZIP_GITHUB_FILE::}"
+      repo="${spec%%::*}"
+      rest="${spec#*::}"
+      branch="${rest%%::*}"
+      file_path="${rest#*::}"
+
+      if [ -z "$repo" ] || [ "$rest" = "$spec" ] || [ -z "$branch" ] || [ "$file_path" = "$rest" ] || [ -z "$file_path" ]; then
+        echo "⚠️ Invalid ZIP_GITHUB_FILE source for $GAME: $URL"
+        download_ok=0
+      else
+        repo_name="${repo##*/}"
+        archive_name="${GAME}.zip"
+        archive_url="https://github.com/$repo/archive/refs/heads/$branch.zip"
+
+        if wget -O "$archive_name" "$archive_url"; then
+          if unzip -q "$archive_name"; then
+            src_dir="$(find . -maxdepth 1 -type d -name "${repo_name}-${branch}*" | head -n1 || true)"
+            src_file=""
+            if [ -n "$src_dir" ] && [ -f "$src_dir/$file_path" ]; then
+              src_file="$src_dir/$file_path"
+            elif [ -n "$src_dir" ]; then
+              src_file="$(find "$src_dir" -type f -name "$(basename "$file_path")" | head -n1 || true)"
+            fi
+
+            if [ -n "$src_file" ] && [ -f "$src_file" ]; then
+              cp "$src_file" "$TARGET/index.html"
+            else
+              echo "⚠️ Could not locate '$file_path' in $repo@$branch for $GAME."
+              download_ok=0
+            fi
+
+            [ -n "$src_dir" ] && rm -rf "$src_dir"
+          else
+            echo "⚠️ Failed to extract archive for $GAME ($archive_url)."
+            download_ok=0
+          fi
+          rm -f "$archive_name"
+        else
+          echo "⚠️ Failed to download archive for $GAME ($archive_url)."
+          download_ok=0
+        fi
+      fi
+    else
+      if ! wget \
+        --mirror \
+        --convert-links \
+        --adjust-extension \
+        --page-requisites \
+        --no-parent \
+        "$URL"; then
+        echo "WARN wget reported fetch errors for $GAME; validating mirrored content before deciding completion."
+      fi
+
+      flatten_mirror "$URL" "$TARGET"
     fi
-  else
-    if ! wget \
-      --mirror \
-      --convert-links \
-      --adjust-extension \
-      --page-requisites \
-      --no-parent \
-      "$URL"; then
-      echo "WARN wget reported fetch errors for $GAME; validating mirrored content before deciding completion."
+
+    if [ "$download_ok" -eq 1 ] && mirror_content_is_complete "$GAME" "$TARGET"; then
+      touch "$MARKER"
+    else
+      rm -f "$MARKER"
+      echo "⚠️ $GAME did not complete successfully; it will be retried next run."
     fi
 
-    flatten_mirror "$URL" "$TARGET"
-  fi
-
-  if [ "$download_ok" -eq 1 ] && mirror_content_is_complete "$GAME" "$TARGET"; then
-    touch "$MARKER"
-  else
-    rm -f "$MARKER"
-    echo "⚠️ $GAME did not complete successfully; it will be retried next run."
-  fi
-
-  chown -R www-data:www-data "$TARGET"
-  # IdleAnt expects to be hosted at /IdleAnt/ (GitHub Pages base path); provide an alias.
-  if [ "$GAME" = "IdleAnt" ]; then
-    ln -sfn "$TARGET" "/var/www/html/IdleAnt"
-  fi
-done
+    if [ "$RUNNING_AS_ROOT" -eq 1 ]; then
+      chown -R www-data:www-data "$TARGET"
+    fi
+    # IdleAnt expects to be hosted at /IdleAnt/ (GitHub Pages base path); provide an alias.
+    if [ "$RUNNING_AS_ROOT" -eq 1 ] && [ "$GAME" = "IdleAnt" ]; then
+      ln -sfn "$TARGET" "/var/www/html/IdleAnt"
+    fi
+  done
+fi
 
 echo "===== Building catalog and pages in $INDEX_DIR ====="
 build_catalog_json
 ensure_filters_file
 write_public_index
+publish_companion_downloads
 write_wiki_index
 write_admin_cgi
 write_admin_index
-configure_admin_auth
+if [ "$LAN_ARCADE_SKIP_ADMIN_AUTH" = "1" ]; then
+  echo "Skipping Apache admin auth because LAN_ARCADE_SKIP_ADMIN_AUTH=1"
+else
+  configure_admin_auth
+fi
 
-chown -R www-data:www-data "$INDEX_DIR"
+if [ "$RUNNING_AS_ROOT" -eq 1 ]; then
+  chown -R www-data:www-data "$INDEX_DIR"
+fi
 chmod 755 "$WIKI_DIR"
 chmod 755 "$ADMIN_DIR"
+chmod 755 "$DOWNLOADS_DIR"
+chmod 755 "$DOWNLOAD_SCREENSHOTS_DIR"
+chmod 644 "$INDEX_FILE"
+chmod 644 "$CATALOG_FILE"
+chmod 644 "$FILTERS_FILE"
+chmod 644 "$WIKI_INDEX_FILE"
+chmod 644 "$ADMIN_INDEX_FILE"
+chmod 644 "$DOWNLOADS_INDEX_FILE"
 chmod 755 "$ADMIN_CGI_FILE"
 
-if command -v systemctl >/dev/null 2>&1; then
-  systemctl reload apache2 || true
-elif command -v apachectl >/dev/null 2>&1; then
-  apachectl -k graceful || true
+if [ "$LAN_ARCADE_SKIP_ADMIN_AUTH" != "1" ]; then
+  if command -v systemctl >/dev/null 2>&1; then
+    systemctl reload apache2 || true
+  elif command -v apachectl >/dev/null 2>&1; then
+    apachectl -k graceful || true
+  fi
 fi
 
 echo
@@ -2272,3 +2462,4 @@ echo "Done."
 echo "Arcade: http://<your-server-ip>/mirrors/games/"
 echo "Wiki:   http://<your-server-ip>/mirrors/games/wiki/"
 echo "Admin:  http://<your-server-ip>/mirrors/games/admin/ (HTTP Basic Auth)"
+echo "APK:    http://<your-server-ip>/mirrors/games/downloads/lan-arcade-companion-debug.apk"

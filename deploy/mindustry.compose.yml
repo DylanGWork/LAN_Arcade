@@ -1,0 +1,21 @@
+services:
+  mindustry:
+    build:
+      context: ..
+      dockerfile: services/mindustry/Dockerfile
+      args:
+        MINDUSTRY_VERSION: ${MINDUSTRY_VERSION:-v157.4}
+    container_name: lan-arcade-mindustry
+    restart: unless-stopped
+    environment:
+      MINDUSTRY_SERVER_NAME: ${MINDUSTRY_SERVER_NAME:-LAN Arcade Mindustry}
+      MINDUSTRY_SERVER_DESC: ${MINDUSTRY_SERVER_DESC:-Offline camping LAN server}
+      MINDUSTRY_MAP: ${MINDUSTRY_MAP:-groundZero}
+      MINDUSTRY_MODE: ${MINDUSTRY_MODE:-survival}
+      MINDUSTRY_XMS: ${MINDUSTRY_XMS:-128m}
+      MINDUSTRY_XMX: ${MINDUSTRY_XMX:-512m}
+    ports:
+      - "${MINDUSTRY_PORT:-6567}:6567/tcp"
+      - "${MINDUSTRY_PORT:-6567}:6567/udp"
+    volumes:
+      - /var/lib/lan-arcade/mindustry:/var/lib/mindustry

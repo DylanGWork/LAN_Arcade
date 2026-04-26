@@ -1,0 +1,15 @@
+node_modules/
+qa/reports/
+tmp/
+npm-debug.log*
+*.tsbuildinfo
+apps/companion/dist/
+apps/companion/android/app/build/
+apps/companion/android/build/
+apps/companion/android/.gradle/
+apps/companion/android/local.properties
+packages/shared/dist/
+services/arcade-api/dist/
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal

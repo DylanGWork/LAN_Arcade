@@ -1,0 +1,23 @@
+{
+  "name": "@lan-arcade/arcade-api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/server.js",
+  "scripts": {
+    "dev": "npm run build -w @lan-arcade/shared && tsx src/server.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/server.js",
+    "test": "npm run build -w @lan-arcade/shared && tsx --test src/*.test.ts"
+  },
+  "dependencies": {
+    "@lan-arcade/shared": "0.1.0",
+    "better-sqlite3": "11.10.0",
+    "zod": "4.1.13"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "7.6.13",
+    "tsx": "4.21.0",
+    "typescript": "5.9.3"
+  }
+}

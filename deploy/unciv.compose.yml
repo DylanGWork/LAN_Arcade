@@ -1,0 +1,17 @@
+services:
+  unciv:
+    build:
+      context: ..
+      dockerfile: services/unciv/Dockerfile
+      args:
+        UNCIV_VERSION: ${UNCIV_VERSION:-4.20.1}
+    container_name: lan-arcade-unciv
+    restart: unless-stopped
+    environment:
+      UNCIV_PORT: "8090"
+      UNCIV_DATA_DIR: /var/lib/unciv/MultiplayerFiles
+      UNCIV_JAVA_OPTS: ${UNCIV_JAVA_OPTS:-}
+    ports:
+      - "${UNCIV_PORT:-8090}:8090/tcp"
+    volumes:
+      - /var/lib/lan-arcade/unciv:/var/lib/unciv
