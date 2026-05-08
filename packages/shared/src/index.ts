@@ -21,6 +21,7 @@ export interface ArcadeGame {
   appRoute?: string;
   connectionHint?: string;
   serverPort?: number;
+  systemHint?: string;
 }
 
 export interface ArcadeCatalog {
@@ -151,7 +152,8 @@ export const bundledCompanionGames: ArcadeGame[] = [
     source: 'lan-service',
     scoreEnabled: false,
     connectionHint: 'Install Mindustry on each phone/desktop, then join the LAN server address shown by your Pi on port 6567.',
-    serverPort: 6567
+    serverPort: 6567,
+    systemHint: 'Best on a Pi 4 with 4 GB or more. Start with MINDUSTRY_XMX=512m and a small map.'
   },
   {
     id: 'unciv-lan',
@@ -164,7 +166,8 @@ export const bundledCompanionGames: ArcadeGame[] = [
     source: 'lan-service',
     scoreEnabled: false,
     connectionHint: 'Install Unciv on each phone/desktop, then set the multiplayer server to http://<pi-ip>:8090.',
-    serverPort: 8090
+    serverPort: 8090,
+    systemHint: 'Lightest bigger-game trial. Start with UNCIV_JAVA_OPTS="-Xms64m -Xmx256m".'
   }
 ];
 

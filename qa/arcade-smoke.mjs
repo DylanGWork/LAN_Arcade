@@ -7,6 +7,63 @@ import { chromium, firefox, webkit } from 'playwright';
 
 const DEFAULT_BASE_URL = 'http://127.0.0.1/mirrors/games/';
 const DEFAULT_REPORT_DIR = 'qa/reports/latest';
+const GAME_RECIPES = {
+  '2048': [
+    { type: 'keys', keys: ['ArrowUp', 'ArrowRight', 'ArrowDown', 'ArrowLeft'] },
+  ],
+  floppybird: [
+    { type: 'keys', keys: ['Space', 'Space', 'Space'] },
+    { type: 'center-click' },
+  ],
+  'breachline-tactics': [
+    { type: 'game-call', method: 'startRun' },
+    { type: 'game-call', method: 'clickCell', args: [1, 2] },
+    { type: 'game-call', method: 'setMode', args: ['move'] },
+    { type: 'game-call', method: 'clickCell', args: [3, 2] },
+    { type: 'game-call', method: 'clickCell', args: [1, 4] },
+    { type: 'game-call', method: 'setMode', args: ['strike'] },
+    { type: 'game-call', method: 'clickCell', args: [7, 3] },
+    { type: 'game-call', method: 'endTurn' },
+    { type: 'wait', ms: 900 },
+  ],
+  'circuit-foundry': [
+    { type: 'game-call', method: 'setTool', args: ['generator'] },
+    { type: 'game-call', method: 'clickCell', args: [0, 0] },
+    { type: 'game-call', method: 'setTool', args: ['extractor'] },
+    { type: 'game-call', method: 'setDirection', args: [0] },
+    { type: 'game-call', method: 'clickCell', args: [1, 1] },
+    { type: 'game-call', method: 'setTool', args: ['belt'] },
+    { type: 'game-call', method: 'clickCell', args: [2, 1] },
+    { type: 'game-call', method: 'setTool', args: ['smelter'] },
+    { type: 'game-call', method: 'clickCell', args: [3, 1] },
+    { type: 'game-call', method: 'setTool', args: ['assembler'] },
+    { type: 'game-call', method: 'clickCell', args: [4, 1] },
+    { type: 'game-call', method: 'run' },
+    { type: 'wait', ms: 4200 },
+    { type: 'game-call', method: 'setTool', args: ['erase'] },
+  ],
+  hextris: [
+    { type: 'keys', keys: ['ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight'] },
+  ],
+  'outpost-siege': [
+    { type: 'click-text', text: 'Cannon' },
+    { type: 'canvas-click-ratio', x: 0.5, y: 0.5 },
+    { type: 'click-text', text: 'Start Mission' },
+    { type: 'wait', ms: 1200 },
+    { type: 'click-text', text: 'Laser' },
+    { type: 'canvas-click-ratio', x: 0.34, y: 0.62 },
+    { type: 'keys', keys: ['Digit3', 'Digit4', 'Space', 'Space'] },
+  ],
+  pacman: [
+    { type: 'keys', keys: ['Enter', 'ArrowRight', 'ArrowDown', 'ArrowLeft', 'ArrowUp'] },
+  ],
+  snake: [
+    { type: 'keys', keys: ['Enter', 'ArrowRight', 'ArrowDown', 'ArrowLeft', 'ArrowUp'] },
+  ],
+  tetris: [
+    { type: 'keys', keys: ['Enter', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Space'] },
+  ],
+};
 
 function parseArgs(argv) {
   const options = {
@@ -15,6 +72,7 @@ function parseArgs(argv) {
     browserName: process.env.ARCADE_QA_BROWSER || 'chromium',
     blockExternal: process.env.ARCADE_ALLOW_EXTERNAL !== '1',
     limit: null,
+    offset: 0,
     gameFilter: null,
     discoverCatalog: process.env.ARCADE_QA_DISCOVER_CATALOG === '1',
     headed: process.env.ARCADE_QA_HEADED === '1',
@@ -36,6 +94,9 @@ function parseArgs(argv) {
       i += 1;
     } else if (arg === '--limit' && next) {
       options.limit = Number.parseInt(next, 10);
+      i += 1;
+    } else if (arg === '--offset' && next) {
+      options.offset = Math.max(0, Number.parseInt(next, 10) || 0);
       i += 1;
     } else if (arg === '--game' && next) {
       options.gameFilter = next.toLowerCase();
@@ -73,6 +134,7 @@ Options:
   --report-dir <path>    Output directory. Default: ${DEFAULT_REPORT_DIR}
   --browser <name>       chromium, firefox, or webkit. Default: chromium
   --limit <n>            Test only the first n discovered games
+  --offset <n>           Skip the first n discovered games before applying --limit
   --game <text>          Test games whose id/title/url includes text
   --catalog              Discover every catalog entry instead of public links
   --allow-external       Do not block or fail remote requests
@@ -208,6 +270,9 @@ function filterAndLimitGames(games, options) {
       return haystack.includes(options.gameFilter);
     });
   }
+  if (Number.isInteger(options.offset) && options.offset > 0) {
+    filtered = filtered.slice(options.offset);
+  }
   if (Number.isInteger(options.limit) && options.limit > 0) {
     filtered = filtered.slice(0, options.limit);
   }
@@ -278,9 +343,13 @@ async function testGame(browser, game, options) {
   page.on('requestfailed', (request) => {
     const url = request.url();
     if (classifyRequest(url, baseOrigin) === 'local') {
+      const failure = request.failure()?.errorText || 'request failed';
+      if (request.resourceType() === 'media' && failure === 'net::ERR_ABORTED') {
+        return;
+      }
       result.localFailures.push({
         url,
-        failure: request.failure()?.errorText || 'request failed',
+        failure,
       });
     }
   });
@@ -296,6 +365,7 @@ async function testGame(browser, game, options) {
     await page.waitForTimeout(900);
     result.render = await collectRenderInfo(page);
     await performBasicInteractions(page, result);
+    await performGameRecipe(page, result, game.id);
     if (options.mobile) {
       await performMobileInteractions(page, result);
     }
@@ -377,6 +447,36 @@ async function performBasicInteractions(page, result) {
   }
 }
 
+async function performGameRecipe(page, result, gameId) {
+  const recipe = GAME_RECIPES[gameId] || [];
+  for (const step of recipe) {
+    try {
+      if (step.type === 'keys') {
+        await pressKeys(page, step.keys);
+        result.interactions.push({ action: `recipe ${gameId}: pressed ${step.keys.join(', ')}`, ok: true });
+      } else if (step.type === 'center-click') {
+        const label = await clickViewportCenter(page);
+        result.interactions.push({ action: `recipe ${gameId}: ${label}`, ok: true });
+      } else if (step.type === 'click-text') {
+        const label = await clickFirstMatchingText(page, new RegExp(escapeRegex(step.text), 'i'));
+        result.interactions.push({ action: `recipe ${gameId}: ${label || `text not found: ${step.text}`}`, ok: Boolean(label) });
+      } else if (step.type === 'canvas-click-ratio') {
+        const label = await clickCanvasRatio(page, step.x, step.y);
+        result.interactions.push({ action: `recipe ${gameId}: ${label}`, ok: true });
+      } else if (step.type === 'wait') {
+        await page.waitForTimeout(step.ms);
+        result.interactions.push({ action: `recipe ${gameId}: waited ${step.ms}ms`, ok: true });
+      } else if (step.type === 'game-call') {
+        const called = await callGameHook(page, step.method, step.args || []);
+        result.interactions.push({ action: `recipe ${gameId}: called ${step.method}`, ok: called });
+      }
+    } catch (error) {
+      result.interactions.push({ action: `recipe ${gameId}`, ok: false, error: error.message });
+    }
+    await page.waitForTimeout(250);
+  }
+}
+
 async function clickFirstMatchingText(page, matcher) {
   const handle = await page.evaluateHandle((source) => {
     const regex = new RegExp(source, 'i');
@@ -396,6 +496,10 @@ async function clickFirstMatchingText(page, matcher) {
   return 'clicked start/play-like control';
 }
 
+function escapeRegex(value) {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 async function clickFirstVisible(page, selector) {
   const locator = page.locator(selector).filter({ hasNotText: /^\s*$/ }).first();
   const count = await page.locator(selector).count();
@@ -413,6 +517,27 @@ async function clickViewportCenter(page) {
   if (!viewport) return null;
   await page.mouse.click(Math.floor(viewport.width / 2), Math.floor(viewport.height / 2));
   return 'clicked viewport center';
+}
+
+async function clickCanvasRatio(page, xRatio, yRatio) {
+  const canvas = page.locator('canvas').first();
+  await canvas.waitFor({ state: 'visible', timeout: 2000 });
+  const box = await canvas.boundingBox();
+  if (!box) return 'canvas not found';
+  await page.mouse.click(
+    Math.floor(box.x + box.width * xRatio),
+    Math.floor(box.y + box.height * yRatio),
+  );
+  return `clicked canvas at ${xRatio}, ${yRatio}`;
+}
+
+async function callGameHook(page, method, args) {
+  return page.evaluate(({ methodName, methodArgs }) => {
+    const api = window.__lanArcadeGame;
+    if (!api || typeof api[methodName] !== 'function') return false;
+    api[methodName](...(Array.isArray(methodArgs) ? methodArgs : []));
+    return true;
+  }, { methodName: method, methodArgs: args });
 }
 
 async function pressKeys(page, keys) {
@@ -654,6 +779,7 @@ async function main() {
       process.stdout.write(`[${index + 1}/${games.length}] ${game.id} ... `);
       const result = await testGame(browser, game, options);
       results.push(result);
+      await writeReports(results, options);
       console.log(`strict=${result.strictStatus} playability=${result.playabilityStatus}`);
     }
 

@@ -215,6 +215,7 @@ export function App() {
             <div className="service-panel" data-testid="lan-service-panel">
               <h3>{activeGame.title}</h3>
               <p>{activeGame.connectionHint || 'Use the matching game client and join the LAN server.'}</p>
+              {activeGame.systemHint && <p>{activeGame.systemHint}</p>}
               {activeGame.serverPort && <strong>Default LAN port: {activeGame.serverPort}</strong>}
             </div>
           )}

@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#121722">
+  <title>Outpost Siege</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">LAN Arcade Defense Grid</p>
+        <h1>Outpost Siege</h1>
+      </div>
+      <div class="stat-strip" aria-label="Run status">
+        <div><span>Integrity</span><strong id="integrityValue">20</strong></div>
+        <div><span>Scrap</span><strong id="scrapValue">175</strong></div>
+        <div><span>Wave</span><strong id="waveValue">0</strong></div>
+      </div>
+    </header>
+
+    <main class="game-layout">
+      <section class="battlefield" aria-label="Outpost battlefield">
+        <canvas id="gameCanvas" width="1280" height="800"></canvas>
+        <div id="toast" class="toast" aria-live="polite"></div>
+      </section>
+
+      <aside class="command-panel" aria-label="Command panel">
+        <div class="panel-section">
+          <div class="section-heading">
+            <span>Build</span>
+            <strong id="selectedLabel">Cannon</strong>
+          </div>
+          <div class="tower-grid" id="towerButtons"></div>
+        </div>
+
+        <div class="panel-section">
+          <div class="section-heading">
+            <span>Selected</span>
+            <strong id="selectedTowerLabel">None</strong>
+          </div>
+          <div class="selected-details" id="selectedTowerDetails">Choose a tower or grid cell.</div>
+          <button id="upgradeButton" class="wide-button" type="button">Upgrade</button>
+        </div>
+
+        <div class="panel-section controls">
+          <button id="waveButton" class="primary-button" type="button">Start Mission</button>
+          <button id="pauseButton" type="button">Pause</button>
+          <button id="speedButton" type="button">1x</button>
+          <button id="resetButton" type="button">Reset Run</button>
+        </div>
+
+        <div class="panel-section telemetry">
+          <div><span>Enemies Down</span><strong id="killsValue">0</strong></div>
+          <div><span>Leaks</span><strong id="leaksValue">0</strong></div>
+          <div><span>Best Wave</span><strong id="bestWaveValue">0</strong></div>
+        </div>
+      </aside>
+    </main>
+  </div>
+
+  <script src="./game.js"></script>
+</body>
+</html>

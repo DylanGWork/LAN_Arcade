@@ -13,6 +13,7 @@
     "test": "npm run test -w @lan-arcade/shared && npm run test -w @lan-arcade/arcade-api && npm run test -w @lan-arcade/companion",
     "dev:api": "npm run dev -w @lan-arcade/arcade-api",
     "dev:companion": "npm run dev -w @lan-arcade/companion",
+    "dev:tank": "node services/lan-tank-arena/server.mjs",
     "qa:static": "./audit_mirrors.sh ${MIRRORS_DIR:-/var/www/html/mirrors}",
     "qa:smoke": "node qa/arcade-smoke.mjs",
     "qa:smoke:catalog": "node qa/arcade-smoke.mjs --catalog",
@@ -20,6 +21,12 @@
     "qa:smoke:sample": "node qa/arcade-smoke.mjs --limit 5",
     "qa:companion": "node qa/companion-smoke.mjs",
     "qa:quarantine-blockers": "node qa/quarantine-blockers.mjs",
+    "qa:summary": "node qa/qa-summary.mjs",
+    "qa:summary:visible": "node qa/qa-summary.mjs --report qa/reports/latest-visible/smoke-report.json --output-dir qa/reports/latest-visible",
+    "qa:patch-mirrors": "scripts/offline_patch_mirrors.sh",
+    "qa:game": "bash scripts/qa_game_regression.sh",
+    "qa:tank": "node qa/tank-arena-smoke.mjs",
+    "qa:repair-assets": "node scripts/repair_missing_assets_from_report.mjs",
     "qa": "npm run qa:static && npm run qa:smoke"
   },
   "devDependencies": {

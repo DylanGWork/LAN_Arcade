@@ -12,8 +12,10 @@ This repo contains:
 
 - `setup_lan_arcade.sh` – installer + HTML generator
 - `games.meta.sh` – list of games and metadata (titles, icons, descriptions, tags, categories)
+- `local-games` – original bundled games that are copied into the mirror without internet dependencies
 - `apps/companion` – React/Capacitor companion app for Android + browser/PWA
 - `services/arcade-api` – local Node/SQLite API for profiles, scores, leaderboards, and challenges
+- `services/lan-tank-arena` – local WebSocket server for the browser-based LAN Tank Arena multiplayer game
 - `services/mindustry` – optional Pi-hosted Mindustry dedicated server container
 - `services/unciv` – optional Pi-hosted Unciv multiplayer turn-file server container
 - `packages/shared` – shared app/API contracts
@@ -36,8 +38,18 @@ http://<server-ip>/mirrors/games/
 - 🗂 Category-aware – public category chips + admin filters across educational, ages 5+/10+/13+, maths, english, typing, and genre categories
 - 🔐 Admin controls – password-protected admin page to disable full categories or individual games
 - 📚 Offline wiki – local wiki page with docs + searchable game catalog at `/mirrors/games/wiki/`
+- 🧪 QA harness – static, desktop, mobile, per-game, and multiplayer smoke checks
 - 🔁 Idempotent – safe to rerun; completed game folders are skipped via marker files
 - 🧩 Easy to extend – update URLs, card data, and categories in `games.meta.sh`
+
+# Original bundled games
+
+The repo now includes a few original games under `local-games/`. These are copied into `/var/www/html/mirrors/` by the installer, so they do not depend on GitHub Pages, CDNs, trackers, remote fonts, or third-party runtime assets.
+
+- `Outpost Siege` – tower defense with waves, tower upgrades, boss pressure, and local save progress.
+- `Breachline Tactics` – turn-based grid tactics with squad abilities, enemy turns, and best-depth tracking.
+- `Circuit Foundry` – compact factory automation with generators, extractors, belts, smelters, and assemblers.
+- `LAN Tank Arena` – browser-based LAN multiplayer tank combat backed by the local WebSocket service.
 
 # Requirements
 On the machine you’re deploying to:
@@ -50,6 +62,7 @@ The script will install these packages automatically:
 - apache2-utils
 - wget
 - unzip
+- nodejs
 It’s been used on:
 - A Debian VM
 - Raspberry Pi-class hardware should also be fine
@@ -113,6 +126,7 @@ The script will then:
 6. Regenerate `/var/www/html/mirrors/games/wiki/index.html` (offline wiki page)
 7. Regenerate `/var/www/html/mirrors/games/admin/index.html` + save endpoint
 8. Configure Apache Basic Auth for `/mirrors/games/admin/`
+9. Enable the `lan-tank-arena` systemd service for the browser multiplayer tank game
     🔧 You do not run games.meta.sh yourself.
     It’s automatically loaded by setup_lan_arcade.sh and used as a config file.
 
@@ -143,6 +157,19 @@ Use it to disable:
 - Individual games
 
 The public index automatically applies those saved filters.
+
+LAN Tank Arena:
+```text
+http://<server-ip>/mirrors/lan-tank-arena/
+```
+
+The full installer enables `lan-tank-arena.service` and listens on port `8787` by default. Players enter a callsign and a shared room code, then join from phones, tablets, or laptops on the same LAN.
+
+Useful service checks:
+```
+systemctl status lan-tank-arena.service
+curl http://127.0.0.1:8787/tank-arena/healthz
+```
 
 Offline wiki (no login required):
 ```text
@@ -226,6 +253,21 @@ npm run qa:smoke:catalog
 Mobile/touch smoke test:
 ```
 npm run qa:smoke:mobile
+```
+
+Focused regression gate for a new or touched game:
+```
+npm run qa:game -- outpost-siege
+```
+
+LAN Tank Arena two-client multiplayer smoke test:
+```
+npm run qa:tank
+```
+
+Catalog chunking for longer regression runs:
+```
+npm run qa:smoke -- --catalog --offset 20 --limit 20 --report-dir qa/reports/catalog-batch-2
 ```
 
 Quarantine blocker games from the latest catalog report:

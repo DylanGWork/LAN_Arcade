@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#111823">
+  <title>Breachline Tactics</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">LAN Arcade Tactical Run</p>
+        <h1>Breachline Tactics</h1>
+      </div>
+      <div class="stat-strip">
+        <div><span>Depth</span><strong id="depthValue">1</strong></div>
+        <div><span>Core</span><strong id="coreValue">12</strong></div>
+        <div><span>Data</span><strong id="dataValue">0</strong></div>
+      </div>
+    </header>
+
+    <main class="game-layout">
+      <section class="battlefield" aria-label="Tactical map">
+        <canvas id="gameCanvas" width="1200" height="760"></canvas>
+        <div id="toast" class="toast" aria-live="polite"></div>
+      </section>
+
+      <aside class="command-panel" aria-label="Command panel">
+        <section class="panel-section">
+          <div class="section-heading">
+            <span>Operation</span>
+            <strong id="phaseLabel">Ready</strong>
+          </div>
+          <button id="startButton" class="primary-button" type="button">Start Run</button>
+          <button id="endTurnButton" type="button">End Turn</button>
+        </section>
+
+        <section class="panel-section">
+          <div class="section-heading">
+            <span>Selected</span>
+            <strong id="selectedLabel">None</strong>
+          </div>
+          <div id="unitDetails" class="unit-details">Select an operator on the grid.</div>
+          <div class="ability-grid">
+            <button id="strikeButton" type="button">Strike</button>
+            <button id="moveButton" type="button">Move</button>
+            <button id="repairButton" type="button">Patch</button>
+            <button id="overwatchButton" type="button">Guard</button>
+          </div>
+        </section>
+
+        <section class="panel-section roster" id="rosterPanel"></section>
+
+        <section class="panel-section telemetry">
+          <div><span>Turns</span><strong id="turnValue">0</strong></div>
+          <div><span>Cleared</span><strong id="clearedValue">0</strong></div>
+          <div><span>Best Depth</span><strong id="bestDepthValue">1</strong></div>
+        </section>
+      </aside>
+    </main>
+  </div>
+
+  <script src="./game.js"></script>
+</body>
+</html>

@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#121722">
+  <title>Circuit Foundry</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">LAN Arcade Automation Lab</p>
+        <h1>Circuit Foundry</h1>
+      </div>
+      <div class="stat-strip">
+        <div><span>Credits</span><strong id="creditsValue">360</strong></div>
+        <div><span>Circuits</span><strong id="circuitsValue">0</strong></div>
+        <div><span>Power</span><strong id="powerValue">0/0</strong></div>
+      </div>
+    </header>
+
+    <main class="game-layout">
+      <section class="factory-floor" aria-label="Factory floor">
+        <canvas id="gameCanvas" width="1280" height="800"></canvas>
+        <div id="toast" class="toast" aria-live="polite"></div>
+      </section>
+
+      <aside class="command-panel" aria-label="Build panel">
+        <section class="panel-section">
+          <div class="section-heading">
+            <span>Build Tool</span>
+            <strong id="toolLabel">Extractor</strong>
+          </div>
+          <div class="tool-grid" id="toolButtons"></div>
+        </section>
+
+        <section class="panel-section">
+          <div class="section-heading">
+            <span>Selected</span>
+            <strong id="selectedLabel">None</strong>
+          </div>
+          <div id="selectedDetails" class="selected-details">Choose a machine or empty tile.</div>
+          <button id="rotateButton" class="wide-button" type="button">Rotate</button>
+        </section>
+
+        <section class="panel-section controls">
+          <button id="runButton" class="primary-button" type="button">Run Factory</button>
+          <button id="speedButton" type="button">1x</button>
+          <button id="resetButton" type="button">Reset Layout</button>
+        </section>
+
+        <section class="panel-section telemetry">
+          <div><span>Ore</span><strong id="oreValue">0</strong></div>
+          <div><span>Plates</span><strong id="platesValue">0</strong></div>
+          <div><span>Best Circuits</span><strong id="bestValue">0</strong></div>
+        </section>
+      </aside>
+    </main>
+  </div>
+
+  <script src="./game.js"></script>
+</body>
+</html>

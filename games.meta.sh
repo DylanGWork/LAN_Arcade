@@ -63,6 +63,10 @@ declare -A GAMES=(
   ["pacman"]="https://pacman.platzh1rsch.ch/"
   ["snake"]="https://icethecoder.github.io/snake/"
     ["supertasball"]="https://supertasball.amos.me/"
+  ["outpost-siege"]="LOCAL_DIR::local-games/outpost-siege"
+  ["breachline-tactics"]="LOCAL_DIR::local-games/breachline-tactics"
+  ["circuit-foundry"]="LOCAL_DIR::local-games/circuit-foundry"
+  ["lan-tank-arena"]="LOCAL_DIR::local-games/lan-tank-arena"
 
 )
 
@@ -125,6 +129,10 @@ declare -A GAME_INFO=(
   ["pacman"]="Pac-Man|🟡|Arcade · Maze|Classic Pac-Man remake in HTML5 (includes sound).|Classic,Arcade,Mobile-friendly"
   ["snake"]="Snake|🐍|Arcade · Classic|Simple Snake with smooth movement (great on touch devices).|Classic,Mobile-friendly,Quick play"
   ["supertasball"]="Super TASball|🎱|Pinball · Idle|Open-source pinball idle game where you “program” shots and build up your run over time.|Pinball,Idle,Strategy"
+  ["outpost-siege"]="Outpost Siege|FORT|Tower Defense · Strategy|Original LAN Arcade base defense game with waves, tower upgrades, enemy armor, boss waves, touch controls, and local save progress.|Tower defense,Strategy,Offline original"
+  ["breachline-tactics"]="Breachline Tactics|GRID|Tactical Roguelite|Original turn-based squad tactics game with grid combat, operator abilities, enemy turns, room depth, and local best-depth saves.|Tactical,Roguelite,Offline original"
+  ["circuit-foundry"]="Circuit Foundry|GEAR|Factory Automation|Original mini automation game where extractors, belts, smelters, generators, and assemblers build a circuit pipeline.|Factory,Automation,Offline original"
+  ["lan-tank-arena"]="LAN Tank Arena|TANK|Multiplayer · Arena Combat|Original real-time LAN tank battle with room codes, shared WebSocket state, powerups, respawns, and 2-8 player skirmishes.|Multiplayer,Tank battle,LAN original"
 
 )
 
@@ -191,4 +199,8 @@ declare -A GAME_CATEGORIES=(
   ["pacman"]="arcade,retro,mobile-friendly,age-5-plus"
   ["snake"]="arcade,retro,mobile-friendly,age-5-plus"
   ["supertasball"]="idle,strategy,arcade,age-10-plus"
+  ["outpost-siege"]="tower-defense,strategy,arcade,simulation,mobile-friendly,age-10-plus"
+  ["breachline-tactics"]="tactical,roguelite,strategy,arcade,mobile-friendly,age-10-plus"
+  ["circuit-foundry"]="factory,automation,strategy,simulation,management,mobile-friendly,age-10-plus"
+  ["lan-tank-arena"]="multiplayer,action,arcade,strategy,mobile-friendly,age-10-plus"
 )

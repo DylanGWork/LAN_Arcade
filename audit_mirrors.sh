@@ -26,8 +26,7 @@ normalize_ref() {
 
 extract_refs() {
   local html_file="$1"
-  grep -Eoi '(src|href)=["'"'"'][^"'"'"']+["'"'"']' "$html_file" \
-    | sed -E 's/^(src|href)=["'"'"']([^"'"'"']+)["'"'"']$/\2/' \
+  perl -ne 'while (/<([a-zA-Z0-9]+)\b[^>]*\b(src|href)=["'"'"']([^"'"'"']+)["'"'"']/ig) { print lc($1)."|".lc($2)."|$3\n" }' "$html_file" \
     | sort -u || true
 }
 
@@ -43,6 +42,33 @@ resolve_local_path() {
   fi
 
   realpath -m "$target"
+}
+
+decode_mirror_filename_ref() {
+  local ref="$1"
+  ref="${ref//%3F/?}"
+  ref="${ref//%3f/?}"
+  ref="${ref//%3D/=}"
+  ref="${ref//%3d/=}"
+  ref="${ref//%26/&}"
+  printf '%s' "$ref"
+}
+
+ref_is_runtime_dependency() {
+  local tag="$1"
+  local attr="$2"
+
+  if [ "$attr" = "src" ]; then
+    return 0
+  fi
+
+  case "$tag" in
+    link)
+      return 0
+      ;;
+  esac
+
+  return 1
 }
 
 list_game_dirs() {
@@ -91,7 +117,7 @@ check_game_dir() {
   local game_name="${2:-}"
   local html_file html_dir
   local missing_count external_count
-  local raw_ref ref resolved
+  local raw_entry tag attr raw_ref ref resolved decoded_ref decoded_resolved
 
   if [ -z "$game_name" ]; then
     game_name="$(basename "$game_dir")"
@@ -118,7 +144,7 @@ check_game_dir() {
 
   html_dir="$(dirname "$html_file")"
 
-  while IFS= read -r raw_ref; do
+  while IFS='|' read -r tag attr raw_ref; do
     ref="$(normalize_ref "$raw_ref")"
     [ -z "$ref" ] && continue
 
@@ -127,16 +153,30 @@ check_game_dir() {
         continue
         ;;
       http://*|https://*|//*)
-        external_count=$((external_count + 1))
-        echo "$game_name|$ref" >> "$tmp_external"
+        if ref_is_runtime_dependency "$tag" "$attr"; then
+          external_count=$((external_count + 1))
+          echo "$game_name|$ref" >> "$tmp_external"
+        fi
         continue
         ;;
     esac
 
+    if [[ "$ref" =~ ^[A-Za-z][A-Za-z0-9+.-]*: ]]; then
+      continue
+    fi
+
+    if ! ref_is_runtime_dependency "$tag" "$attr"; then
+      continue
+    fi
+
     resolved="$(resolve_local_path "$html_dir" "$ref")"
     if [ ! -e "$resolved" ]; then
-      missing_count=$((missing_count + 1))
-      echo "$game_name|$ref|$resolved" >> "$tmp_missing"
+      decoded_ref="$(decode_mirror_filename_ref "$ref")"
+      decoded_resolved="$(resolve_local_path "$html_dir" "$decoded_ref")"
+      if [ ! -e "$decoded_resolved" ]; then
+        missing_count=$((missing_count + 1))
+        echo "$game_name|$ref|$resolved" >> "$tmp_missing"
+      fi
     fi
   done < <(extract_refs "$html_file")
 

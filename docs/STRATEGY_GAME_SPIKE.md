@@ -80,6 +80,12 @@ real phone/client connection test passes. It is much lighter than Freeciv-web,
 but it still needs a complete create-game, upload-turn, and download-turn loop
 from actual clients before camping.
 
+Memory fit:
+
+- under 2 GB RAM: not recommended for camping
+- 2-4 GB RAM: test with `UNCIV_JAVA_OPTS="-Xms64m -Xmx256m"`
+- 4 GB+ RAM: good first bigger-game trial, still verify with real clients
+
 ## Mindustry
 
 Mindustry remains the best real-time "wow" multiplayer candidate. Like Unciv,
@@ -87,3 +93,9 @@ the Pi hosts the server while players' devices do the graphics and controls.
 
 Recommendation: keep it optional and test it on the actual Pi with two clients.
 Start with a 512 MB JVM heap and a small map.
+
+Memory fit:
+
+- under 2 GB RAM: not recommended
+- 2-4 GB RAM: small maps only, start with `MINDUSTRY_XMX=512m`
+- 4 GB+ RAM: good candidate for a real LAN smoke test with two clients

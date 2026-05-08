@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#101722">
+  <title>LAN Tank Arena</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">LAN Arcade Multiplayer</p>
+        <h1>LAN Tank Arena</h1>
+      </div>
+      <div class="stat-strip">
+        <div><span>Status</span><strong id="statusValue">Lobby</strong></div>
+        <div><span>Room</span><strong id="roomValue">ALPHA</strong></div>
+        <div><span>Players</span><strong id="playersValue">0</strong></div>
+      </div>
+    </header>
+
+    <main class="game-layout">
+      <section class="arena-panel" aria-label="Tank arena">
+        <canvas id="gameCanvas" width="1280" height="800"></canvas>
+        <div id="toast" class="toast" aria-live="polite"></div>
+      </section>
+
+      <aside class="command-panel" aria-label="Tank controls">
+        <section class="panel-section lobby">
+          <div class="section-heading">
+            <span>Deploy</span>
+            <strong id="callsignLabel">Offline</strong>
+          </div>
+          <label>
+            Callsign
+            <input id="nameInput" type="text" maxlength="18" placeholder="Tank Ace" autocomplete="off">
+          </label>
+          <label>
+            Room
+            <input id="roomInput" type="text" maxlength="12" value="ALPHA" autocomplete="off">
+          </label>
+          <button id="joinButton" class="primary-button" type="button" disabled>Join Arena</button>
+        </section>
+
+        <section class="panel-section">
+          <div class="section-heading">
+            <span>Controls</span>
+            <strong>WASD</strong>
+          </div>
+          <div class="control-grid">
+            <button id="turnLeftButton" type="button">Left</button>
+            <button id="driveButton" type="button">Drive</button>
+            <button id="turnRightButton" type="button">Right</button>
+            <button id="fireButton" class="danger-button" type="button">Fire</button>
+          </div>
+        </section>
+
+        <section class="panel-section telemetry">
+          <div><span>HP</span><strong id="hpValue">--</strong></div>
+          <div><span>Shield</span><strong id="shieldValue">--</strong></div>
+          <div><span>Score</span><strong id="scoreValue">0</strong></div>
+        </section>
+
+        <section class="panel-section">
+          <div class="section-heading">
+            <span>Scoreboard</span>
+            <strong id="leaderValue">None</strong>
+          </div>
+          <div id="scoreboard" class="scoreboard"></div>
+        </section>
+      </aside>
+    </main>
+  </div>
+
+  <script src="./game.js"></script>
+</body>
+</html>

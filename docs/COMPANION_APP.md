@@ -192,6 +192,15 @@ The companion now has two native LAN service entries:
 - `Mindustry LAN Server` - a Raspberry Pi hosts the dedicated server on port `6567`; Android and desktop clients connect directly.
 - `Unciv LAN Server` - a Raspberry Pi hosts the turn-file server on port `8090`; Android and desktop Unciv clients connect directly.
 
+The setup script now prints a device-memory suitability check. It does not block
+the browser arcade install, but it warns when the box is too small for the
+larger service experiments:
+
+- under 2 GB RAM: keep to the browser arcade
+- 2-4 GB RAM: try only conservative Unciv/Mindustry settings
+- 4-8 GB RAM: run one bigger LAN service at a time
+- 8 GB+ RAM: suitable for broader service trials, while Freeciv-web remains experimental
+
 Setup notes live in:
 
 ```text

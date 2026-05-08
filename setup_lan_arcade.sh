@@ -12,6 +12,11 @@ LAN_ARCADE_SKIP_PACKAGE_INSTALL="${LAN_ARCADE_SKIP_PACKAGE_INSTALL:-0}"
 LAN_ARCADE_SKIP_MIRROR="${LAN_ARCADE_SKIP_MIRROR:-0}"
 LAN_ARCADE_SKIP_ADMIN_AUTH="${LAN_ARCADE_SKIP_ADMIN_AUTH:-0}"
 LAN_ARCADE_CATALOG_SOURCE="${LAN_ARCADE_CATALOG_SOURCE:-all-dirs}"
+LAN_ARCADE_SKIP_DEVICE_CHECKS="${LAN_ARCADE_SKIP_DEVICE_CHECKS:-0}"
+LAN_ARCADE_SKIP_OFFLINE_PATCH="${LAN_ARCADE_SKIP_OFFLINE_PATCH:-0}"
+LAN_ARCADE_SKIP_TANK_SERVICE="${LAN_ARCADE_SKIP_TANK_SERVICE:-0}"
+LAN_TANK_HOST="${LAN_TANK_HOST:-0.0.0.0}"
+LAN_TANK_PORT="${LAN_TANK_PORT:-8787}"
 
 RUNNING_AS_ROOT=0
 if [ "$(id -u)" -eq 0 ]; then
@@ -47,9 +52,16 @@ declare -a CATEGORY_ORDER=(
   age-13-plus
   puzzle
   arcade
+  multiplayer
+  action
   idle
   clicker
   strategy
+  tactical
+  roguelite
+  tower-defense
+  factory
+  automation
   simulation
   management
   adventure
@@ -76,9 +88,16 @@ declare -A CATEGORY_LABELS=(
   ["age-13-plus"]="Ages 13+"
   ["puzzle"]="Puzzle"
   ["arcade"]="Arcade"
+  ["multiplayer"]="Multiplayer"
+  ["action"]="Action"
   ["idle"]="Idle"
   ["clicker"]="Clicker"
   ["strategy"]="Strategy"
+  ["tactical"]="Tactical"
+  ["roguelite"]="Roguelite"
+  ["tower-defense"]="Tower Defense"
+  ["factory"]="Factory"
+  ["automation"]="Automation"
   ["simulation"]="Simulation"
   ["management"]="Management"
   ["adventure"]="Adventure"
@@ -201,12 +220,52 @@ fi
 echo "Using arcade name: $ARCADE_NAME_USE"
 echo
 
+device_memory_mb() {
+  if [ -r /proc/meminfo ]; then
+    awk '/^MemTotal:/ { printf "%.0f\n", $2 / 1024 }' /proc/meminfo
+  else
+    printf '0\n'
+  fi
+}
+
+print_device_suitability() {
+  local mem_mb arch
+  [ "$LAN_ARCADE_SKIP_DEVICE_CHECKS" = "1" ] && return 0
+
+  mem_mb="$(device_memory_mb)"
+  arch="$(uname -m 2>/dev/null || printf 'unknown')"
+
+  echo "===== Device suitability check ====="
+  if [ "$mem_mb" -gt 0 ]; then
+    echo "Detected memory: ${mem_mb} MB (${arch})"
+  else
+    echo "Detected memory: unknown (${arch})"
+  fi
+
+  if [ "$mem_mb" -gt 0 ] && [ "$mem_mb" -lt 2048 ]; then
+    echo "WARN: This device is tight for bigger LAN games."
+    echo "      Browser arcade pages should be fine, but skip Mindustry/Unciv server containers for camping."
+  elif [ "$mem_mb" -gt 0 ] && [ "$mem_mb" -lt 4096 ]; then
+    echo "WARN: Bigger LAN games may work only with conservative settings."
+    echo "      Try Unciv with -Xmx256m and Mindustry with -Xmx512m on a small map."
+  elif [ "$mem_mb" -gt 0 ] && [ "$mem_mb" -lt 7680 ]; then
+    echo "OK: This should fit the browser arcade plus one bigger LAN service at a time."
+    echo "    Freeciv-web remains experimental; test it before relying on it offline."
+  else
+    echo "OK: Memory looks healthy for the browser arcade and bigger LAN service trials."
+    echo "    Still test Mindustry/Unciv with real phones before a trip."
+  fi
+  echo
+}
+
+print_device_suitability
+
 # ---------- Base packages ----------
 if [ "$LAN_ARCADE_SKIP_PACKAGE_INSTALL" = "1" ]; then
   echo "Skipping package installation because LAN_ARCADE_SKIP_PACKAGE_INSTALL=1"
 else
   apt-get update -y
-  apt-get install -y apache2 apache2-utils wget unzip git
+  apt-get install -y apache2 apache2-utils wget unzip git nodejs
 
   if command -v systemctl >/dev/null 2>&1; then
     systemctl enable --now apache2 || true
@@ -429,6 +488,21 @@ mirror_content_is_complete() {
   return 0
 }
 
+patch_mirror_for_offline_use() {
+  local game_name="$1"
+  local target_dir="$2"
+  local patcher="$SCRIPT_DIR/scripts/offline_patch_mirrors.sh"
+
+  [ "$LAN_ARCADE_SKIP_OFFLINE_PATCH" = "1" ] && return 0
+  [ -d "$target_dir" ] || return 0
+
+  if [ ! -x "$patcher" ]; then
+    return 0
+  fi
+
+  "$patcher" "$MIRRORS_DIR" "$game_name" || true
+}
+
 discover_mirror_dirs() {
   local -n out_ref="$1"
   local dir_name
@@ -530,6 +604,72 @@ CONF
   fi
   if command -v a2enconf >/dev/null 2>&1; then
     a2enconf lan-arcade-admin >/dev/null 2>&1 || true
+  fi
+}
+
+configure_tank_arena_service() {
+  local node_bin service_group unit_file
+
+  if [ "$LAN_ARCADE_SKIP_TANK_SERVICE" = "1" ]; then
+    echo "Skipping LAN Tank Arena service because LAN_ARCADE_SKIP_TANK_SERVICE=1"
+    return 0
+  fi
+
+  if [ "$LAN_ARCADE_SKIP_PACKAGE_INSTALL" = "1" ]; then
+    echo "Skipping LAN Tank Arena service because LAN_ARCADE_SKIP_PACKAGE_INSTALL=1"
+    return 0
+  fi
+
+  if [ "$RUNNING_AS_ROOT" -ne 1 ]; then
+    echo "Skipping LAN Tank Arena service because this run is not root."
+    return 0
+  fi
+
+  if ! command -v systemctl >/dev/null 2>&1; then
+    echo "WARN: systemctl not found; LAN Tank Arena service was not installed."
+    return 0
+  fi
+
+  node_bin="$(command -v node 2>/dev/null || command -v nodejs 2>/dev/null || true)"
+  if [ -z "$node_bin" ]; then
+    echo "WARN: node not found; LAN Tank Arena service was not installed."
+    return 0
+  fi
+
+  if [ ! -f "$SCRIPT_DIR/services/lan-tank-arena/server.mjs" ]; then
+    echo "WARN: LAN Tank Arena server missing; service was not installed."
+    return 0
+  fi
+
+  service_group="$(id -gn "$LOCAL_USER" 2>/dev/null || printf '%s' "$LOCAL_USER")"
+  unit_file="/etc/systemd/system/lan-tank-arena.service"
+
+  cat > "$unit_file" <<CONF
+[Unit]
+Description=LAN Arcade Tank Arena WebSocket Service
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=$SCRIPT_DIR
+Environment=LAN_TANK_HOST=$LAN_TANK_HOST
+Environment=LAN_TANK_PORT=$LAN_TANK_PORT
+ExecStart=$node_bin $SCRIPT_DIR/services/lan-tank-arena/server.mjs
+Restart=on-failure
+RestartSec=2
+User=$LOCAL_USER
+Group=$service_group
+
+[Install]
+WantedBy=multi-user.target
+CONF
+
+  chmod 644 "$unit_file"
+  systemctl daemon-reload || true
+  if systemctl enable --now lan-tank-arena.service; then
+    echo "LAN Tank Arena service enabled on ${LAN_TANK_HOST}:${LAN_TANK_PORT}."
+  else
+    echo "WARN: LAN Tank Arena service could not be started. Check: systemctl status lan-tank-arena.service"
   fi
 }
 
@@ -1408,6 +1548,26 @@ write_wiki_index() {
       </article>
 
       <article class="panel">
+        <h2>Original Browser Games</h2>
+        <ul>
+          <li><code>outpost-siege</code> - tower defense with waves, upgrades, and local save progress.</li>
+          <li><code>breachline-tactics</code> - turn-based tactical grid combat with squad abilities.</li>
+          <li><code>circuit-foundry</code> - mini factory automation with generators, belts, and assemblers.</li>
+          <li><code>lan-tank-arena</code> - LAN multiplayer tank combat backed by a local WebSocket server.</li>
+        </ul>
+      </article>
+
+      <article class="panel">
+        <h2>LAN Tank Arena</h2>
+        <ul>
+          <li>Play URL: <code>/mirrors/lan-tank-arena/</code>.</li>
+          <li>Service: <code>lan-tank-arena.service</code>.</li>
+          <li>Default health check: <code>http://127.0.0.1:8787/tank-arena/healthz</code>.</li>
+          <li>Players join with a callsign and shared room code from any LAN browser.</li>
+        </ul>
+      </article>
+
+      <article class="panel">
         <h2>Companion App</h2>
         <ul>
           <li>Android APK: <code>/mirrors/games/downloads/lan-arcade-companion-debug.apk</code>.</li>
@@ -1424,6 +1584,17 @@ write_wiki_index() {
           <li>Run <code>sudo ./setup_lan_arcade.sh</code> again.</li>
           <li>Catalog, pages, and admin controls are regenerated.</li>
           <li>Game folders with completion markers are skipped safely.</li>
+        </ul>
+      </article>
+
+      <article class="panel">
+        <h2>QA Flow</h2>
+        <ul>
+          <li>Static mirror audit: <code>npm run qa:static</code>.</li>
+          <li>Catalog browser smoke: <code>npm run qa:smoke -- --catalog</code>.</li>
+          <li>Focused game gate: <code>npm run qa:game -- &lt;game-id&gt;</code>.</li>
+          <li>Tank multiplayer gate: <code>npm run qa:tank</code>.</li>
+          <li>Chunk long runs with <code>--offset</code> and <code>--limit</code>.</li>
         </ul>
       </article>
     </section>
@@ -2245,12 +2416,18 @@ else
     MARKER="$TARGET/$READY_MARKER"
 
     if [ -f "$MARKER" ]; then
-      if mirror_content_is_complete "$GAME" "$TARGET"; then
+      if [[ "$URL" == LOCAL_DIR::* ]]; then
+        echo "Refreshing local bundled game $GAME"
+        rm -rf "$TARGET"
+      elif mirror_content_is_complete "$GAME" "$TARGET"; then
+        patch_mirror_for_offline_use "$GAME" "$TARGET"
         echo "OK   $GAME already exists, skipping download"
         continue
       fi
-      echo "WARN $GAME has a stale completion marker; re-downloading."
-      rm -f "$MARKER"
+      if [ -d "$TARGET" ]; then
+        echo "WARN $GAME has a stale completion marker; re-downloading."
+        rm -f "$MARKER"
+      fi
     fi
 
     if [ -d "$TARGET" ] && [ -n "$(find "$TARGET" -mindepth 1 ! -name "$READY_MARKER" -print -quit 2>/dev/null || true)" ]; then
@@ -2265,6 +2442,12 @@ else
     fi
     cd "$TARGET"
     download_ok=1
+
+    local_source_dir=""
+    if [[ "$URL" == LOCAL_DIR::* ]]; then
+      local_spec="${URL#LOCAL_DIR::}"
+      local_source_dir="$SCRIPT_DIR/$local_spec"
+    fi
 
     git_repo=""
     git_branch=""
@@ -2291,7 +2474,17 @@ else
       fi
     fi
 
-    if [ -n "$git_repo" ]; then
+    if [ -n "$local_source_dir" ]; then
+      if [ -d "$local_source_dir" ]; then
+        shopt -s dotglob nullglob
+        cp -a "$local_source_dir"/* "$TARGET"/ 2>/dev/null || true
+        shopt -u dotglob nullglob
+        promote_entrypoint_if_missing "$TARGET"
+      else
+        echo "⚠️ Local source directory not found for $GAME: $local_source_dir"
+        download_ok=0
+      fi
+    elif [ -n "$git_repo" ]; then
       if [ -z "$git_branch" ]; then
         git_branch="main"
       fi
@@ -2403,6 +2596,8 @@ else
       flatten_mirror "$URL" "$TARGET"
     fi
 
+    patch_mirror_for_offline_use "$GAME" "$TARGET"
+
     if [ "$download_ok" -eq 1 ] && mirror_content_is_complete "$GAME" "$TARGET"; then
       touch "$MARKER"
     else
@@ -2433,6 +2628,7 @@ if [ "$LAN_ARCADE_SKIP_ADMIN_AUTH" = "1" ]; then
 else
   configure_admin_auth
 fi
+configure_tank_arena_service
 
 if [ "$RUNNING_AS_ROOT" -eq 1 ]; then
   chown -R www-data:www-data "$INDEX_DIR"
@@ -2463,3 +2659,4 @@ echo "Arcade: http://<your-server-ip>/mirrors/games/"
 echo "Wiki:   http://<your-server-ip>/mirrors/games/wiki/"
 echo "Admin:  http://<your-server-ip>/mirrors/games/admin/ (HTTP Basic Auth)"
 echo "APK:    http://<your-server-ip>/mirrors/games/downloads/lan-arcade-companion-debug.apk"
+echo "Tank:   http://<your-server-ip>/mirrors/lan-tank-arena/ (service port ${LAN_TANK_PORT})"
