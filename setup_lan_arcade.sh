@@ -872,6 +872,52 @@ write_public_index() {
     .toolbar-link:hover {
       border-color: var(--accent);
     }
+    .download-panel {
+      margin: 0 auto 1rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: linear-gradient(135deg, rgba(17, 28, 40, 0.96), rgba(10, 20, 31, 0.96));
+      padding: 0.85rem;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 0.9rem;
+      align-items: center;
+    }
+    .download-panel h2 {
+      margin: 0 0 0.25rem;
+      font-size: 1rem;
+    }
+    .download-panel p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.88rem;
+      line-height: 1.4;
+    }
+    .download-actions {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+    .download-link {
+      border: 1px solid rgba(148, 163, 184, 0.35);
+      border-radius: 999px;
+      color: var(--text);
+      text-decoration: none;
+      padding: 0.45rem 0.8rem;
+      font-size: 0.84rem;
+      font-weight: 700;
+      background: rgba(15, 23, 42, 0.76);
+      white-space: nowrap;
+    }
+    .download-link.primary {
+      border-color: rgba(76, 175, 80, 0.55);
+      background: var(--accent-soft);
+      color: #bbf7d0;
+    }
+    .download-link:hover {
+      border-color: var(--accent);
+    }
     main {
       padding: 1rem 1.5rem 2rem;
       max-width: 1100px;
@@ -988,6 +1034,9 @@ write_public_index() {
     @media (max-width: 600px) {
       header { padding: 1.25rem 1rem 0.5rem; }
       main { padding: 0.5rem 1rem 1.5rem; }
+      .download-panel { grid-template-columns: 1fr; }
+      .download-actions { justify-content: stretch; }
+      .download-link { flex: 1; text-align: center; }
     }
   </style>
 </head>
@@ -1000,10 +1049,21 @@ write_public_index() {
     </div>
     <div class="toolbar">
       <a class="toolbar-link" href="./wiki/">Offline Wiki</a>
+      <a class="toolbar-link" href="./downloads/">Downloads</a>
       <a class="toolbar-link" href="./admin/">Admin Panel</a>
     </div>
   </header>
   <main>
+    <section class="download-panel" aria-label="Downloads">
+      <div>
+        <h2>Android Companion App</h2>
+        <p>Download the APK on Android devices, install it, then set the app server to <code>http://&lt;server-ip&gt;/arcade-api/</code>. Browser games work without installing anything.</p>
+      </div>
+      <div class="download-actions">
+        <a class="download-link primary" href="./downloads/lan-arcade-companion-debug.apk">Download APK</a>
+        <a class="download-link" href="./downloads/">Setup Instructions</a>
+      </div>
+    </section>
     <div id="status" class="status">Loading game catalog...</div>
     <div id="categoryFilters" class="filters" hidden></div>
     <section id="grid" class="grid" aria-live="polite"></section>
@@ -1250,12 +1310,19 @@ publish_companion_downloads() {
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>LAN Arcade Downloads</title>
   <style>
-    :root { color-scheme: dark; --bg: #07101a; --panel: #101b2b; --text: #eef4fa; --muted: #a2b0bf; --line: #213245; --accent: #5de4c7; }
+    :root { color-scheme: dark; --bg: #07101a; --panel: #101b2b; --text: #eef4fa; --muted: #a2b0bf; --line: #213245; --accent: #5de4c7; --accent-soft: rgba(93, 228, 199, 0.12); }
     body { margin: 0; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: var(--bg); color: var(--text); }
     main { width: min(980px, calc(100vw - 24px)); margin: 0 auto; padding: 1.5rem 0 2rem; }
     a { color: var(--accent); font-weight: 800; }
     .card { border: 1px solid var(--line); border-radius: 8px; background: var(--panel); padding: 1rem; margin-top: 1rem; }
     .muted { color: var(--muted); }
+    .top-actions { display: flex; gap: 0.55rem; flex-wrap: wrap; margin-top: 1rem; }
+    .button-link { border: 1px solid var(--line); border-radius: 999px; color: var(--text); display: inline-flex; padding: 0.45rem 0.85rem; text-decoration: none; }
+    .button-link.primary { background: var(--accent-soft); border-color: rgba(93, 228, 199, 0.55); color: #ccfff5; }
+    .steps { display: grid; gap: 0.45rem; margin: 0.7rem 0 0; padding-left: 1.15rem; }
+    .steps li { color: var(--muted); line-height: 1.45; }
+    code { background: rgba(162, 176, 191, 0.14); border-radius: 6px; color: #d7e7f6; padding: 0.1rem 0.3rem; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 0.85rem; }
     .screens { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.75rem; margin-top: 0.75rem; }
     .screens img { width: 100%; border: 1px solid var(--line); border-radius: 8px; background: #050b12; }
   </style>
@@ -1263,12 +1330,41 @@ publish_companion_downloads() {
 <body>
   <main>
     <h1>LAN Arcade Downloads</h1>
-    <p class="muted">Local files for phones and tablets on this offline network.</p>
+    <p class="muted">Local files and setup notes for phones and tablets on this offline network.</p>
+    <div class="top-actions">
+      <a class="button-link" href="../">Back to Arcade</a>
+      <a class="button-link" href="../wiki/">Offline Wiki</a>
+      <a class="button-link primary" href="./lan-arcade-companion-debug.apk">Download Android APK</a>
+    </div>
+
+    <div class="grid">
+      <section class="card">
+        <h2>Android Companion APK</h2>
+        <p><a href="./lan-arcade-companion-debug.apk">Download lan-arcade-companion-debug.apk</a></p>
+        <p class="muted">Install this on Android phones that will connect to the LAN Arcade server. Browser games still work directly from the arcade page without this app.</p>
+      </section>
+      <section class="card">
+        <h2>Server Addresses</h2>
+        <p class="muted">Use these after replacing <code>&lt;server-ip&gt;</code> with the LAN Arcade host address.</p>
+        <ol class="steps">
+          <li>Browser arcade: <code>http://&lt;server-ip&gt;/mirrors/games/</code></li>
+          <li>Companion app server: <code>http://&lt;server-ip&gt;/arcade-api/</code></li>
+          <li>Tank Arena: <code>http://&lt;server-ip&gt;/mirrors/lan-tank-arena/</code></li>
+        </ol>
+      </section>
+    </div>
+
     <section class="card">
-      <h2>Android Companion APK</h2>
-      <p><a href="./lan-arcade-companion-debug.apk">Download lan-arcade-companion-debug.apk</a></p>
-      <p class="muted">Install this on Android phones that will connect to the LAN Arcade server.</p>
+      <h2>Android Install Steps</h2>
+      <ol class="steps">
+        <li>Open this downloads page on the Android phone or tablet.</li>
+        <li>Tap <strong>Download Android APK</strong> and keep the file if the browser asks.</li>
+        <li>Open the downloaded APK. If Android blocks it, allow installs from this browser for this one install.</li>
+        <li>Open LAN Arcade Companion and set the server URL to <code>http://&lt;server-ip&gt;/arcade-api/</code>.</li>
+        <li>Keep using <code>/mirrors/games/</code> in the browser for normal web games; the APK adds profiles, scores, app-only games, and service cards.</li>
+      </ol>
     </section>
+
     <section class="card">
       <h2>Screenshots</h2>
       <div class="screens">
@@ -1571,6 +1667,7 @@ write_wiki_index() {
         <h2>Companion App</h2>
         <ul>
           <li>Android APK: <code>/mirrors/games/downloads/lan-arcade-companion-debug.apk</code>.</li>
+          <li>Downloads and install notes: <code>/mirrors/games/downloads/</code>.</li>
           <li>Server URL on phones: <code>http://&lt;pi-ip&gt;/arcade-api/</code>.</li>
           <li>Includes app-only games, local profiles, scores, and Pi service cards.</li>
           <li>Mirrors the PestSense WiFi provisioning app handoff style: a direct APK download plus simple local instructions.</li>

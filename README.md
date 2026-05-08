@@ -38,6 +38,7 @@ http://<server-ip>/mirrors/games/
 - 🗂 Category-aware – public category chips + admin filters across educational, ages 5+/10+/13+, maths, english, typing, and genre categories
 - 🔐 Admin controls – password-protected admin page to disable full categories or individual games
 - 📚 Offline wiki – local wiki page with docs + searchable game catalog at `/mirrors/games/wiki/`
+- 📦 Downloads page – Android companion APK and setup notes at `/mirrors/games/downloads/`
 - 🧪 QA harness – static, desktop, mobile, per-game, and multiplayer smoke checks
 - 🔁 Idempotent – safe to rerun; completed game folders are skipped via marker files
 - 🧩 Easy to extend – update URLs, card data, and categories in `games.meta.sh`
@@ -180,6 +181,17 @@ Use it as a LAN-local reference for:
 - Category/tag overview
 - Admin control instructions
 - Important files/paths
+
+Downloads page:
+```text
+http://<server-ip>/mirrors/games/downloads/
+```
+
+Use it from Android phones/tablets to download the companion APK and see setup instructions. Browser games still work directly from `/mirrors/games/`; the APK adds the companion app experience with profiles, scores, app-only games, and service cards. In the companion app, set the server field to:
+
+```text
+http://<server-ip>/arcade-api/
+```
 
 # Admin controls
 
