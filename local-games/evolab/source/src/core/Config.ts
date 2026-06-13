@@ -41,7 +41,7 @@ export const Config = {
   GLUCOSE_COUNT: 60, // Increased from 40 to match larger map size
   GLUCOSE_RADIUS: 8,
   GLUCOSE_COLOR: 0xffd700,
-  GLUCOSE_RESPAWN_TIME: 8000, // Reduced from 10000 - faster respawn
+  GLUCOSE_RESPAWN_TIME: 8, // Seconds; resource.update receives deltaTime in seconds
   RESOURCE_COLLECTION_RANGE: 44, // Wider pickup radius so visual overlaps reliably collect
   GOLDEN_RESOURCE_CHANCE: 0.02, // 2% chance for golden resource (10x value)
   GOLDEN_RESOURCE_DNA_MULTIPLIER: 10, // 10x DNA from golden resources

@@ -15,3 +15,4 @@ Local LAN Arcade changes:
 - Added narrow-screen layout guards so panels do not pile up over the playfield on phones.
 - Added visible food feedback: wider glucose pickup radius, eating sparkles, floating +ATP labels, and a HUD Food Eaten counter.
 - Reworked the trait editor with +/- buttons, number inputs, trait-specific change ranges, and inline DNA budget feedback instead of alert popups.
+- Fixed glucose respawn timing: resource updates use seconds, so respawn is 8 seconds rather than an accidental 8000 seconds.
