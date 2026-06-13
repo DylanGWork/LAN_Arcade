@@ -50,8 +50,9 @@ export class AutoPilot {
     // Must match Cell.drainATP() calculation including metabolismRate
     const baseDrain = Config.ATP_DRAIN_RATE;
     const sizeDrain = player.traits.size * Config.ATP_DRAIN_MULTIPLIER_SIZE;
-    const drainRate = (baseDrain + sizeDrain) * player.traits.metabolismRate;
-    const projectedATP = player.traits.atp - (drainRate * Config.AUTO_PILOT_STARVATION_WINDOW_SECONDS);
+    const energyEfficiency = Math.max(0.25, player.traits.energyEfficiency || 1);
+    const drainRatePerSecond = ((baseDrain + sizeDrain) * player.traits.metabolismRate * Config.TARGET_FPS) / energyEfficiency;
+    const projectedATP = player.traits.atp - (drainRatePerSecond * Config.AUTO_PILOT_STARVATION_WINDOW_SECONDS);
     const projectedATPRatio = projectedATP / player.traits.maxATP;
     
     const preferredResourceType = this.getNeededResourceType(player, atpRatio, projectedATPRatio);
@@ -223,7 +224,7 @@ export class AutoPilot {
     let nearestDistance = Infinity;
 
     for (const cell of allCells) {
-      if (cell.id === player.id || cell.isPlayer) continue;
+      if (cell.id === player.id || cell.isPlayer || this.isSamePlayerSpecies(player, cell)) continue;
       
       // Consider cells with high aggression and larger size as predators
       const isPredator = 
@@ -244,10 +245,15 @@ export class AutoPilot {
 
   private shouldFlee(player: Cell, predator: Cell): boolean {
     const distance = this.getDistance(player.position, predator.position);
-    const safeDistance = player.traits.visionRange || 200;
+    const fear = Math.max(0, Math.min(10, player.traits.fearResponse || 5));
+    const safeDistance = (player.traits.visionRange || 200) * (0.35 + fear * 0.13);
     
-    // Flee if predator is within vision range
+    // Flee if predator is within a fear-scaled safe distance.
     return distance < safeDistance;
+  }
+
+  private isSamePlayerSpecies(a: Cell, b: Cell): boolean {
+    return a.id.startsWith('player-species-') && b.id.startsWith('player-species-');
   }
 
   private getNeededResourceType(player: Cell, atpRatio: number, projectedATPRatio: number): ResourceType | null {

@@ -21,6 +21,12 @@ interface TraitConfig {
   maxDelta: number;
 }
 
+interface TraitHelp {
+  summary: string;
+  higher: string;
+  lower: string;
+}
+
 interface TraitSection {
   title: string;
   traits: TraitConfig[];
@@ -77,6 +83,108 @@ const traitSections: TraitSection[] = [
     ],
   },
 ];
+
+const traitHelp: Partial<Record<keyof Traits, TraitHelp>> = {
+  metabolismRate: {
+    summary: 'How quickly cells burn energy and run their body.',
+    higher: 'More active, but ATP falls faster.',
+    lower: 'Conserves ATP, but cells feel less lively.',
+  },
+  energyEfficiency: {
+    summary: 'How much work cells get from each ATP point.',
+    higher: 'Better survival because movement and metabolism cost less.',
+    lower: 'Wastes ATP faster.',
+  },
+  photosynthesis: {
+    summary: 'Passive ATP gained from bright shallow areas.',
+    higher: 'Helps in safer lit biomes.',
+    lower: 'Pushes the species to forage more.',
+  },
+  size: {
+    summary: 'Body size, visibility, and collision presence.',
+    higher: 'Tougher and more imposing, but hungrier.',
+    lower: 'Cheaper to keep alive, but more fragile.',
+  },
+  speed: {
+    summary: 'How quickly cells can cross the map.',
+    higher: 'Reaches food and escapes threats sooner.',
+    lower: 'Saves some energy but can miss resources.',
+  },
+  armor: {
+    summary: 'Reduces combat and environmental damage.',
+    higher: 'Survives hits and harsh biomes longer.',
+    lower: 'Leaves cells exposed.',
+  },
+  regeneration: {
+    summary: 'Health recovered every second while alive.',
+    higher: 'Heals chip damage from fights and hazards.',
+    lower: 'Damage sticks around longer.',
+  },
+  visionRange: {
+    summary: 'How far cells can notice food and threats.',
+    higher: 'Finds distant resources, but also reacts to distant danger.',
+    lower: 'Less distraction, but easier to miss food.',
+  },
+  chemotaxis: {
+    summary: 'Chemical sense for tracking nutrients.',
+    higher: 'Better food-seeking behavior.',
+    lower: 'More random wandering.',
+  },
+  hearing: {
+    summary: 'Sensitivity to nearby movement and danger.',
+    higher: 'Earlier warning around threats.',
+    lower: 'Less skittish, but easier to surprise.',
+  },
+  aggression: {
+    summary: 'How willing cells are to fight.',
+    higher: 'More predator-like behavior.',
+    lower: 'More peaceful foraging.',
+  },
+  intelligence: {
+    summary: 'Decision quality for survival behavior.',
+    higher: 'Better prioritising food, safety, and reproduction.',
+    lower: 'Simpler wandering.',
+  },
+  fearResponse: {
+    summary: 'How readily cells flee when danger is nearby.',
+    higher: 'Safer around predators, but may abandon food.',
+    lower: 'Braver around resources, but takes more risks.',
+  },
+  toxinStrength: {
+    summary: 'Extra damage when fighting.',
+    higher: 'Better offensive pressure.',
+    lower: 'Less combat payoff.',
+  },
+  speedBurstPower: {
+    summary: 'Emergency burst movement potential.',
+    higher: 'Better escapes and chases.',
+    lower: 'Steadier but less explosive movement.',
+  },
+  camouflage: {
+    summary: 'How hard cells are to notice.',
+    higher: 'Avoids some predator attention.',
+    lower: 'More visible in the ecosystem.',
+  },
+  temperatureTolerance: {
+    summary: 'Protection from hot and cold biomes.',
+    higher: 'Less health loss in volcanic or frozen areas.',
+    lower: 'Needs safer temperatures.',
+  },
+  pressureResistance: {
+    summary: 'Protection in deep water.',
+    higher: 'Less damage in abyss/deep pressure zones.',
+    lower: 'Best kept in shallow regions.',
+  },
+  toxinResistance: {
+    summary: 'Protection from radiation and toxic regions.',
+    higher: 'Less environmental poison/radiation damage.',
+    lower: 'Avoid polluted or crystal-heavy areas.',
+  },
+};
+
+const formatTraitHelp = (help: TraitHelp): string => `${help.summary}
+Higher: ${help.higher}
+Lower: ${help.lower}`;
 
 export const TraitEditor: React.FC<TraitEditorProps> = ({
   currentTraits,
@@ -194,11 +302,17 @@ export const TraitEditor: React.FC<TraitEditorProps> = ({
     const allowedRange = getAllowedRange(config);
     const diff = modifiedValue - currentValue;
     const traitCost = Math.abs(diff) * Config.DNA_COST_PER_TRAIT_CHANGE;
+    const help = traitHelp[config.key];
 
     return (
       <div className="trait-row" key={config.key}>
         <label className="trait-label" htmlFor={`trait-${config.key}`}>
-          {config.label}
+          <span className="trait-label-text">{config.label}</span>
+          {help && (
+            <span className="trait-help" tabIndex={0} title={formatTraitHelp(help)} aria-label={`${config.label}: ${help.summary}`}>
+              ?
+            </span>
+          )}
           {hasChanged && <span className="changed-indicator">*</span>}
         </label>
 
@@ -278,7 +392,7 @@ export const TraitEditor: React.FC<TraitEditorProps> = ({
             {statusMessage && <div className="status-message">{statusMessage}</div>}
           </div>
 
-          <div className="editor-content">
+          <div className="editor-content" onWheel={e => e.stopPropagation()} onTouchMove={e => e.stopPropagation()}>
             {traitSections.map(section => (
               <div className="trait-section" key={section.title}>
                 <h3>{section.title}</h3>
@@ -300,7 +414,7 @@ export const TraitEditor: React.FC<TraitEditorProps> = ({
               </button>
             </div>
             <div className="info-text">
-              Use sliders, +/- buttons, or type a value. Vision can shift by up to 100 per generation; most traits shift by up to 2.
+              Use sliders, +/- buttons, or type a value. Applied changes affect living cells immediately and spend DNA.
             </div>
           </div>
 
@@ -316,14 +430,14 @@ export const TraitEditor: React.FC<TraitEditorProps> = ({
           justify-content: center;
           align-items: center;
           z-index: 1000;
+          overscroll-behavior: contain;
         }
 
         .trait-editor {
           background: #1a1e2e;
-          border-radius: 12px;
-          width: 92%;
-          max-width: 980px;
-          max-height: 90vh;
+          border-radius: 8px;
+          width: min(1080px, 96vw);
+          max-height: min(92vh, 860px);
           overflow: hidden;
           display: flex;
           flex-direction: column;
@@ -365,7 +479,10 @@ export const TraitEditor: React.FC<TraitEditorProps> = ({
         .editor-content {
           flex: 1;
           overflow-y: auto;
+          overflow-x: hidden;
           padding: 20px;
+          min-height: 0;
+          scrollbar-gutter: stable;
         }
 
         .trait-section {
@@ -380,8 +497,8 @@ export const TraitEditor: React.FC<TraitEditorProps> = ({
 
         .trait-row {
           display: grid;
-          grid-template-columns: 170px minmax(160px, 1fr) 36px 96px 36px 130px;
-          gap: 10px;
+          grid-template-columns: minmax(126px, 150px) minmax(96px, 1fr) 34px 86px 34px minmax(82px, 102px);
+          gap: 8px;
           align-items: center;
           margin-bottom: 12px;
         }
@@ -389,6 +506,31 @@ export const TraitEditor: React.FC<TraitEditorProps> = ({
         .trait-label {
           color: #ddd;
           font-size: 14px;
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          min-width: 0;
+        }
+
+        .trait-label-text {
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+
+        .trait-help {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          width: 18px;
+          height: 18px;
+          flex: 0 0 auto;
+          border: 1px solid #4caf50;
+          border-radius: 50%;
+          color: #b5ffbd;
+          font-size: 12px;
+          font-weight: bold;
+          cursor: help;
         }
 
         .changed-indicator {
@@ -402,7 +544,7 @@ export const TraitEditor: React.FC<TraitEditorProps> = ({
         }
 
         .stepper-button {
-          width: 36px;
+          width: 34px;
           height: 34px;
           border: 1px solid #4caf50;
           border-radius: 6px;
@@ -418,7 +560,7 @@ export const TraitEditor: React.FC<TraitEditorProps> = ({
         }
 
         .trait-number {
-          width: 96px;
+          width: 86px;
           height: 34px;
           border: 1px solid #4caf50;
           border-radius: 6px;
@@ -504,6 +646,27 @@ export const TraitEditor: React.FC<TraitEditorProps> = ({
           text-align: center;
         }
 
+        @media (max-width: 1080px) {
+          .trait-row {
+            grid-template-columns: minmax(118px, 1fr) 34px 82px 34px;
+            gap: 8px;
+          }
+
+          .trait-label,
+          .trait-slider,
+          .trait-value {
+            grid-column: 1 / -1;
+          }
+
+          .trait-label-text {
+            white-space: normal;
+          }
+
+          .trait-value {
+            align-items: flex-start;
+          }
+        }
+
         @media (max-width: 760px) {
           .trait-editor {
             width: 96%;
@@ -520,15 +683,6 @@ export const TraitEditor: React.FC<TraitEditorProps> = ({
             gap: 8px;
           }
 
-          .trait-label,
-          .trait-slider,
-          .trait-value {
-            grid-column: 1 / -1;
-          }
-
-          .trait-value {
-            align-items: flex-start;
-          }
 
           .button-group {
             flex-wrap: wrap;

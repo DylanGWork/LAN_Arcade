@@ -17,3 +17,4 @@ Local LAN Arcade changes:
 - Reworked the trait editor with +/- buttons, number inputs, trait-specific change ranges, and inline DNA budget feedback instead of alert popups.
 - Fixed glucose respawn timing: resource updates use seconds, so respawn is 8 seconds rather than an accidental 8000 seconds.
 - Added visible species breeding: amino acid/phosphate resources now spawn, auto mode seeks needed nutrients, asexual/sexual modes produce offspring, and the HUD tracks births.
+- Improved EvoLab usability/performance: trait help tooltips, scroll-safe trait editor layout, immediate DNA-spending trait application, dynamic map-fit zoom, capped particle effects, and lower renderer pixel cost.

@@ -17,9 +17,10 @@ export class PixiApp {
   private mapBoundary: Graphics | null = null;
   private backgroundLayer: Graphics | null = null;
   private isInitialized = false;
-  private zoomLevel: number = 0.5; // Default to fully zoomed out
-  private minZoom: number = 0.5;
+  private zoomLevel: number = 0.5;
+  private minZoom: number = 0.3;
   private maxZoom: number = 3.0;
+  private resizeHandler: (() => void) | null = null;
 
   constructor() {
     this.app = new Application();
@@ -42,14 +43,19 @@ export class PixiApp {
     // Use full viewport size
     const width = window.innerWidth;
     const height = window.innerHeight;
+    this.updateZoomLimits(width, height);
+    this.zoomLevel = this.minZoom;
 
     await this.app.init({
       width,
       height,
       backgroundColor: Config.BACKGROUND_COLOR,
-      resolution: window.devicePixelRatio || 1,
+      resolution: Math.min(window.devicePixelRatio || 1, 1.5),
       autoDensity: true,
-      antialias: true,
+      antialias: false,
+      preference: 'webgl',
+      preferWebGLVersion: 1,
+      powerPreference: 'low-power',
       resizeTo: window, // Auto-resize with window
     });
 
@@ -86,7 +92,19 @@ export class PixiApp {
     this.worldContainer.x = screenSize.width / 2;
     this.worldContainer.y = screenSize.height / 2;
 
+    this.resizeHandler = () => {
+      this.updateZoomLimits();
+      this.setZoom(this.zoomLevel);
+      this.updateBackgroundLayer();
+    };
+    window.addEventListener('resize', this.resizeHandler);
+
     this.isInitialized = true;
+  }
+
+  private updateZoomLimits(width = window.innerWidth, height = window.innerHeight): void {
+    const fitZoom = Math.min(width / Config.LAKE_WIDTH, height / Config.LAKE_HEIGHT) * 0.95;
+    this.minZoom = Math.max(0.12, Math.min(0.5, fitZoom));
   }
 
   // Create background layer that covers everything outside the map boundary
@@ -209,6 +227,7 @@ export class PixiApp {
   }
 
   setZoom(level: number): void {
+    this.updateZoomLimits();
     this.zoomLevel = Math.max(this.minZoom, Math.min(this.maxZoom, level));
     this.worldContainer.scale.set(this.zoomLevel, this.zoomLevel);
   }
@@ -290,6 +309,10 @@ export class PixiApp {
 
   dispose(): void {
     this.particleSystem.dispose();
+    if (this.resizeHandler) {
+      window.removeEventListener('resize', this.resizeHandler);
+      this.resizeHandler = null;
+    }
     if (this.miniMap) {
       this.miniMap.dispose();
     }

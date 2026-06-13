@@ -16,9 +16,25 @@ export interface Particle {
 export class ParticleSystem {
   private container: Container;
   private particles: Particle[] = [];
+  private readonly maxParticles = 180;
 
   constructor(container: Container) {
     this.container = container;
+  }
+
+  private addParticle(particle: Particle): void {
+    this.container.addChild(particle.graphic);
+    this.particles.push(particle);
+    this.trimParticles();
+  }
+
+  private trimParticles(): void {
+    while (this.particles.length > this.maxParticles) {
+      const oldest = this.particles.shift();
+      if (!oldest) continue;
+      this.container.removeChild(oldest.graphic);
+      oldest.graphic.destroy();
+    }
   }
 
   // Update all particles
@@ -61,8 +77,9 @@ export class ParticleSystem {
 
   // Create death burst effect
   createDeathBurst(x: number, y: number, color: number, count: number = 12): void {
-    for (let i = 0; i < count; i++) {
-      const angle = (Math.PI * 2 * i) / count;
+    const burstCount = Math.min(count, 8);
+    for (let i = 0; i < burstCount; i++) {
+      const angle = (Math.PI * 2 * i) / burstCount;
       const speed = 50 + Math.random() * 100;
 
       const graphic = new Graphics();
@@ -71,9 +88,7 @@ export class ParticleSystem {
       graphic.x = x;
       graphic.y = y;
 
-      this.container.addChild(graphic);
-
-      this.particles.push({
+      this.addParticle({
         graphic,
         vx: Math.cos(angle) * speed,
         vy: Math.sin(angle) * speed,
@@ -87,7 +102,7 @@ export class ParticleSystem {
 
   // Create eating effect (sparkles)
   createEatingEffect(x: number, y: number, color: number): void {
-    for (let i = 0; i < 6; i++) {
+    for (let i = 0; i < 3; i++) {
       const angle = Math.random() * Math.PI * 2;
       const speed = 20 + Math.random() * 40;
 
@@ -97,9 +112,7 @@ export class ParticleSystem {
       graphic.x = x;
       graphic.y = y;
 
-      this.container.addChild(graphic);
-
-      this.particles.push({
+      this.addParticle({
         graphic,
         vx: Math.cos(angle) * speed,
         vy: Math.sin(angle) * speed,
@@ -128,9 +141,7 @@ export class ParticleSystem {
     text.x = x;
     text.y = y - 18;
 
-    this.container.addChild(text);
-
-    this.particles.push({
+    this.addParticle({
       graphic: text,
       vx: 0,
       vy: -34,
@@ -143,7 +154,7 @@ export class ParticleSystem {
 
   // Create attack effect (impact particles)
   createAttackEffect(x: number, y: number, angle: number, color: number): void {
-    for (let i = 0; i < 8; i++) {
+    for (let i = 0; i < 5; i++) {
       const spread = 0.5;
       const particleAngle = angle + (Math.random() - 0.5) * spread;
       const speed = 80 + Math.random() * 80;
@@ -154,9 +165,7 @@ export class ParticleSystem {
       graphic.x = x;
       graphic.y = y;
 
-      this.container.addChild(graphic);
-
-      this.particles.push({
+      this.addParticle({
         graphic,
         vx: Math.cos(particleAngle) * speed,
         vy: Math.sin(particleAngle) * speed,
@@ -170,7 +179,7 @@ export class ParticleSystem {
 
   // Create reproduction glow effect (hearts/sparkles)
   createReproductionEffect(x: number, y: number, color: number): void {
-    for (let i = 0; i < 10; i++) {
+    for (let i = 0; i < 6; i++) {
       const angle = Math.random() * Math.PI * 2;
       const speed = 15 + Math.random() * 25;
 
@@ -181,9 +190,7 @@ export class ParticleSystem {
       graphic.x = x;
       graphic.y = y;
 
-      this.container.addChild(graphic);
-
-      this.particles.push({
+      this.addParticle({
         graphic,
         vx: Math.cos(angle) * speed,
         vy: Math.sin(angle) * speed - 20, // Float upward
@@ -213,9 +220,7 @@ export class ParticleSystem {
     graphic.y = y;
     graphic.alpha = 0.6;
 
-    this.container.addChild(graphic);
-
-    this.particles.push({
+    this.addParticle({
       graphic,
       vx,
       vy,
@@ -234,21 +239,23 @@ export class ParticleSystem {
     graphic.x = x;
     graphic.y = y;
 
-    this.container.addChild(graphic);
-
     // Create expanding ring effect manually
     const expandSpeed = 100;
     const life = 0.5;
     let currentRadius = 5;
 
     const expandInterval = setInterval(() => {
+      if (graphic.destroyed) {
+        clearInterval(expandInterval);
+        return;
+      }
       currentRadius += expandSpeed * 0.016; // Approximate deltaTime
       graphic.clear();
       graphic.circle(0, 0, currentRadius);
       graphic.stroke({ width: 2, color: color, alpha: graphic.alpha });
     }, 16);
 
-    this.particles.push({
+    this.addParticle({
       graphic,
       vx: 0,
       vy: 0,
@@ -264,7 +271,7 @@ export class ParticleSystem {
   // Create combo effect (burst of colorful particles with scaling text)
   createComboEffect(x: number, y: number, comboSize: number): void {
     // Create burst of golden particles for combo
-    const particleCount = 15 + comboSize * 2;
+    const particleCount = Math.min(12, 6 + comboSize);
     for (let i = 0; i < particleCount; i++) {
       const angle = (Math.PI * 2 * i) / particleCount;
       const speed = 60 + Math.random() * 80;
@@ -275,9 +282,7 @@ export class ParticleSystem {
       graphic.x = x;
       graphic.y = y;
 
-      this.container.addChild(graphic);
-
-      this.particles.push({
+      this.addParticle({
         graphic,
         vx: Math.cos(angle) * speed,
         vy: Math.sin(angle) * speed - 30, // Slight upward bias
@@ -290,7 +295,7 @@ export class ParticleSystem {
     }
 
     // Add some extra sparkle particles
-    for (let i = 0; i < 8; i++) {
+    for (let i = 0; i < 4; i++) {
       const angle = Math.random() * Math.PI * 2;
       const speed = 30 + Math.random() * 50;
 
@@ -300,9 +305,7 @@ export class ParticleSystem {
       graphic.x = x;
       graphic.y = y;
 
-      this.container.addChild(graphic);
-
-      this.particles.push({
+      this.addParticle({
         graphic,
         vx: Math.cos(angle) * speed,
         vy: Math.sin(angle) * speed - 50, // Float upward
@@ -317,7 +320,7 @@ export class ParticleSystem {
 
   // Create DNA collection sparkles (rainbow particles)
   createDNASparkles(x: number, y: number, dnaAmount: number): void {
-    const particleCount = Math.min(15, 5 + dnaAmount * 2);
+    const particleCount = Math.min(10, 4 + dnaAmount * 2);
     const colors = [0xff00ff, 0x00ffff, 0xffff00, 0xff0080, 0x80ff00]; // Rainbow colors
 
     for (let i = 0; i < particleCount; i++) {
@@ -331,9 +334,7 @@ export class ParticleSystem {
       graphic.x = x;
       graphic.y = y;
 
-      this.container.addChild(graphic);
-
-      this.particles.push({
+      this.addParticle({
         graphic,
         vx: Math.cos(angle) * speed,
         vy: Math.sin(angle) * speed - 40,
@@ -358,9 +359,7 @@ export class ParticleSystem {
         graphic.x = x;
         graphic.y = y;
 
-        this.container.addChild(graphic);
-
-        this.particles.push({
+        this.addParticle({
           graphic,
           vx: 0,
           vy: 0,
@@ -373,6 +372,10 @@ export class ParticleSystem {
         // Expand the ring
         let scale = 1;
         const expandInterval = setInterval(() => {
+          if (graphic.destroyed) {
+            clearInterval(expandInterval);
+            return;
+          }
           scale += 0.15;
           graphic.scale.set(scale);
           if (scale > 3) clearInterval(expandInterval);
@@ -398,9 +401,7 @@ export class ParticleSystem {
       graphic.x = pos.x;
       graphic.y = pos.y;
 
-      this.container.addChild(graphic);
-
-      this.particles.push({
+      this.addParticle({
         graphic,
         vx: 0,
         vy: 0,

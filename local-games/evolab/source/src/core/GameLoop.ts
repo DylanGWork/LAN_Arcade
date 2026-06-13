@@ -148,6 +148,8 @@ export class GameLoop {
   private totalResourcesCollected = 0;
   private musicPresetChangeHandler: EventListener | null = null;
   private biomeHighlightHandler: EventListener | null = null;
+  private lastSpeciesEvolutionSurvivalTotal = 0;
+  private lastSpeciesEvolutionResources = 0;
 
   constructor() {
     this.renderer = new PixiApp();
@@ -472,9 +474,6 @@ export class GameLoop {
       const speciesCenter = this.entityManager.playerSpecies.getCenterPosition();
       this.renderer.updateCamera(speciesCenter.x, speciesCenter.y);
     }
-
-    // Spawn resources
-    this.entityManager.spawnResources();
 
     // Initialize mini-map
     this.renderer.initializeMiniMap(this.biomeGenerator);
@@ -1074,6 +1073,11 @@ export class GameLoop {
     }
   }
 
+  private getHazardResistanceMultiplier(value: number | undefined, reductionPerPoint = 0.08): number {
+    const resistance = Math.max(0, Math.min(10, value || 0));
+    return Math.max(0.15, 1 - resistance * reductionPerPoint);
+  }
+
   private applyHazardsToCell(cell: Cell, biome: any, deltaTime: number): void {
     for (const hazard of biome.hazards) {
       switch (hazard.type) {
@@ -1087,44 +1091,49 @@ export class GameLoop {
         }
 
         case 'temperature': {
-          // Extreme temperatures cause damage over time
-          // Damage scales with intensity and is reduced by armor
-          const tempDamage = hazard.intensity * 2 * deltaTime;
-          const armorReduction = cell.traits.armor * 0.1;
-          const finalTempDamage = Math.max(0, tempDamage - armorReduction);
+          // Extreme temperatures cause damage over time; tolerance and armor help.
+          const tolerance = this.getHazardResistanceMultiplier(cell.traits.temperatureTolerance);
+          const tempDamage = hazard.intensity * 2 * tolerance;
+          const armorReduction = cell.traits.armor * 0.08;
+          const finalTempDamage = Math.max(0, tempDamage - armorReduction) * deltaTime;
           cell.traits.health -= finalTempDamage;
           break;
         }
 
         case 'oxygen': {
-          // Low oxygen reduces ATP regeneration
-          // Reduces effectiveness of metabolism
+          // Low oxygen drains ATP; lower oxygenNeed softens the penalty.
           const oxygenPenalty = hazard.intensity * 0.5;
-          const atpDrain = oxygenPenalty * cell.traits.metabolismRate * deltaTime;
+          const oxygenNeed = Math.max(0, Math.min(10, cell.traits.oxygenNeed || 5));
+          const oxygenSensitivity = 0.35 + oxygenNeed * 0.08;
+          const atpDrain = oxygenPenalty * cell.traits.metabolismRate * oxygenSensitivity * deltaTime;
           cell.traits.atp = Math.max(0, cell.traits.atp - atpDrain);
           break;
         }
 
         case 'radiation': {
-          // Radiation causes gradual health damage
-          const radiationDamage = hazard.intensity * 1.5 * deltaTime;
-          const radiationArmorReduction = cell.traits.armor * 0.05;
-          const finalRadDamage = Math.max(0, radiationDamage - radiationArmorReduction);
+          // Radiation causes gradual health damage; toxin resistance helps here too.
+          const resistance = this.getHazardResistanceMultiplier(cell.traits.toxinResistance);
+          const radiationDamage = hazard.intensity * 1.5 * resistance;
+          const radiationArmorReduction = cell.traits.armor * 0.04;
+          const finalRadDamage = Math.max(0, radiationDamage - radiationArmorReduction) * deltaTime;
           cell.traits.health -= finalRadDamage;
           break;
         }
 
         case 'pressure': {
-          // High pressure slows movement and causes damage
-          // Pressure damage (armor helps significantly)
-          const pressureDamage = hazard.intensity * 1 * deltaTime;
-          const pressureArmorReduction = cell.traits.armor * 0.15;
-          const finalPressureDamage = Math.max(0, pressureDamage - pressureArmorReduction);
+          // High pressure slows movement and causes damage.
+          const resistance = this.getHazardResistanceMultiplier(cell.traits.pressureResistance);
+          const pressureDamage = hazard.intensity * 1 * resistance;
+          const pressureArmorReduction = cell.traits.armor * 0.06;
+          const finalPressureDamage = Math.max(0, pressureDamage - pressureArmorReduction) * deltaTime;
           cell.traits.health -= finalPressureDamage;
           break;
         }
       }
     }
+
+    cell.traits.health = Math.max(0, Math.min(cell.traits.maxHealth, cell.traits.health));
+    cell.traits.atp = Math.max(0, Math.min(cell.traits.maxATP, cell.traits.atp));
   }
 
   // Render game
@@ -1297,10 +1306,17 @@ export class GameLoop {
       const stats = this.entityManager.playerSpecies.getStats();
       const baseGenome = this.entityManager.playerSpecies.getBaseGenome();
       
-      // Calculate DNA points from species performance
-      const dnaPoints = stats.averageSurvivalTime * Config.DNA_FROM_SURVIVAL_TIME + 
-                         stats.totalResourcesCollected * Config.DNA_FROM_GLUCOSE;
+      const speciesCells = this.entityManager.playerSpecies.getAllCells();
+      const totalSurvivalTime = speciesCells.reduce((sum, cell) => sum + cell.survivalTime, 0);
+      const survivalDelta = Math.max(0, totalSurvivalTime - this.lastSpeciesEvolutionSurvivalTotal);
+      const resourceDelta = Math.max(0, stats.totalResourcesCollected - this.lastSpeciesEvolutionResources);
+
+      // Calculate DNA points only from progress since the last evolution report.
+      const dnaPoints = survivalDelta * Config.DNA_FROM_SURVIVAL_TIME +
+                         resourceDelta * Config.DNA_FROM_GLUCOSE;
       baseGenome.dnaPoints += dnaPoints;
+      this.lastSpeciesEvolutionSurvivalTotal = totalSurvivalTime;
+      this.lastSpeciesEvolutionResources = stats.totalResourcesCollected;
 
       // Show generation report
       // Evolution will be applied when user clicks "Apply" in trait editor
@@ -1365,6 +1381,8 @@ export class GameLoop {
     this.timeControl.reset();
     this.dayNightCycle = new DayNightCycle(Config.DAY_NIGHT_START_TIME, Config.DAY_NIGHT_SPEED_MULTIPLIER);
     gameStateAnnouncer.reset(); // Reset accessibility announcements
+    this.lastSpeciesEvolutionSurvivalTotal = 0;
+    this.lastSpeciesEvolutionResources = 0;
     this.entityManager = new EntityManager(
       this.renderer,
       this.biomeGenerator,
@@ -1395,6 +1413,8 @@ export class GameLoop {
       playerGenome.dnaPoints = sim.playerData.genome.dnaPoints;
 
       this.entityManager.dispose();
+      this.lastSpeciesEvolutionSurvivalTotal = 0;
+      this.lastSpeciesEvolutionResources = 0;
       this.entityManager = new EntityManager(
         this.renderer,
         this.biomeGenerator,

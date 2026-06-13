@@ -271,25 +271,35 @@ export class PlayerSpeciesManager {
   // Apply evolution modifications to the whole species
   applyEvolution(modifications: Partial<Traits>): void {
     this.generation++;
+    const dnaCost = this.calculateEvolutionCost(modifications);
     
     // Update base genome
     Object.assign(this.baseGenome.traits, modifications);
     this.baseGenome.lineage.generation = this.generation;
+    this.baseGenome.dnaPoints = Math.max(0, this.baseGenome.dnaPoints - dnaCost);
     
-    // Apply changes to all living cells (gradual evolution)
+    // Apply selected evolution immediately so the controls match what the player sees.
     this.cells.forEach(cell => {
       Object.keys(modifications).forEach(key => {
         const traitKey = key as keyof Traits;
         const newValue = modifications[traitKey];
         if (newValue !== undefined && typeof newValue === 'number') {
-          // Gradually shift toward new trait value
-          const currentValue = cell.traits[traitKey] as number;
-          // Type-safe dynamic trait assignment
-          (cell.traits[traitKey] as number) = currentValue + (newValue - currentValue) * 0.1;
+          (cell.traits[traitKey] as number) = newValue;
         }
       });
       cell.genome.traits = cell.traits;
     });
+  }
+
+  private calculateEvolutionCost(modifications: Partial<Traits>): number {
+    let cost = 0;
+    for (const [key, value] of Object.entries(modifications)) {
+      const oldValue = this.baseGenome.traits[key as keyof Traits];
+      if (typeof value === 'number' && typeof oldValue === 'number') {
+        cost += Math.abs(value - oldValue) * Config.DNA_COST_PER_TRAIT_CHANGE;
+      }
+    }
+    return Number(cost.toFixed(2));
   }
 
   // Get species statistics

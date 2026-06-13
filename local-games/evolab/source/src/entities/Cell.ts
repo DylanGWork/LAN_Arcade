@@ -44,20 +44,24 @@ export class Cell {
 
   // Update cell state each frame
   update(deltaTime: number): void {
+    const simulationSteps = this.getSimulationSteps(deltaTime);
+
     // Update position based on velocity
-    this.position.x += this.velocity.x;
-    this.position.y += this.velocity.y;
+    this.position.x += this.velocity.x * simulationSteps;
+    this.position.y += this.velocity.y * simulationSteps;
 
     // Apply friction
-    this.velocity.x *= Config.FRICTION;
-    this.velocity.y *= Config.FRICTION;
+    const frictionFactor = Math.pow(Config.FRICTION, simulationSteps);
+    this.velocity.x *= frictionFactor;
+    this.velocity.y *= frictionFactor;
 
     // Update sprite position
     this.sprite.x = this.position.x;
     this.sprite.y = this.position.y;
 
-    // Drain ATP over time
-    this.drainATP(deltaTime);
+    // Drain ATP over time and heal passive damage
+    this.drainATP(simulationSteps);
+    this.regenerateHealth(deltaTime);
 
     // Update survival time
     this.survivalTime = (Date.now() - this.birthTime) / 1000;
@@ -115,13 +119,18 @@ export class Cell {
     }
   }
 
+  private getSimulationSteps(deltaTime: number): number {
+    return Math.max(0, Math.min(10, deltaTime * Config.TARGET_FPS));
+  }
+
   // Drain ATP based on metabolism and size
-  private drainATP(_deltaTime: number): void {
+  private drainATP(simulationSteps: number): void {
     const baseDrain = Config.ATP_DRAIN_RATE;
     const sizeDrain = this.traits.size * Config.ATP_DRAIN_MULTIPLIER_SIZE;
-    const totalDrain = (baseDrain + sizeDrain) * this.traits.metabolismRate;
+    const energyEfficiency = Math.max(0.25, this.traits.energyEfficiency || 1);
+    const totalDrain = ((baseDrain + sizeDrain) * this.traits.metabolismRate) / energyEfficiency;
 
-    this.traits.atp -= totalDrain;
+    this.traits.atp -= totalDrain * simulationSteps;
 
     // Clamp ATP to valid range
     if (this.traits.atp < 0) {
@@ -131,6 +140,16 @@ export class Cell {
     if (this.traits.atp > this.traits.maxATP) {
       this.traits.atp = this.traits.maxATP;
     }
+  }
+
+  private regenerateHealth(deltaTime: number): void {
+    const regenPerSecond = Math.max(0, this.traits.regeneration || 0);
+    if (regenPerSecond <= 0 || this.traits.health <= 0) return;
+
+    this.traits.health = Math.min(
+      this.traits.maxHealth,
+      this.traits.health + regenPerSecond * deltaTime
+    );
   }
 
   // Restore ATP (from glucose collection)

@@ -69,8 +69,19 @@ export class InputHandler {
     this.wheelHandler = (e: WheelEvent) => {
       // Only handle zoom when not over UI elements
       const target = e.target as HTMLElement;
-      if (target && (target.closest('#hud') || target.closest('.modal-overlay') || target.closest('button'))) {
-        return; // Don't zoom when over UI
+      if (target && (
+        target.closest('#hud') ||
+        target.closest('#ui-root') ||
+        target.closest('[role="dialog"]') ||
+        target.closest('.modal-overlay') ||
+        target.closest('.trait-editor-overlay') ||
+        target.closest('.trait-editor') ||
+        target.closest('button') ||
+        target.closest('input') ||
+        target.closest('textarea') ||
+        target.closest('select')
+      )) {
+        return; // Don't zoom when over UI; let menus and modals scroll normally.
       }
 
       e.preventDefault();
