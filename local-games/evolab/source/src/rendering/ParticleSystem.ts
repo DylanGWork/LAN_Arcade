@@ -1,0 +1,432 @@
+// Particle system for visual effects
+
+import { Graphics, Container, Text } from 'pixi.js';
+
+export interface Particle {
+  graphic: Graphics | Text;
+  vx: number;
+  vy: number;
+  life: number;
+  maxLife: number;
+  fadeOut: boolean;
+  shrink: boolean;
+  gravity?: number;
+}
+
+export class ParticleSystem {
+  private container: Container;
+  private particles: Particle[] = [];
+
+  constructor(container: Container) {
+    this.container = container;
+  }
+
+  // Update all particles
+  update(deltaTime: number): void {
+    for (let i = this.particles.length - 1; i >= 0; i--) {
+      const particle = this.particles[i];
+      if (!particle) continue;
+
+      // Update position
+      particle.graphic.x += particle.vx * deltaTime;
+      particle.graphic.y += particle.vy * deltaTime;
+
+      // Apply gravity if specified
+      if (particle.gravity) {
+        particle.vy += particle.gravity * deltaTime;
+      }
+
+      // Update lifetime
+      particle.life -= deltaTime;
+
+      // Update visual effects
+      if (particle.fadeOut) {
+        const lifeFraction = particle.life / particle.maxLife;
+        particle.graphic.alpha = lifeFraction;
+      }
+
+      if (particle.shrink) {
+        const lifeFraction = particle.life / particle.maxLife;
+        particle.graphic.scale.set(lifeFraction);
+      }
+
+      // Remove dead particles
+      if (particle.life <= 0) {
+        this.container.removeChild(particle.graphic);
+        particle.graphic.destroy();
+        this.particles.splice(i, 1);
+      }
+    }
+  }
+
+  // Create death burst effect
+  createDeathBurst(x: number, y: number, color: number, count: number = 12): void {
+    for (let i = 0; i < count; i++) {
+      const angle = (Math.PI * 2 * i) / count;
+      const speed = 50 + Math.random() * 100;
+
+      const graphic = new Graphics();
+      graphic.circle(0, 0, 3 + Math.random() * 3);
+      graphic.fill(color);
+      graphic.x = x;
+      graphic.y = y;
+
+      this.container.addChild(graphic);
+
+      this.particles.push({
+        graphic,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        life: 0.5 + Math.random() * 0.5,
+        maxLife: 1,
+        fadeOut: true,
+        shrink: true,
+      });
+    }
+  }
+
+  // Create eating effect (sparkles)
+  createEatingEffect(x: number, y: number, color: number): void {
+    for (let i = 0; i < 6; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const speed = 20 + Math.random() * 40;
+
+      const graphic = new Graphics();
+      graphic.circle(0, 0, 2 + Math.random() * 2);
+      graphic.fill(color);
+      graphic.x = x;
+      graphic.y = y;
+
+      this.container.addChild(graphic);
+
+      this.particles.push({
+        graphic,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        life: 0.3 + Math.random() * 0.3,
+        maxLife: 0.6,
+        fadeOut: true,
+        shrink: false,
+      });
+    }
+  }
+
+  // Create clear floating ATP gain text so resource pickups are readable.
+  createATPText(x: number, y: number, amount: number): void {
+    const text = new Text({
+      text: `+${Math.round(amount)} ATP`,
+      style: {
+        fontFamily: 'Courier New, monospace',
+        fontSize: 18,
+        fontWeight: 'bold',
+        fill: 0xfff176,
+        stroke: { color: 0x0a0e27, width: 4 },
+      },
+    });
+
+    text.anchor.set(0.5);
+    text.x = x;
+    text.y = y - 18;
+
+    this.container.addChild(text);
+
+    this.particles.push({
+      graphic: text,
+      vx: 0,
+      vy: -34,
+      life: 1.1,
+      maxLife: 1.1,
+      fadeOut: true,
+      shrink: false,
+    });
+  }
+
+  // Create attack effect (impact particles)
+  createAttackEffect(x: number, y: number, angle: number, color: number): void {
+    for (let i = 0; i < 8; i++) {
+      const spread = 0.5;
+      const particleAngle = angle + (Math.random() - 0.5) * spread;
+      const speed = 80 + Math.random() * 80;
+
+      const graphic = new Graphics();
+      graphic.circle(0, 0, 2 + Math.random() * 3);
+      graphic.fill(color);
+      graphic.x = x;
+      graphic.y = y;
+
+      this.container.addChild(graphic);
+
+      this.particles.push({
+        graphic,
+        vx: Math.cos(particleAngle) * speed,
+        vy: Math.sin(particleAngle) * speed,
+        life: 0.4 + Math.random() * 0.3,
+        maxLife: 0.7,
+        fadeOut: true,
+        shrink: true,
+      });
+    }
+  }
+
+  // Create reproduction glow effect (hearts/sparkles)
+  createReproductionEffect(x: number, y: number, color: number): void {
+    for (let i = 0; i < 10; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const speed = 15 + Math.random() * 25;
+
+      const graphic = new Graphics();
+      // Create a small heart-like shape or star
+      graphic.circle(0, 0, 3);
+      graphic.fill(color);
+      graphic.x = x;
+      graphic.y = y;
+
+      this.container.addChild(graphic);
+
+      this.particles.push({
+        graphic,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed - 20, // Float upward
+        life: 1.0 + Math.random() * 0.5,
+        maxLife: 1.5,
+        fadeOut: true,
+        shrink: false,
+        gravity: -10, // Negative gravity for floating effect
+      });
+    }
+  }
+
+  // Create environmental particles (continuous effect)
+  createEnvironmentalParticle(
+    x: number,
+    y: number,
+    vx: number,
+    vy: number,
+    color: number,
+    size: number,
+    life: number
+  ): void {
+    const graphic = new Graphics();
+    graphic.circle(0, 0, size);
+    graphic.fill(color);
+    graphic.x = x;
+    graphic.y = y;
+    graphic.alpha = 0.6;
+
+    this.container.addChild(graphic);
+
+    this.particles.push({
+      graphic,
+      vx,
+      vy,
+      life,
+      maxLife: life,
+      fadeOut: true,
+      shrink: false,
+    });
+  }
+
+  // Create spawn effect (expanding ring)
+  createSpawnEffect(x: number, y: number, color: number): void {
+    const graphic = new Graphics();
+    graphic.circle(0, 0, 5);
+    graphic.stroke({ width: 2, color: color, alpha: 0.8 });
+    graphic.x = x;
+    graphic.y = y;
+
+    this.container.addChild(graphic);
+
+    // Create expanding ring effect manually
+    const expandSpeed = 100;
+    const life = 0.5;
+    let currentRadius = 5;
+
+    const expandInterval = setInterval(() => {
+      currentRadius += expandSpeed * 0.016; // Approximate deltaTime
+      graphic.clear();
+      graphic.circle(0, 0, currentRadius);
+      graphic.stroke({ width: 2, color: color, alpha: graphic.alpha });
+    }, 16);
+
+    this.particles.push({
+      graphic,
+      vx: 0,
+      vy: 0,
+      life,
+      maxLife: life,
+      fadeOut: true,
+      shrink: false,
+    });
+
+    setTimeout(() => clearInterval(expandInterval), life * 1000);
+  }
+
+  // Create combo effect (burst of colorful particles with scaling text)
+  createComboEffect(x: number, y: number, comboSize: number): void {
+    // Create burst of golden particles for combo
+    const particleCount = 15 + comboSize * 2;
+    for (let i = 0; i < particleCount; i++) {
+      const angle = (Math.PI * 2 * i) / particleCount;
+      const speed = 60 + Math.random() * 80;
+
+      const graphic = new Graphics();
+      graphic.star(0, 0, 5, 4 + Math.random() * 3, 2);
+      graphic.fill(0xffd700); // Golden color for combo
+      graphic.x = x;
+      graphic.y = y;
+
+      this.container.addChild(graphic);
+
+      this.particles.push({
+        graphic,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed - 30, // Slight upward bias
+        life: 0.8 + Math.random() * 0.4,
+        maxLife: 1.2,
+        fadeOut: true,
+        shrink: true,
+        gravity: 20, // Gravity pulls particles down
+      });
+    }
+
+    // Add some extra sparkle particles
+    for (let i = 0; i < 8; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const speed = 30 + Math.random() * 50;
+
+      const graphic = new Graphics();
+      graphic.circle(0, 0, 3 + Math.random() * 2);
+      graphic.fill(0xffff00); // Bright yellow sparkles
+      graphic.x = x;
+      graphic.y = y;
+
+      this.container.addChild(graphic);
+
+      this.particles.push({
+        graphic,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed - 50, // Float upward
+        life: 1.0 + Math.random() * 0.5,
+        maxLife: 1.5,
+        fadeOut: true,
+        shrink: false,
+        gravity: -15, // Negative gravity for floating effect
+      });
+    }
+  }
+
+  // Create DNA collection sparkles (rainbow particles)
+  createDNASparkles(x: number, y: number, dnaAmount: number): void {
+    const particleCount = Math.min(15, 5 + dnaAmount * 2);
+    const colors = [0xff00ff, 0x00ffff, 0xffff00, 0xff0080, 0x80ff00]; // Rainbow colors
+
+    for (let i = 0; i < particleCount; i++) {
+      const angle = (Math.PI * 2 * i) / particleCount;
+      const speed = 40 + Math.random() * 60;
+      const color = colors[i % colors.length];
+
+      const graphic = new Graphics();
+      graphic.star(0, 0, 4, 3, 1.5);
+      graphic.fill(color);
+      graphic.x = x;
+      graphic.y = y;
+
+      this.container.addChild(graphic);
+
+      this.particles.push({
+        graphic,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed - 40,
+        life: 0.6 + Math.random() * 0.4,
+        maxLife: 1.0,
+        fadeOut: true,
+        shrink: true,
+        gravity: 15,
+      });
+    }
+  }
+
+  // Create evolution glow effect (pulsing aura)
+  createEvolutionGlow(x: number, y: number): void {
+    const ringCount = 3;
+    for (let ring = 0; ring < ringCount; ring++) {
+      const delay = ring * 0.1;
+      setTimeout(() => {
+        const graphic = new Graphics();
+        graphic.circle(0, 0, 20);
+        graphic.stroke({ color: 0x00ff00, width: 3, alpha: 0.8 });
+        graphic.x = x;
+        graphic.y = y;
+
+        this.container.addChild(graphic);
+
+        this.particles.push({
+          graphic,
+          vx: 0,
+          vy: 0,
+          life: 0.8,
+          maxLife: 0.8,
+          fadeOut: true,
+          shrink: false,
+        });
+
+        // Expand the ring
+        let scale = 1;
+        const expandInterval = setInterval(() => {
+          scale += 0.15;
+          graphic.scale.set(scale);
+          if (scale > 3) clearInterval(expandInterval);
+        }, 16);
+      }, delay * 1000);
+    }
+  }
+
+  // Create screen flash for near-death warning
+  createNearDeathFlash(): void {
+    // This would typically be handled by a screen overlay in the renderer
+    // For now, create red particles around the edges
+    const edgePositions = [
+      { x: 100, y: 100 }, { x: 500, y: 100 }, { x: 900, y: 100 },
+      { x: 100, y: 400 }, { x: 900, y: 400 },
+      { x: 100, y: 700 }, { x: 500, y: 700 }, { x: 900, y: 700 },
+    ];
+
+    edgePositions.forEach(pos => {
+      const graphic = new Graphics();
+      graphic.rect(0, 0, 50, 50);
+      graphic.fill({ color: 0xff0000, alpha: 0.3 });
+      graphic.x = pos.x;
+      graphic.y = pos.y;
+
+      this.container.addChild(graphic);
+
+      this.particles.push({
+        graphic,
+        vx: 0,
+        vy: 0,
+        life: 0.3,
+        maxLife: 0.3,
+        fadeOut: true,
+        shrink: false,
+      });
+    });
+  }
+
+  // Get current particle count (Week 4 - for performance monitoring)
+  getParticleCount(): number {
+    return this.particles.length;
+  }
+
+  // Clear all particles
+  clear(): void {
+    for (const particle of this.particles) {
+      this.container.removeChild(particle.graphic);
+      particle.graphic.destroy();
+    }
+    this.particles = [];
+  }
+
+  dispose(): void {
+    this.clear();
+  }
+}

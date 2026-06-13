@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Gene Garden - LAN Arcade</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app">
+    <aside class="control-panel" aria-label="Gene Garden controls">
+      <header class="masthead">
+        <div>
+          <h1>Gene Garden</h1>
+          <p id="runLine">Spring, tick 0</p>
+        </div>
+        <button id="toggleRun" class="primary" type="button">Pause</button>
+      </header>
+
+      <section class="metrics" aria-label="Simulation metrics">
+        <div><span id="population">0</span><small>Population</small></div>
+        <div><span id="generation">0</span><small>Generation</small></div>
+        <div><span id="families">0</span><small>Families</small></div>
+        <div><span id="grass">0%</span><small>Grass</small></div>
+      </section>
+
+      <section class="tool-strip" aria-label="World tools">
+        <button type="button" data-tool="grass" title="Paint grass">Grass</button>
+        <button type="button" data-tool="wall" title="Place walls">Wall</button>
+        <button type="button" data-tool="erase" title="Erase walls">Erase</button>
+        <button type="button" data-tool="add" title="Add critters">Add</button>
+      </section>
+
+      <section class="button-grid" aria-label="World actions">
+        <button type="button" data-action="reset">Reset</button>
+        <button type="button" data-action="storm">Storm</button>
+        <button type="button" data-action="meadow">Meadow</button>
+        <button type="button" data-action="paddocks">Paddocks</button>
+        <button type="button" data-action="corridor">Corridor</button>
+        <button type="button" data-action="winter">Winter</button>
+      </section>
+
+      <section class="sliders" aria-label="Simulation settings">
+        <label>
+          <span>Speed</span>
+          <input id="speed" type="range" min="1" max="8" value="4">
+        </label>
+        <label>
+          <span>Mutation</span>
+          <input id="mutation" type="range" min="0" max="100" value="18">
+        </label>
+        <label>
+          <span>Winter pressure</span>
+          <input id="pressure" type="range" min="0" max="100" value="42">
+        </label>
+        <label>
+          <span>Start size</span>
+          <input id="startSize" type="range" min="12" max="160" value="72">
+        </label>
+      </section>
+
+      <section class="gene-panel" aria-label="Average genes">
+        <div class="section-title">
+          <strong>Average genes</strong>
+          <span id="dominantLine">No line</span>
+        </div>
+        <div id="geneBars" class="gene-bars"></div>
+      </section>
+
+      <section class="line-panel" aria-label="Family lines">
+        <div class="section-title">
+          <strong>Family lines</strong>
+          <span id="birthDeath">0 born / 0 lost</span>
+        </div>
+        <div id="familyList" class="family-list"></div>
+      </section>
+    </aside>
+
+    <main class="world-area">
+      <canvas id="world" width="1400" height="900" aria-label="Gene Garden world"></canvas>
+      <div class="status-bar">
+        <span id="toolReadout">Grass tool</span>
+        <span id="eventLog">Fresh meadow seeded.</span>
+      </div>
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

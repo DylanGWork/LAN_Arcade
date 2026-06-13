@@ -1,0 +1,44 @@
+{
+  "name": "evolab",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Open source browser-based evolution simulator",
+  "license": "MIT",
+  "scripts": {
+    "dev": "vite",
+    "dev:audio": "vite --watch src/audio/",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "lint": "eslint . --ext ts,tsx",
+    "format": "prettier --write \"src/**/*.{ts,tsx}\"",
+    "test": "vitest",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@rolldown/binding-linux-x64-gnu": "^1.1.1",
+    "d3": "^7.9.0",
+    "dexie": "^4.0.8",
+    "matter-js": "^0.20.0",
+    "pixi.js": "^8.5.2",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "react-focus-lock": "^2.13.7",
+    "tone": "^15.1.22",
+    "zustand": "^5.0.14"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/d3": "^7.4.3",
+    "@types/matter-js": "^0.20.2",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "@typescript-eslint/eslint-plugin": "^8.60.0",
+    "@typescript-eslint/parser": "^8.46.4",
+    "@vitejs/plugin-react": "^6.0.2",
+    "eslint": "^10.4.1",
+    "prettier": "^3.8.3",
+    "typescript": "^6.0.3",
+    "vite": "^8.0.14",
+    "vitest": "^4.1.8"
+  }
+}

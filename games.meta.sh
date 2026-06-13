@@ -67,6 +67,9 @@ declare -A GAMES=(
   ["breachline-tactics"]="LOCAL_DIR::local-games/breachline-tactics"
   ["circuit-foundry"]="LOCAL_DIR::local-games/circuit-foundry"
   ["lan-tank-arena"]="LOCAL_DIR::local-games/lan-tank-arena"
+  ["life-engine"]="LOCAL_DIR::local-games/life-engine"
+  ["evolab"]="LOCAL_DIR::local-games/evolab"
+  ["gene-garden"]="LOCAL_DIR::local-games/gene-garden"
 
 )
 
@@ -133,6 +136,9 @@ declare -A GAME_INFO=(
   ["breachline-tactics"]="Breachline Tactics|GRID|Tactical Roguelite|Original turn-based squad tactics game with grid combat, operator abilities, enemy turns, room depth, and local best-depth saves.|Tactical,Roguelite,Offline original"
   ["circuit-foundry"]="Circuit Foundry|GEAR|Factory Automation|Original mini automation game where extractors, belts, smelters, generators, and assemblers build a circuit pipeline.|Factory,Automation,Offline original"
   ["lan-tank-arena"]="LAN Tank Arena|TANK|Multiplayer · Arena Combat|Original real-time LAN tank battle with room codes, shared WebSocket state, powerups, respawns, and 2-8 player skirmishes.|Multiplayer,Tank battle,LAN original"
+  ["life-engine"]="The Life Engine|LIFE|Artificial Life - Evolution Sandbox|Cellular ecosystem sandbox where organisms eat, reproduce, mutate, compete, and adapt through natural selection.|Evolution,Artificial life,Science"
+  ["evolab"]="EvoLab|DNA|Evolution - Cell Survival|Browser evolution game with ATP survival, resource gathering, AI species, biomes, trait editing, generations, and ecosystem data.|Evolution,Genetics,Simulation"
+  ["gene-garden"]="Gene Garden|GENE|Artificial Life - Genetics Garden|Original LAN Arcade evolution sandbox where grass, seasons, walls, mutation, and inherited genes shape competing critter family lines.|Evolution,Genetics,Simulation"
 
 )
 
@@ -203,4 +209,7 @@ declare -A GAME_CATEGORIES=(
   ["breachline-tactics"]="tactical,roguelite,strategy,arcade,mobile-friendly,age-10-plus"
   ["circuit-foundry"]="factory,automation,strategy,simulation,management,mobile-friendly,age-10-plus"
   ["lan-tank-arena"]="multiplayer,action,arcade,strategy,mobile-friendly,age-10-plus"
+  ["life-engine"]="simulation,strategy,science,educational,family,age-10-plus"
+  ["evolab"]="simulation,strategy,science,educational,biology,age-10-plus"
+  ["gene-garden"]="simulation,strategy,science,educational,biology,mobile-friendly,age-10-plus,family"
 )

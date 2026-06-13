@@ -312,6 +312,71 @@ qa/reports/full-catalog-with-lan-tank-arena-mobile-batch-1/smoke-report.md
 qa/reports/full-catalog-with-lan-tank-arena-mobile-batch-12/smoke-report.md
 ```
 
+Life Engine addition on 2026-06-13:
+
+- Added `life-engine` as a bundled `LOCAL_DIR` browser artificial-life/evolution sandbox based on `MaxRobinsonTheGreat/LifeEngine` commit `15bb2fe444d3c5c0024dc92183fbda8249813fbb`.
+- Kept GPL-3.0 license/source context under `local-games/life-engine/`.
+- Offline-patched the upstream build by replacing CDN Font Awesome with local icon CSS, replacing remote CanvasJS with a small local chart shim, removing the YouTube/community-link embed, disabling remote mod links, and adding LAN Arcade QA hooks.
+- Deployed by copying only `/var/www/html/mirrors/life-engine`, then running the safe no-mirror/no-package regeneration command. Backup: `tmp/deploy-backups/life-engine-20260612T145104Z`.
+- Catalog after regeneration: 59 games.
+- Static audit: 59 OK / 0 needing attention / 0 entrypoint external dependency refs.
+- Focused Life Engine desktop regression: 1/1 strict pass, playable, 0 warnings, 0 blockers.
+- Focused Life Engine mobile regression: 1/1 strict pass, playable, 0 warnings, 0 blockers.
+- Reports:
+  - `qa/reports/game-regression/life-engine-20260612T145201Z-desktop/smoke-report.md`
+  - `qa/reports/game-regression/life-engine-20260612T145201Z-desktop/qa-summary.md`
+  - `qa/reports/game-regression/life-engine-20260612T145201Z-mobile/smoke-report.md`
+  - `qa/reports/game-regression/life-engine-20260612T145201Z-mobile/qa-summary.md`
+- A temporary agent-play/watch session was started for 20 minutes at `/mirrors/agent-runs/life-engine/`, with screenshots/status copied from a headless Playwright run. Initial PID: `204658`.
+
+EvoLab addition on 2026-06-13:
+
+- Added `evolab` as a bundled `LOCAL_DIR` browser evolution game based on `simongonzalezdc/EvoLab` commit `ad46b78e65d07de022b67d7081847ef420a0564e`.
+- Kept MIT license/source context under `local-games/evolab/`.
+- Built with scoped Node 22 because the VM global Node is 18 and Vite 8 requires Node 20.19+.
+- Installed the missing Rolldown native binding and aligned `react-dom` to `19.2.7` to match React before building.
+- Built with Vite `--base ./` so dynamic chunks load under `/mirrors/evolab/` instead of `/assets/`.
+- Offline-patched the build by removing the remote OpenDyslexic font, defaulting background music off, and guarding Tone.js startup errors for mobile/autoplay stability.
+- Deployed by copying only `/var/www/html/mirrors/evolab`, then running the safe no-mirror/no-package regeneration command. Backup: `tmp/deploy-backups/evolab-20260612T155758Z`.
+- Catalog after regeneration: 60 games.
+- Static audit: 60 OK / 0 needing attention / 0 entrypoint external dependency refs.
+- Focused EvoLab desktop regression: 1/1 strict pass, playable, 0 warnings, 0 blockers.
+- Focused EvoLab mobile regression: 1/1 strict pass, playable, 0 warnings, 0 blockers.
+- Reports:
+  - `qa/reports/game-regression/evolab-20260612T155839Z-desktop/smoke-report.md`
+  - `qa/reports/game-regression/evolab-20260612T155839Z-desktop/qa-summary.md`
+  - `qa/reports/game-regression/evolab-20260612T155839Z-mobile/smoke-report.md`
+  - `qa/reports/game-regression/evolab-20260612T155839Z-mobile/qa-summary.md`
+- A temporary 45-minute headless agent-play run was started at `/mirrors/agent-runs/evolab/`, with screenshots/status copied from a Playwright run. Initial PID: `263421`. Planned end: `2026-06-12T16:51:46Z`. Report dir: `qa/reports/agent-evolab-20260612T160646Z`.
+
+Gene Garden addition on 2026-06-13:
+
+- Added `gene-garden` as an original bundled `LOCAL_DIR` artificial-life genetics sandbox inspired by the broader Some-Life style/genre, without copying Some-Life code, assets, layout, or text.
+- Kept source note under `local-games/gene-garden/SOURCE.md`. The game is first-party LAN Arcade HTML/CSS/JS with no external runtime dependencies.
+- Core systems: grid grass growth, Spring/Winter pressure, critter family lines, eight inheritable genes, mutation, reproduction, walls, paddocks/corridor layouts, storm pressure, gene bars, and QA hooks.
+- Added `gene-garden` metadata to `games.meta.sh` and a smoke recipe that pauses, paints grass, places a wall, adds critters, runs, storms, and fast-forwards evolution.
+- Deployed by copying only `/var/www/html/mirrors/gene-garden`, then running the safe no-mirror/no-package regeneration command. Backup: `tmp/deploy-backups/gene-garden-20260612T163557Z`.
+- Catalog after regeneration: 61 games.
+- Static audit: 61 OK / 0 needing attention / 0 entrypoint external dependency refs.
+- Focused Gene Garden desktop regression: 1/1 strict pass, playable, 0 warnings, 0 blockers.
+- Focused Gene Garden mobile regression: 1/1 strict pass, playable, 0 warnings, 0 blockers.
+- Reports:
+  - `qa/reports/game-regression/gene-garden-20260612T163611Z-desktop/smoke-report.md`
+  - `qa/reports/game-regression/gene-garden-20260612T163611Z-desktop/qa-summary.md`
+  - `qa/reports/game-regression/gene-garden-20260612T163611Z-mobile/smoke-report.md`
+  - `qa/reports/game-regression/gene-garden-20260612T163611Z-mobile/qa-summary.md`
+
+Mobile UX check on 2026-06-13:
+
+- Checked the evolution/life games in a phone viewport after Dylan reported EvoLab menu overlap from a real phone screenshot.
+- Visual reports:
+  - `qa/reports/mobile-ux-check-20260612T170522Z/`
+  - `qa/reports/evolab-layout-check-20260612T171124Z/`
+- Verdict: `gene-garden` is genuinely mobile friendly; `life-engine` is mobile tolerant but tiny/desktop-ish; `evolab` is not mobile friendly because fixed side menus, setup panels, and bottom controls overlap or run off-screen on phone-sized viewports.
+- Removed `mobile-friendly` from EvoLab categories and regenerated the catalog safely. Backup: `tmp/deploy-backups/mobile-labels-20260612T171416Z`.
+- Static audit after relabel: 61 OK / 0 needing attention / 0 entrypoint external dependency refs.
+
+
 Common failure types:
 
 - missing local JavaScript, CSS, image, sound, or template files
