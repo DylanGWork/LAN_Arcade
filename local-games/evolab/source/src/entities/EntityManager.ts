@@ -1,7 +1,7 @@
 // Entity manager for handling all game entities
 
 import { Cell } from './Cell';
-import { Resource } from './Resource';
+import { Resource, type ResourceRarity, type ResourceType } from './Resource';
 import { PixiApp } from '../rendering/PixiApp';
 import { BiomeGenerator } from '../environment/BiomeGenerator';
 import { Config } from '../core/Config';
@@ -93,35 +93,47 @@ export class EntityManager {
     return cell;
   }
 
-  // Spawn resources (glucose) - Week 3: with golden resource chance
+  // Spawn collectable resources used for energy and reproduction.
   spawnResources(): void {
     const halfWidth = Config.LAKE_WIDTH / 2;
     const halfHeight = Config.LAKE_HEIGHT / 2;
 
-    for (let i = 0; i < Config.GLUCOSE_COUNT; i++) {
-      const x = Math.random() * Config.LAKE_WIDTH - halfWidth;
-      const y = Math.random() * Config.LAKE_HEIGHT - halfHeight;
+    const spawnBatch = (
+      prefix: string,
+      type: ResourceType,
+      count: number,
+      radius: number,
+      color: number,
+      allowGolden = false
+    ) => {
+      for (let i = 0; i < count; i++) {
+        const x = Math.random() * Config.LAKE_WIDTH - halfWidth;
+        const y = Math.random() * Config.LAKE_HEIGHT - halfHeight;
 
-      // Week 3: 2% chance for golden resource (10x value)
-      const isGolden = Math.random() < Config.GOLDEN_RESOURCE_CHANCE;
-      const rarity = isGolden ? 'golden' : 'common';
-      const color = isGolden ? 0xffd700 : Config.GLUCOSE_COLOR; // Gold color for golden resources
+        const isGolden = allowGolden && Math.random() < Config.GOLDEN_RESOURCE_CHANCE;
+        const rarity: ResourceRarity = isGolden ? 'golden' : 'common';
+        const resourceColor = isGolden ? 0xffd700 : color;
 
-      const sprite = this.renderer.createCircle(x, y, Config.GLUCOSE_RADIUS, color);
-      this.renderer.addToWorld(sprite);
+        const sprite = this.renderer.createCircle(x, y, radius, resourceColor);
+        this.renderer.addToWorld(sprite);
 
-      const resource = new Resource(`glucose-${i}`, x, y, 'glucose', sprite, rarity);
-      this.resources.set(resource.id, resource);
-    }
+        const resource = new Resource(`${prefix}-${i}`, x, y, type, sprite, rarity);
+        this.resources.set(resource.id, resource);
+      }
+    };
+
+    spawnBatch('glucose', 'glucose', Config.GLUCOSE_COUNT, Config.GLUCOSE_RADIUS, Config.GLUCOSE_COLOR, true);
+    spawnBatch('amino-acid', 'aminoAcid', Config.AMINO_ACID_COUNT, Config.AMINO_ACID_RADIUS, Config.AMINO_ACID_COLOR);
+    spawnBatch('phosphate', 'phosphate', Config.PHOSPHATE_COUNT, Config.PHOSPHATE_RADIUS, Config.PHOSPHATE_COLOR);
   }
 
   // Update all entities
-  update(deltaTime: number, autoMode: boolean = false, manualDirection: { x: number; y: number } = { x: 0, y: 0 }): void {
+  update(deltaTime: number, autoMode: boolean = false, manualDirection: { x: number; y: number } = { x: 0, y: 0 }, reproductionMode: 'asexual' | 'sexual' = 'asexual'): void {
     // Update player species (new species-level gameplay)
     if (this.playerSpecies) {
       const allCells = this.getAllCells();
       const allResources = Array.from(this.resources.values());
-      this.playerSpecies.update(deltaTime, allCells, allResources, autoMode, manualDirection);
+      this.playerSpecies.update(deltaTime, allCells, allResources, autoMode, manualDirection, reproductionMode);
     }
 
     // Update legacy player cell (for backward compatibility)

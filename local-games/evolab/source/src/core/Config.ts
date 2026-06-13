@@ -41,6 +41,12 @@ export const Config = {
   GLUCOSE_COUNT: 60, // Increased from 40 to match larger map size
   GLUCOSE_RADIUS: 8,
   GLUCOSE_COLOR: 0xffd700,
+  AMINO_ACID_COUNT: 24,
+  AMINO_ACID_RADIUS: 7,
+  AMINO_ACID_COLOR: 0x4fc3f7,
+  PHOSPHATE_COUNT: 20,
+  PHOSPHATE_RADIUS: 7,
+  PHOSPHATE_COLOR: 0xba68c8,
   GLUCOSE_RESPAWN_TIME: 8, // Seconds; resource.update receives deltaTime in seconds
   RESOURCE_COLLECTION_RANGE: 44, // Wider pickup radius so visual overlaps reliably collect
   GOLDEN_RESOURCE_CHANCE: 0.02, // 2% chance for golden resource (10x value)
@@ -106,8 +112,8 @@ export const Config = {
 
   // Reproduction requirements
   REPRODUCTION_ATP_THRESHOLD: 70, // % of max ATP required
-  REPRODUCTION_GLUCOSE_REQUIRED: 50,
-  REPRODUCTION_AMINO_ACIDS_REQUIRED: 30,
-  REPRODUCTION_PHOSPHATES_REQUIRED: 20,
-  REPRODUCTION_COOLDOWN_SECONDS: 60, // Time between reproductions
+  REPRODUCTION_GLUCOSE_REQUIRED: 25,
+  REPRODUCTION_AMINO_ACIDS_REQUIRED: 9,
+  REPRODUCTION_PHOSPHATES_REQUIRED: 6,
+  REPRODUCTION_COOLDOWN_SECONDS: 45, // Time between reproductions
 } as const;

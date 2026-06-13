@@ -2,7 +2,7 @@
 // Handles movement, resource collection, and predator avoidance automatically
 
 import { Cell } from '../entities/Cell';
-import { Resource } from '../entities/Resource';
+import { Resource, type ResourceType } from '../entities/Resource';
 import { BiomeGenerator, BiomeData } from '../environment/BiomeGenerator';
 import { Config } from './Config';
 import { logger } from '../utils/Logger';
@@ -54,52 +54,35 @@ export class AutoPilot {
     const projectedATP = player.traits.atp - (drainRate * Config.AUTO_PILOT_STARVATION_WINDOW_SECONDS);
     const projectedATPRatio = projectedATP / player.traits.maxATP;
     
-    // Trigger resource-seeking if:
-    // - ATP ratio below hunger threshold OR
-    // - Projected ATP will drop below 30% OR
-    // - Compounds are needed for reproduction
-    const needsResources = 
-      atpRatio < Config.AUTO_PILOT_HUNGER_THRESHOLD ||
-      projectedATPRatio < 0.3 ||
-      player.compounds.glucose < Config.REPRODUCTION_GLUCOSE_REQUIRED ||
-      player.compounds.aminoAcids < Config.REPRODUCTION_AMINO_ACIDS_REQUIRED ||
-      player.compounds.phosphates < Config.REPRODUCTION_PHOSPHATES_REQUIRED;
+    const preferredResourceType = this.getNeededResourceType(player, atpRatio, projectedATPRatio);
+    const needsResources = preferredResourceType !== null;
 
     if (needsResources) {
       if (Config.DEBUG_AUTO_PILOT) {
-        logger.log(`[AutoPilot] Cell ${player.id} needs resources - ATP: ${atpRatio.toFixed(2)}, Projected: ${projectedATPRatio.toFixed(2)}`);
+        logger.log(`[AutoPilot] Cell ${player.id} needs ${preferredResourceType} - ATP: ${atpRatio.toFixed(2)}, Projected: ${projectedATPRatio.toFixed(2)}`);
       }
 
-      // Check if cell has cached target
       const cachedTargetId = this.cellTargets.get(player.id);
       let targetResource: Resource | null = null;
 
       if (cachedTargetId) {
-        // Verify cached target still exists and is collectable
-        targetResource = resources.find(r => r.id === cachedTargetId && !r.isCollected) || null;
-        
+        targetResource = resources.find(r =>
+          r.id === cachedTargetId &&
+          !r.isCollected &&
+          (!preferredResourceType || r.type === preferredResourceType)
+        ) || null;
+
         if (!targetResource) {
-          // Cached target is invalid, clear it
           this.cellTargets.delete(player.id);
-          if (Config.DEBUG_AUTO_PILOT) {
-            logger.log(`[AutoPilot] Cell ${player.id} cached target invalid, finding new one`);
-          }
-        } else {
-          if (Config.DEBUG_AUTO_PILOT) {
-            logger.log(`[AutoPilot] Cell ${player.id} using cached target: ${cachedTargetId}`);
-          }
         }
       }
 
-      // If no valid cached target, find new nearest resource
       if (!targetResource) {
-        targetResource = this.findNearestResource(player, resources);
+        targetResource = this.findNearestResource(player, resources, preferredResourceType) ||
+          this.findNearestResource(player, resources);
+
         if (targetResource) {
-          // Cache the new target
           this.cellTargets.set(player.id, targetResource.id);
-          if (Config.DEBUG_AUTO_PILOT) {
-            logger.log(`[AutoPilot] Cell ${player.id} cached new target: ${targetResource.id}`);
-          }
         }
       }
 
@@ -267,7 +250,27 @@ export class AutoPilot {
     return distance < safeDistance;
   }
 
-  private findNearestResource(player: Cell, resources: Resource[]): Resource | null {
+  private getNeededResourceType(player: Cell, atpRatio: number, projectedATPRatio: number): ResourceType | null {
+    if (atpRatio < Config.AUTO_PILOT_HUNGER_THRESHOLD || projectedATPRatio < 0.3) {
+      return 'glucose';
+    }
+
+    if (player.compounds.glucose < Config.REPRODUCTION_GLUCOSE_REQUIRED) {
+      return 'glucose';
+    }
+
+    if (player.compounds.aminoAcids < Config.REPRODUCTION_AMINO_ACIDS_REQUIRED) {
+      return 'aminoAcid';
+    }
+
+    if (player.compounds.phosphates < Config.REPRODUCTION_PHOSPHATES_REQUIRED) {
+      return 'phosphate';
+    }
+
+    return null;
+  }
+
+  private findNearestResource(player: Cell, resources: Resource[], preferredType: ResourceType | null = null): Resource | null {
     let nearest: Resource | null = null;
     let nearestDistance = Infinity;
 
@@ -275,12 +278,11 @@ export class AutoPilot {
     const detectionRange = player.traits.visionRange || 800;
 
     for (const resource of resources) {
-      // Skip already collected resources
       if (resource.isCollected) continue;
+      if (preferredType && resource.type !== preferredType) continue;
 
       const distance = this.getDistance(player.position, resource.position);
 
-      // Only consider resources within detection range
       if (distance < nearestDistance && distance < detectionRange) {
         nearestDistance = distance;
         nearest = resource;

@@ -15,6 +15,7 @@ export interface SpeciesStats {
   population: number;
   averageTraits: Partial<Traits>;
   totalResourcesCollected: number;
+  totalBirths: number;
   averageSurvivalTime: number;
   generation: number;
   diversity: number; // Genetic diversity measure
@@ -26,6 +27,7 @@ export class PlayerSpeciesManager {
   private renderer: PixiApp;
   private autoPilot: AutoPilot;
   private totalResourcesCollected = 0;
+  private totalBirths = 0;
   private generation = 1;
   private speciesColor: number;
   private initialPopulationSize = 15; // Increased for better visibility
@@ -54,6 +56,7 @@ export class PlayerSpeciesManager {
       genome.traits.size += (Math.random() - 0.5) * mutationAmount;
       genome.traits.speed += (Math.random() - 0.5) * mutationAmount;
       genome.traits.color = this.speciesColor;
+      genome.traits.gender = Math.random() < 0.5 ? 'male' : 'female';
       
       // Ensure cells start with full ATP and health
       genome.traits.atp = genome.traits.maxATP;
@@ -85,7 +88,7 @@ export class PlayerSpeciesManager {
   }
 
   // Update all cells in the species
-  update(deltaTime: number, allCells: Cell[], resources: Resource[], autoMode: boolean, manualDirection: { x: number; y: number } = { x: 0, y: 0 }): void {
+  update(deltaTime: number, allCells: Cell[], resources: Resource[], autoMode: boolean, manualDirection: { x: number; y: number } = { x: 0, y: 0 }, reproductionMode: 'asexual' | 'sexual' = 'asexual'): void {
     // Update each cell
     this.cells.forEach(cell => {
       cell.update(deltaTime);
@@ -131,89 +134,138 @@ export class PlayerSpeciesManager {
     });
 
     // Natural reproduction within species
-    this.handleNaturalReproduction();
+    this.handleNaturalReproduction(reproductionMode);
   }
 
   // Check resource collection for a cell
   private checkResourceCollection(cell: Cell, resources: Resource[]): void {
     resources.forEach(resource => {
-      if (!resource.isCollected) {
-        const distance = cell.distanceTo(resource.position);
-        if (distance < Config.RESOURCE_COLLECTION_RANGE) {
-          resource.collect();
-          // Clear cached target when resource is collected
-          this.autoPilot.clearTarget(cell.id);
-          
-          if (resource.type === 'glucose') {
-            const atpBefore = cell.traits.atp;
-            cell.restoreATP(Config.ATP_FROM_GLUCOSE);
-            cell.collectCompound('glucose', 5);
-            this.totalResourcesCollected++;
-            const atpGained = cell.traits.atp - atpBefore;
-            this.renderer.particleSystem.createEatingEffect(
-              resource.position.x,
-              resource.position.y,
-              Config.GLUCOSE_COLOR
-            );
-            if (atpGained > 0) {
-              this.renderer.particleSystem.createATPText(cell.position.x, cell.position.y, atpGained);
-            }
-          } else if (resource.type === 'aminoAcid') {
-            cell.collectCompound('aminoAcid', 3);
-          } else if (resource.type === 'phosphate') {
-            cell.collectCompound('phosphate', 2);
-          }
+      if (resource.isCollected) return;
+
+      const distance = cell.distanceTo(resource.position);
+      if (distance >= Config.RESOURCE_COLLECTION_RANGE) return;
+
+      resource.collect();
+      this.autoPilot.clearTarget(cell.id);
+      this.totalResourcesCollected++;
+
+      this.renderer.particleSystem.createEatingEffect(
+        resource.position.x,
+        resource.position.y,
+        this.getResourceColor(resource.type)
+      );
+
+      if (resource.type === 'glucose') {
+        const atpBefore = cell.traits.atp;
+        cell.restoreATP(Config.ATP_FROM_GLUCOSE);
+        cell.collectCompound('glucose', 5);
+        const atpGained = cell.traits.atp - atpBefore;
+        if (atpGained > 0) {
+          this.renderer.particleSystem.createATPText(cell.position.x, cell.position.y, atpGained);
         }
+      } else if (resource.type === 'aminoAcid') {
+        cell.collectCompound('aminoAcid', 3);
+      } else if (resource.type === 'phosphate') {
+        cell.collectCompound('phosphate', 2);
       }
     });
   }
 
+  private getResourceColor(type: Resource['type']): number {
+    if (type === 'aminoAcid') return Config.AMINO_ACID_COLOR;
+    if (type === 'phosphate') return Config.PHOSPHATE_COLOR;
+    return Config.GLUCOSE_COLOR;
+  }
+
   // Handle natural reproduction within the species
-  private handleNaturalReproduction(): void {
-    // Find cells that can reproduce
+  private handleNaturalReproduction(reproductionMode: 'asexual' | 'sexual'): void {
     const readyCells = this.cells.filter(cell => cell.canReproduce());
-    
-    if (readyCells.length >= 2) {
-      // Pair up cells for reproduction (sexual or asexual)
-      for (let i = 0; i < readyCells.length - 1; i += 2) {
-        const parent1 = readyCells[i];
-        const parent2 = readyCells[i + 1];
-        
-        // Ensure parents exist
-        if (!parent1 || !parent2) continue;
-        
-        // Create offspring
-        const offspringGenome = parent1.genome.clone();
-        // Mix traits from both parents
-        offspringGenome.traits.size = (parent1.traits.size + parent2.traits.size) / 2;
-        offspringGenome.traits.speed = (parent1.traits.speed + parent2.traits.speed) / 2;
-        offspringGenome.traits.color = this.speciesColor;
-        
-        // Spawn near parents
-        const spawnX = (parent1.position.x + parent2.position.x) / 2 + (Math.random() - 0.5) * 50;
-        const spawnY = (parent1.position.y + parent2.position.y) / 2 + (Math.random() - 0.5) * 50;
-        
-        const radius = 10 + offspringGenome.traits.size;
-        const sprite = this.renderer.createCircle(spawnX, spawnY, radius, offspringGenome.traits.color);
-        this.renderer.addToWorld(sprite);
-        
-        const offspring = new Cell(
-          `player-species-${Date.now()}-${Math.random()}`,
-          spawnX,
-          spawnY,
-          offspringGenome,
-          sprite,
-          false
-        );
-        
-        this.cells.push(offspring);
-        parent1.markReproduction();
-        parent2.markReproduction();
-        
-        // Limit population growth
-        if (this.cells.length > 50) break;
+    if (readyCells.length === 0 || this.cells.length >= 50) return;
+
+    if (reproductionMode === 'asexual') {
+      for (const parent of readyCells) {
+        this.createOffspring(parent);
+        if (this.cells.length >= 50) break;
       }
+      return;
     }
+
+    const usedParents = new Set<string>();
+    for (const parent1 of readyCells) {
+      if (usedParents.has(parent1.id)) continue;
+
+      const parent2 = readyCells.find(candidate =>
+        candidate.id !== parent1.id &&
+        !usedParents.has(candidate.id) &&
+        candidate.traits.gender &&
+        parent1.traits.gender &&
+        candidate.traits.gender !== parent1.traits.gender
+      );
+
+      if (!parent2) continue;
+
+      this.createOffspring(parent1, parent2);
+      usedParents.add(parent1.id);
+      usedParents.add(parent2.id);
+      if (this.cells.length >= 50) break;
+    }
+  }
+
+  private createOffspring(parent1: Cell, parent2?: Cell): void {
+    const offspringGenome = parent1.genome.clone();
+    const mate = parent2 || parent1;
+
+    offspringGenome.traits.size = (parent1.traits.size + mate.traits.size) / 2;
+    offspringGenome.traits.speed = (parent1.traits.speed + mate.traits.speed) / 2;
+    offspringGenome.traits.maxATP = (parent1.traits.maxATP + mate.traits.maxATP) / 2;
+    offspringGenome.traits.maxHealth = (parent1.traits.maxHealth + mate.traits.maxHealth) / 2;
+    offspringGenome.traits.color = this.speciesColor;
+    offspringGenome.traits.gender = Math.random() < 0.5 ? 'male' : 'female';
+    offspringGenome.traits.atp = offspringGenome.traits.maxATP;
+    offspringGenome.traits.health = offspringGenome.traits.maxHealth;
+
+    const spawnX = parent2
+      ? (parent1.position.x + parent2.position.x) / 2 + (Math.random() - 0.5) * 50
+      : parent1.position.x + (Math.random() - 0.5) * 60;
+    const spawnY = parent2
+      ? (parent1.position.y + parent2.position.y) / 2 + (Math.random() - 0.5) * 50
+      : parent1.position.y + (Math.random() - 0.5) * 60;
+
+    const radius = 10 + offspringGenome.traits.size;
+    const sprite = this.renderer.createCircle(spawnX, spawnY, radius, offspringGenome.traits.color);
+    this.renderer.addToWorld(sprite);
+
+    const offspring = new Cell(
+      `player-species-${Date.now()}-${Math.random()}`,
+      spawnX,
+      spawnY,
+      offspringGenome,
+      sprite,
+      false
+    );
+
+    const velocityAngle = Math.random() * Math.PI * 2;
+    const speed = 1 + Math.random() * 2;
+    offspring.velocity.x = Math.cos(velocityAngle) * speed;
+    offspring.velocity.y = Math.sin(velocityAngle) * speed;
+    offspring.markReproduction();
+
+    this.spendReproductionCompounds(parent1);
+    parent1.markReproduction();
+    if (parent2) {
+      this.spendReproductionCompounds(parent2);
+      parent2.markReproduction();
+    }
+
+    this.cells.push(offspring);
+    this.totalBirths++;
+    this.renderer.particleSystem.createEatingEffect(spawnX, spawnY, this.speciesColor);
+  }
+
+  private spendReproductionCompounds(cell: Cell): void {
+    cell.compounds.glucose = Math.max(0, cell.compounds.glucose - Config.REPRODUCTION_GLUCOSE_REQUIRED);
+    cell.compounds.aminoAcids = Math.max(0, cell.compounds.aminoAcids - Config.REPRODUCTION_AMINO_ACIDS_REQUIRED);
+    cell.compounds.phosphates = Math.max(0, cell.compounds.phosphates - Config.REPRODUCTION_PHOSPHATES_REQUIRED);
   }
 
   // Apply evolution modifications to the whole species
@@ -247,6 +299,7 @@ export class PlayerSpeciesManager {
         population: 0,
         averageTraits: {},
         totalResourcesCollected: this.totalResourcesCollected,
+        totalBirths: this.totalBirths,
         averageSurvivalTime: 0,
         generation: this.generation,
         diversity: 0,
@@ -296,6 +349,7 @@ export class PlayerSpeciesManager {
       population: this.cells.length,
       averageTraits: avgTraits,
       totalResourcesCollected: this.totalResourcesCollected,
+      totalBirths: this.totalBirths,
       averageSurvivalTime: totalSurvivalTime / this.cells.length,
       generation: this.generation,
       diversity,

@@ -540,7 +540,12 @@ export class GameLoop {
     this.applyEnvironmentalHazards(deltaTime);
 
     // Update all entities (species-level gameplay)
-    this.entityManager.update(deltaTime, this.autoMode, manualDirection);
+    this.entityManager.update(
+      deltaTime,
+      this.autoMode,
+      manualDirection,
+      this.evolutionSystems.sexualReproductionEnabled ? 'sexual' : 'asexual'
+    );
 
     // Update evolution systems (physics, mating, speciation)
     const allCells = this.entityManager.getAllCells();
@@ -1173,14 +1178,14 @@ export class GameLoop {
       // Repurpose resource stats for species-wide metrics
       this.setHudLabel('glucose-label', 'Population:');
       this.setHudValue('glucose-value', stats.population);
-      this.setHudLabel('food-label', 'Food Eaten:');
+      this.setHudLabel('food-label', 'Resources Eaten:');
       this.setHudValue('food-value', stats.totalResourcesCollected);
 
       this.setHudLabel('aminoacid-label', 'Avg Survival (s):');
       this.setHudValue('aminoacid-value', Math.round(stats.averageSurvivalTime || 0));
 
-      this.setHudLabel('phosphate-label', 'Diversity Index:');
-      this.setHudValue('phosphate-value', stats.diversity ? stats.diversity.toFixed(1) : '0.0');
+      this.setHudLabel('phosphate-label', 'Births:');
+      this.setHudValue('phosphate-value', stats.totalBirths);
 
       // Update Generation
       const generationValue = document.getElementById('generation-value');

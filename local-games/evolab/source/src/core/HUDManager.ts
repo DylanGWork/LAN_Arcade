@@ -93,8 +93,8 @@ export class HUDManager {
     this.setHudLabel('aminoacid-label', 'Avg Survival (s):');
     this.setHudValue('aminoacid-value', Math.round(stats.averageSurvivalTime || 0));
 
-    this.setHudLabel('phosphate-label', 'Diversity Index:');
-    this.setHudValue('phosphate-value', stats.diversity ? stats.diversity.toFixed(1) : '0.0');
+    this.setHudLabel('phosphate-label', 'Births:');
+    this.setHudValue('phosphate-value', stats.totalBirths);
 
     // Update Generation
     const generationValue = document.getElementById('generation-value');
