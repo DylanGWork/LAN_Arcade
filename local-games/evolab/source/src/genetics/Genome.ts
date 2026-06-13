@@ -113,6 +113,9 @@ export class Genome {
       parentId: `gen-${this.lineage.generation}`,
       birthTime: Date.now(),
       mutations: [...mutations],
+      motherLineageId: this.lineage.motherLineageId,
+      fatherLineageId: this.lineage.fatherLineageId,
+      speciesId: this.lineage.speciesId,
     };
 
     const cloned = new Genome(clonedTraits, clonedLineage);

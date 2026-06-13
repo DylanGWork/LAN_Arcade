@@ -54,7 +54,7 @@ export class PixiApp {
       autoDensity: true,
       antialias: false,
       preference: 'webgl',
-      preferWebGLVersion: 1,
+      preferWebGLVersion: 2,
       powerPreference: 'low-power',
       resizeTo: window, // Auto-resize with window
     });

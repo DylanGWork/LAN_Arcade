@@ -97,23 +97,23 @@ const traitHelp: Partial<Record<keyof Traits, TraitHelp>> = {
   },
   photosynthesis: {
     summary: 'Passive ATP gained from bright shallow areas.',
-    higher: 'Helps in safer lit biomes.',
+    higher: 'Offsets ATP drain if the species can stay alive long enough.',
     lower: 'Pushes the species to forage more.',
   },
   size: {
     summary: 'Body size, visibility, and collision presence.',
-    higher: 'Tougher and more imposing, but hungrier.',
+    higher: 'Tougher and more imposing, but hungrier and slower to steer.',
     lower: 'Cheaper to keep alive, but more fragile.',
   },
   speed: {
     summary: 'How quickly cells can cross the map.',
-    higher: 'Reaches food and escapes threats sooner.',
-    lower: 'Saves some energy but can miss resources.',
+    higher: 'Reaches food and escapes threats sooner, but burns extra ATP.',
+    lower: 'Saves energy but can miss resources.',
   },
   armor: {
     summary: 'Reduces combat and environmental damage.',
-    higher: 'Survives hits and harsh biomes longer.',
-    lower: 'Leaves cells exposed.',
+    higher: 'Survives hits and harsh biomes longer, but movement gets heavier.',
+    lower: 'Leaves cells exposed but nimble.',
   },
   regeneration: {
     summary: 'Health recovered every second while alive.',
@@ -122,8 +122,8 @@ const traitHelp: Partial<Record<keyof Traits, TraitHelp>> = {
   },
   visionRange: {
     summary: 'How far cells can notice food and threats.',
-    higher: 'Finds distant resources, but also reacts to distant danger.',
-    lower: 'Less distraction, but easier to miss food.',
+    higher: 'Finds distant resources, but costs ATP and can trigger distant fear.',
+    lower: 'Less sensory cost, but easier to miss food.',
   },
   chemotaxis: {
     summary: 'Chemical sense for tracking nutrients.',
@@ -137,13 +137,13 @@ const traitHelp: Partial<Record<keyof Traits, TraitHelp>> = {
   },
   aggression: {
     summary: 'How willing cells are to fight.',
-    higher: 'More predator-like behavior.',
+    higher: 'More predator-like behavior and damage, but attacks cost more ATP.',
     lower: 'More peaceful foraging.',
   },
   intelligence: {
     summary: 'Decision quality for survival behavior.',
-    higher: 'Better prioritising food, safety, and reproduction.',
-    lower: 'Simpler wandering.',
+    higher: 'Better prioritising food, safety, and reproduction, with a brain-energy cost.',
+    lower: 'Simpler wandering with lower upkeep.',
   },
   fearResponse: {
     summary: 'How readily cells flee when danger is nearby.',
@@ -152,8 +152,8 @@ const traitHelp: Partial<Record<keyof Traits, TraitHelp>> = {
   },
   toxinStrength: {
     summary: 'Extra damage when fighting.',
-    higher: 'Better offensive pressure.',
-    lower: 'Less combat payoff.',
+    higher: 'Better offensive pressure, but toxin upkeep and attacks cost more ATP.',
+    lower: 'Less combat payoff and lower upkeep.',
   },
   speedBurstPower: {
     summary: 'Emergency burst movement potential.',
@@ -414,7 +414,7 @@ export const TraitEditor: React.FC<TraitEditorProps> = ({
               </button>
             </div>
             <div className="info-text">
-              Use sliders, +/- buttons, or type a value. Applied changes affect living cells immediately and spend DNA.
+              Use sliders, +/- buttons, or type a value. Applied changes affect living cells immediately and spend DNA. Bigger, faster, smarter, sensory, armored, and toxic builds now have upkeep costs.
             </div>
           </div>
 

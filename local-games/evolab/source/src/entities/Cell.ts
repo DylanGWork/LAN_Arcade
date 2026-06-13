@@ -108,14 +108,23 @@ export class Cell {
 
   // Apply movement force (for player input)
   applyForce(direction: Vector2D, speed: number): void {
-    this.velocity.x += direction.x * speed;
-    this.velocity.y += direction.y * speed;
+    const armorDrag = 1 - Math.min(0.45, Math.max(0, this.traits.armor || 0) * 0.04);
+    const sizeDrag = 1 - Math.min(0.25, Math.max(0, (this.traits.size || 5) - 5) * 0.035);
+    const effectiveSpeed = speed * armorDrag * sizeDrag;
 
-    // Cap maximum velocity
+    this.velocity.x += direction.x * effectiveSpeed;
+    this.velocity.y += direction.y * effectiveSpeed;
+
+    // Cap maximum velocity with trait trade-offs: speed helps, armor and bulk slow you down.
+    const speedScale = 0.55 + Math.max(1, this.traits.speed || 1) / 10;
+    const effectiveMaxVelocity = Math.max(
+      2.5,
+      Config.MAX_VELOCITY * speedScale * armorDrag * sizeDrag
+    );
     const magnitude = Math.sqrt(this.velocity.x ** 2 + this.velocity.y ** 2);
-    if (magnitude > Config.MAX_VELOCITY && magnitude > 0) {
-      this.velocity.x = (this.velocity.x / magnitude) * Config.MAX_VELOCITY;
-      this.velocity.y = (this.velocity.y / magnitude) * Config.MAX_VELOCITY;
+    if (magnitude > effectiveMaxVelocity && magnitude > 0) {
+      this.velocity.x = (this.velocity.x / magnitude) * effectiveMaxVelocity;
+      this.velocity.y = (this.velocity.y / magnitude) * effectiveMaxVelocity;
     }
   }
 
@@ -123,14 +132,13 @@ export class Cell {
     return Math.max(0, Math.min(10, deltaTime * Config.TARGET_FPS));
   }
 
-  // Drain ATP based on metabolism and size
-  private drainATP(simulationSteps: number): void {
-    const baseDrain = Config.ATP_DRAIN_RATE;
-    const sizeDrain = this.traits.size * Config.ATP_DRAIN_MULTIPLIER_SIZE;
-    const energyEfficiency = Math.max(0.25, this.traits.energyEfficiency || 1);
-    const totalDrain = ((baseDrain + sizeDrain) * this.traits.metabolismRate) / energyEfficiency;
+  getATPDrainPerSecond(): number {
+    return this.getATPDrainPerStep() * Config.TARGET_FPS;
+  }
 
-    this.traits.atp -= totalDrain * simulationSteps;
+  // Drain ATP based on metabolism, body plan, senses, and combat load.
+  private drainATP(simulationSteps: number): void {
+    this.traits.atp -= this.getATPDrainPerStep() * simulationSteps;
 
     // Clamp ATP to valid range
     if (this.traits.atp < 0) {
@@ -140,6 +148,43 @@ export class Cell {
     if (this.traits.atp > this.traits.maxATP) {
       this.traits.atp = this.traits.maxATP;
     }
+  }
+
+  private getATPDrainPerStep(): number {
+    const size = Math.max(1, this.traits.size || 1);
+    const speed = Math.max(1, this.traits.speed || 1);
+    const armor = Math.max(0, this.traits.armor || 0);
+    const visionRange = Math.max(50, this.traits.visionRange || 50);
+    const chemotaxis = Math.max(0, this.traits.chemotaxis || 0);
+    const hearing = Math.max(0, this.traits.hearing || 0);
+    const intelligence = Math.max(0, this.traits.intelligence || 0);
+    const aggression = Math.max(0, this.traits.aggression || 0);
+    const toxinStrength = Math.max(0, this.traits.toxinStrength || 0);
+    const burst = Math.max(0, this.traits.speedBurstPower || 0);
+    const regeneration = Math.max(0, this.traits.regeneration || 0);
+    const photosynthesis = Math.max(0, this.traits.photosynthesis || 0);
+
+    const baseDrain = Config.ATP_DRAIN_RATE;
+    const sizeDrain = size * Config.ATP_DRAIN_MULTIPLIER_SIZE;
+    const speedDrain = Math.max(0, speed - 4) * 0.0025;
+    const armorDrain = armor * 0.0018;
+    const sensoryDrain =
+      (Math.max(0, visionRange - 150) / 350) * 0.012 +
+      chemotaxis * 0.0009 +
+      hearing * 0.0007;
+    const cognitionDrain = intelligence * 0.0009;
+    const weaponDrain = aggression * 0.0006 + toxinStrength * 0.0012 + burst * 0.0008;
+    const regenerationDrain = regeneration * 0.001;
+    const photosynthesisCredit = photosynthesis * 0.012;
+
+    const metabolismRate = Math.max(0.5, this.traits.metabolismRate || 1);
+    const energyEfficiency = Math.max(0.35, Math.min(1.8, this.traits.energyEfficiency || 1));
+    const preEfficiencyDrain = Math.max(
+      0.006,
+      baseDrain + sizeDrain + speedDrain + armorDrain + sensoryDrain + cognitionDrain + weaponDrain + regenerationDrain - photosynthesisCredit
+    );
+
+    return (preEfficiencyDrain * metabolismRate) / energyEfficiency;
   }
 
   private regenerateHealth(deltaTime: number): void {

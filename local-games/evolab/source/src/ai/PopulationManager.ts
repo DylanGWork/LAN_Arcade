@@ -95,11 +95,12 @@ export class PopulationManager {
 
     setups.forEach((setup, index) => {
       const type = setup.type;
+      const name = setup.name || `${this.getTypeLabel(type)} ${index + 1}`;
       const baseGenome = this.createBaseGenome(type);
       const color = setup.color ?? this.getDefaultColor(type);
       baseGenome.traits.color = color;
+      baseGenome.lineage.speciesId = `ai-${name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
       const safePopulation = Math.max(1, Math.floor(setup.population));
-      const name = setup.name || `${this.getTypeLabel(type)} ${index + 1}`;
       this.registerSpecies(name, type, baseGenome, color, safePopulation);
     });
   }

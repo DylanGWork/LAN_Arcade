@@ -394,12 +394,73 @@ export class EventManager {
 
     const targetCells = this.filterCellsByTarget(effect.target, allCells);
     for (const cell of targetCells) {
+      if (effect.stat === 'dnaPoints') {
+        cell.genome.dnaPoints = Math.max(0, cell.genome.dnaPoints + effect.value);
+        continue;
+      }
+
       const stat = effect.stat as keyof typeof cell.traits;
       if (typeof cell.traits[stat] === 'number') {
         const currentValue = cell.traits[stat] as number;
-        (cell.traits[stat] as number) = Math.max(0, currentValue + effect.value);
+        const nextValue = this.clampTraitStat(effect.stat, currentValue + effect.value, cell);
+        (cell.traits[stat] as number) = nextValue;
+
+        if (effect.stat === 'maxHealth') {
+          cell.traits.health = Math.min(cell.traits.health, nextValue);
+        } else if (effect.stat === 'maxATP') {
+          cell.traits.atp = Math.min(cell.traits.atp, nextValue);
+        }
       }
     }
+  }
+
+  private clampTraitStat(stat: string, value: number, cell: Cell): number {
+    const dynamicRanges: Record<string, [number, number]> = {
+      atp: [0, cell.traits.maxATP],
+      health: [0, cell.traits.maxHealth],
+    };
+
+    const fixedRanges: Record<string, [number, number]> = {
+      maxATP: [50, 200],
+      metabolismRate: [0.5, 2],
+      energyEfficiency: [0.5, 1.8],
+      photosynthesis: [0, 1],
+      size: [1, 10],
+      speed: [1, 10],
+      maxSpeed: [3, 15],
+      armor: [0, 10],
+      maxHealth: [50, 200],
+      regeneration: [0, 5],
+      visionRange: [50, 500],
+      chemotaxis: [0, 10],
+      hearing: [0, 10],
+      magnetoreception: [0, 10],
+      aggression: [0, 10],
+      intelligence: [0, 10],
+      socialBehavior: [0, 10],
+      fearResponse: [0, 10],
+      learningRate: [0, 1],
+      toxinStrength: [0, 10],
+      speedBurstPower: [0, 10],
+      camouflage: [0, 10],
+      electricShock: [0, 10],
+      absorptionRate: [0.5, 2],
+      digestionEfficiency: [0.5, 2],
+      maxStorage: [50, 500],
+      scavengerBonus: [0, 2],
+      temperatureTolerance: [0, 10],
+      pressureResistance: [0, 10],
+      toxinResistance: [0, 10],
+      pHTolerance: [0, 10],
+      oxygenNeed: [0, 10],
+      fertilityRate: [0, 1],
+      matingDisplayStrength: [0, 10],
+    };
+
+    const range = dynamicRanges[stat] ?? fixedRanges[stat];
+    if (!range) return Math.max(0, value);
+
+    return Math.max(range[0], Math.min(range[1], value));
   }
 
   private filterCellsByTarget(target: string, allCells: Cell[]): Cell[] {

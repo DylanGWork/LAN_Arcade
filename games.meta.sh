@@ -70,6 +70,9 @@ declare -A GAMES=(
   ["life-engine"]="LOCAL_DIR::local-games/life-engine"
   ["evolab"]="LOCAL_DIR::local-games/evolab"
   ["gene-garden"]="LOCAL_DIR::local-games/gene-garden"
+  ["mindustry-lan"]="LOCAL_DIR::local-games/mindustry-lan"
+  ["unciv-lan"]="LOCAL_DIR::local-games/unciv-lan"
+  ["retro-emulator-lab"]="LOCAL_DIR::local-games/retro-emulator-lab"
 
 )
 
@@ -139,6 +142,9 @@ declare -A GAME_INFO=(
   ["life-engine"]="The Life Engine|LIFE|Artificial Life - Evolution Sandbox|Cellular ecosystem sandbox where organisms eat, reproduce, mutate, compete, and adapt through natural selection.|Evolution,Artificial life,Science"
   ["evolab"]="EvoLab|DNA|Evolution - Cell Survival|Browser evolution game with ATP survival, resource gathering, AI species, biomes, trait editing, generations, and ecosystem data.|Evolution,Genetics,Simulation"
   ["gene-garden"]="Gene Garden|GENE|Artificial Life - Genetics Garden|Original LAN Arcade evolution sandbox where grass, seasons, walls, mutation, and inherited genes shape competing critter family lines.|Evolution,Genetics,Simulation"
+  ["mindustry-lan"]="Mindustry LAN Server|MIND|LAN Service - Factory RTS|Host a Mindustry dedicated server on the arcade box while phones and laptops run native clients.|Multiplayer,Factory,Server"
+  ["unciv-lan"]="Unciv LAN Server|CIV|LAN Service - Turn Strategy|Host Unciv multiplayer turn files locally for Civilization-style games on phones and desktops.|Strategy,Multiplayer,Server"
+  ["retro-emulator-lab"]="Retro Emulator Lab|ROM|Emulator - Homebrew Intake|Offline retro-emulation staging area for legal homebrew/public-domain ROMs using EmulatorJS.|Retro,Emulator,Homebrew"
 
 )
 
@@ -212,4 +218,7 @@ declare -A GAME_CATEGORIES=(
   ["life-engine"]="simulation,strategy,science,educational,family,age-10-plus"
   ["evolab"]="simulation,strategy,science,educational,biology,age-10-plus"
   ["gene-garden"]="simulation,strategy,science,educational,biology,mobile-friendly,age-10-plus,family"
+  ["mindustry-lan"]="multiplayer,strategy,simulation,management,age-10-plus"
+  ["unciv-lan"]="multiplayer,strategy,simulation,management,age-10-plus"
+  ["retro-emulator-lab"]="retro,arcade,age-10-plus"
 )

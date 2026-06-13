@@ -22,8 +22,8 @@ export class CombatSystem {
 
         if (!cell1 || !cell2) continue;
 
-        // Skip player vs player (shouldn't happen)
-        if (cell1.isPlayer && cell2.isPlayer) continue;
+        // Skip cells from the same species branch; speciation branches can still compete.
+        if (this.isSameSpecies(cell1, cell2)) continue;
 
         const distance = cell1.distanceTo(cell2.position);
 
@@ -42,8 +42,9 @@ export class CombatSystem {
     // Only aggressive cells attack
     if (aggressor.traits.aggression < 5) return;
 
-    // Calculate damage based on size, toxin strength, and armor
-    const baseDamage = aggressor.traits.size * this.damageMultiplier;
+    // Calculate damage based on size, aggression, toxin strength, and armor
+    const aggressionBonus = 1 + Math.max(0, aggressor.traits.aggression - 5) * 0.06;
+    const baseDamage = aggressor.traits.size * this.damageMultiplier * aggressionBonus;
     const toxinDamage = aggressor.traits.toxinStrength * Config.TOXIN_DAMAGE_MULTIPLIER;
     const totalDamage = baseDamage + toxinDamage;
 
@@ -88,8 +89,15 @@ export class CombatSystem {
       aggressor.restoreATP(energyGain);
     }
 
-    // Aggressor loses some ATP from attacking
-    aggressor.traits.atp -= finalDamage * Config.ATP_COST_OF_ATTACKING_MULTIPLIER;
+    // Aggressor loses ATP from attacking; hyper-aggressive/toxic builds hit harder but tire faster.
+    const attackFatigue = 1 + aggressor.traits.aggression * 0.05 + aggressor.traits.toxinStrength * 0.04;
+    aggressor.traits.atp -= finalDamage * Config.ATP_COST_OF_ATTACKING_MULTIPLIER * attackFatigue;
+  }
+
+  private isSameSpecies(cell1: Cell, cell2: Cell): boolean {
+    const species1 = cell1.genome.lineage.speciesId;
+    const species2 = cell2.genome.lineage.speciesId;
+    return Boolean(species1 && species2 && species1 === species2);
   }
 
   // Calculate combat power for AI decision making

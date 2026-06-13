@@ -47,11 +47,7 @@ export class AutoPilot {
     const atpRatio = player.traits.atp / player.traits.maxATP;
 
     // Calculate projected ATP (current - drain rate * starvation window)
-    // Must match Cell.drainATP() calculation including metabolismRate
-    const baseDrain = Config.ATP_DRAIN_RATE;
-    const sizeDrain = player.traits.size * Config.ATP_DRAIN_MULTIPLIER_SIZE;
-    const energyEfficiency = Math.max(0.25, player.traits.energyEfficiency || 1);
-    const drainRatePerSecond = ((baseDrain + sizeDrain) * player.traits.metabolismRate * Config.TARGET_FPS) / energyEfficiency;
+    const drainRatePerSecond = player.getATPDrainPerSecond();
     const projectedATP = player.traits.atp - (drainRatePerSecond * Config.AUTO_PILOT_STARVATION_WINDOW_SECONDS);
     const projectedATPRatio = projectedATP / player.traits.maxATP;
     

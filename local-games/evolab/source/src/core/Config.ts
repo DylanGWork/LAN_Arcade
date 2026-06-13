@@ -21,8 +21,8 @@ export const Config = {
   // ATP / Energy settings
   START_ATP: 100,
   MAX_ATP: 100,
-  ATP_DRAIN_RATE: 0.025, // Reduced from 0.05 - cells last twice as long
-  ATP_DRAIN_MULTIPLIER_SIZE: 0.005, // Reduced from 0.01 - size penalty halved
+  ATP_DRAIN_RATE: 0.012, // Per-frame baseline; tuned so foraging choices matter without instant starvation
+  ATP_DRAIN_MULTIPLIER_SIZE: 0.0025, // Larger cells pay upkeep, but not enough to make size a trap
   ATP_FROM_GLUCOSE: 40, // Increased from 25 - more rewarding to collect glucose
 
   // Auto-pilot settings
@@ -47,8 +47,8 @@ export const Config = {
   PHOSPHATE_COUNT: 20,
   PHOSPHATE_RADIUS: 7,
   PHOSPHATE_COLOR: 0xba68c8,
-  GLUCOSE_RESPAWN_TIME: 8, // Seconds; resource.update receives deltaTime in seconds
-  RESOURCE_COLLECTION_RANGE: 44, // Wider pickup radius so visual overlaps reliably collect
+  GLUCOSE_RESPAWN_TIME: 6, // Seconds; resource.update receives deltaTime in seconds
+  RESOURCE_COLLECTION_RANGE: 50, // Wider pickup radius so visual overlaps reliably collect
   GOLDEN_RESOURCE_CHANCE: 0.02, // 2% chance for golden resource (10x value)
   GOLDEN_RESOURCE_DNA_MULTIPLIER: 10, // 10x DNA from golden resources
 
@@ -111,9 +111,12 @@ export const Config = {
   LOW_ATP_WARNING_THRESHOLD: 0.2, // Play warning at 20% ATP
 
   // Reproduction requirements
-  REPRODUCTION_ATP_THRESHOLD: 70, // % of max ATP required
-  REPRODUCTION_GLUCOSE_REQUIRED: 25,
-  REPRODUCTION_AMINO_ACIDS_REQUIRED: 9,
-  REPRODUCTION_PHOSPHATES_REQUIRED: 6,
-  REPRODUCTION_COOLDOWN_SECONDS: 45, // Time between reproductions
+  REPRODUCTION_ATP_THRESHOLD: 55, // % of max ATP required
+  REPRODUCTION_GLUCOSE_REQUIRED: 12,
+  REPRODUCTION_AMINO_ACIDS_REQUIRED: 4,
+  REPRODUCTION_PHOSPHATES_REQUIRED: 3,
+  REPRODUCTION_COOLDOWN_SECONDS: 24, // Time between reproductions
+
+  // Species-level evolution pacing
+  MIN_DNA_FOR_EVOLUTION_EDITOR: 8,
 } as const;

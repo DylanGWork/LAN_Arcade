@@ -52,7 +52,11 @@ export class TimeControl {
     if (!this.shouldUpdate()) {
       return 0;
     }
-    return baseDelta * this.speedMultiplier;
+
+    // Keep high fast-forward modes in the same stability envelope as Cell.update(),
+    // which caps each frame at 10 simulation steps.
+    const maxStableDelta = 10 / 60;
+    return Math.min(baseDelta * this.speedMultiplier, maxStableDelta);
   }
 
   isPausedState(): boolean {

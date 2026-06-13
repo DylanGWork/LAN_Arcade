@@ -136,19 +136,25 @@ export class EvolutionSystemsManager {
       this.matingSystem.clearOldHistory();
     }
 
-    // Update speciation tracking
+    // Update speciation tracking for the player lineage only. AI species keep their
+    // own combat IDs, but they should not pollute the player's phylogenetic tree.
     if (this.speciationEnabled) {
-      this.speciationSystem.updatePopulations(cells);
+      const trackedCells = cells.filter(cell => this.isPlayerLineageCell(cell));
+      this.speciationSystem.updatePopulations(trackedCells);
 
       // Check for new species divergence (every 100 updates to avoid overhead)
-      if (Math.random() < 0.01) {
-        const newSpecies = this.speciationSystem.checkForSpeciation(cells);
+      if (trackedCells.length > 0 && Math.random() < 0.01) {
+        const newSpecies = this.speciationSystem.checkForSpeciation(trackedCells);
 
         if (newSpecies.length > 0 && Config.DEBUG_EVOLUTION) {
           logger.log(`🧬 New species emerged: ${newSpecies.map(s => s.name).join(', ')}`);
         }
       }
     }
+  }
+
+  private isPlayerLineageCell(cell: Cell): boolean {
+    return cell.id === 'player' || cell.id.startsWith('player-species-');
   }
 
   // Attempt sexual reproduction between two cells

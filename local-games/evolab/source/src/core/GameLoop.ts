@@ -23,6 +23,7 @@ import { AchievementSystem } from '../achievements/AchievementSystem';
 import type { Achievement } from '../achievements/AchievementSystem';
 import { EvolutionSystemsManager } from './EvolutionSystemsManager';
 import { AutoPilot } from './AutoPilot';
+import type { SpeciesStats } from './PlayerSpeciesManager';
 import { Cell } from '../entities/Cell';
 import { BehaviorType } from '../ai/AIBehavior';
 import type { AISpeciesSetup } from '../ai/PopulationManager';
@@ -204,9 +205,7 @@ export class GameLoop {
       }
     });
 
-    // Initialize base species for speciation system
-    const baseGenome = Genome.createDefault();
-    this.evolutionSystems.initializeBaseSpecies(baseGenome, 10);
+    // Speciation tracking is initialized after the player species is created.
 
     // Setup achievement unlock callback
     this.achievementSystem.onAchievementUnlocked((achievement) => {
@@ -404,6 +403,21 @@ export class GameLoop {
     this.uiController.showPhylogeneticTree(tree, species);
   }
 
+  private initializeTrackedSpecies(): void {
+    const playerSpecies = this.entityManager.playerSpecies;
+    if (!playerSpecies) return;
+
+    const cells = playerSpecies.getAllCells();
+    const baseGenome = playerSpecies.getBaseGenome();
+    const baseSpecies = this.evolutionSystems.initializeBaseSpecies(baseGenome, cells.length);
+
+    cells.forEach(cell => {
+      cell.genome.lineage.speciesId = baseSpecies.id;
+      cell.traits.color = baseSpecies.color;
+      cell.genome.traits.color = baseSpecies.color;
+    });
+  }
+
   private showAchievementsPanel(): void {
     this.uiController.showAchievements(
       this.achievementSystem.getAllAchievements(),
@@ -442,6 +456,7 @@ export class GameLoop {
     try {
       // Create player species (species-level gameplay)
       this.entityManager.createPlayerSpecies();
+      this.initializeTrackedSpecies();
     } catch (error) {
       logger.error('[GameLoop] ERROR: Failed to create player species:', error);
       throw error;
@@ -1190,8 +1205,8 @@ export class GameLoop {
       this.setHudLabel('food-label', 'Resources Eaten:');
       this.setHudValue('food-value', stats.totalResourcesCollected);
 
-      this.setHudLabel('aminoacid-label', 'Avg Survival (s):');
-      this.setHudValue('aminoacid-value', Math.round(stats.averageSurvivalTime || 0));
+      this.setHudLabel('aminoacid-label', 'Ready Breeders:');
+      this.setHudValue('aminoacid-value', stats.readyBreeders);
 
       this.setHudLabel('phosphate-label', 'Births:');
       this.setHudValue('phosphate-value', stats.totalBirths);
@@ -1211,18 +1226,13 @@ export class GameLoop {
         this.uiController.updateDNAProgress(baseGenome.dnaPoints, 50);
       }
 
-      // Evolution button - show when species is ready (based on average survival time)
+      const pendingDNA = this.calculatePendingSpeciesDNA(stats);
       const reproduceBtn = document.getElementById('reproduce-btn') as HTMLButtonElement;
       if (reproduceBtn) {
-        // Show evolution button periodically (every 30 seconds of average survival)
-        const canEvolve = stats.averageSurvivalTime > 30 && stats.population > 0;
+        const canEvolve = stats.population > 0 && pendingDNA >= Config.MIN_DNA_FOR_EVOLUTION_EDITOR;
         reproduceBtn.style.display = canEvolve ? 'block' : 'none';
-        reproduceBtn.textContent = '🧬 Evolve Species';
-
-        // Add click handler if not already added
-        if (canEvolve && !reproduceBtn.onclick) {
-          reproduceBtn.onclick = () => this.handleReproduction();
-        }
+        reproduceBtn.textContent = `Evolve Species (+${Math.floor(pendingDNA)} DNA)`;
+        reproduceBtn.onclick = canEvolve ? () => this.handleReproduction() : null;
       }
       return;
     }
@@ -1296,6 +1306,18 @@ export class GameLoop {
     }
   }
 
+  private calculatePendingSpeciesDNA(stats: SpeciesStats): number {
+    if (!this.entityManager.playerSpecies) return 0;
+
+    const speciesCells = this.entityManager.playerSpecies.getAllCells();
+    const totalSurvivalTime = speciesCells.reduce((sum, cell) => sum + cell.survivalTime, 0);
+    const survivalDelta = Math.max(0, totalSurvivalTime - this.lastSpeciesEvolutionSurvivalTotal);
+    const resourceDelta = Math.max(0, stats.totalResourcesCollected - this.lastSpeciesEvolutionResources);
+
+    return survivalDelta * Config.DNA_FROM_SURVIVAL_TIME +
+      resourceDelta * Config.DNA_FROM_GLUCOSE;
+  }
+
   // Handle reproduction trigger (species-level evolution)
   private handleReproduction(): void {
     // Play evolution sound!
@@ -1308,12 +1330,9 @@ export class GameLoop {
       
       const speciesCells = this.entityManager.playerSpecies.getAllCells();
       const totalSurvivalTime = speciesCells.reduce((sum, cell) => sum + cell.survivalTime, 0);
-      const survivalDelta = Math.max(0, totalSurvivalTime - this.lastSpeciesEvolutionSurvivalTotal);
-      const resourceDelta = Math.max(0, stats.totalResourcesCollected - this.lastSpeciesEvolutionResources);
+      const dnaPoints = this.calculatePendingSpeciesDNA(stats);
+      if (dnaPoints < Config.MIN_DNA_FOR_EVOLUTION_EDITOR) return;
 
-      // Calculate DNA points only from progress since the last evolution report.
-      const dnaPoints = survivalDelta * Config.DNA_FROM_SURVIVAL_TIME +
-                         resourceDelta * Config.DNA_FROM_GLUCOSE;
       baseGenome.dnaPoints += dnaPoints;
       this.lastSpeciesEvolutionSurvivalTotal = totalSurvivalTime;
       this.lastSpeciesEvolutionResources = stats.totalResourcesCollected;
@@ -1389,6 +1408,7 @@ export class GameLoop {
       this.convertCompetitionSetupToAI(this.competitionSetup)
     );
     this.entityManager.createPlayerSpecies(); // Species-level gameplay
+    this.initializeTrackedSpecies();
 
     // Initialize camera to species position
     if (this.entityManager.playerSpecies) {

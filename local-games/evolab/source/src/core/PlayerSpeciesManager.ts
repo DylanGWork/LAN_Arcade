@@ -8,7 +8,7 @@ import { PixiApp } from '../rendering/PixiApp';
 import { BiomeGenerator } from '../environment/BiomeGenerator';
 import { Config } from './Config';
 import { AutoPilot } from './AutoPilot';
-import type { Traits } from '../types/entities';
+import type { Traits, CompoundStorage } from '../types/entities';
 import { logger } from '../utils/Logger';
 
 export interface SpeciesStats {
@@ -16,6 +16,8 @@ export interface SpeciesStats {
   averageTraits: Partial<Traits>;
   totalResourcesCollected: number;
   totalBirths: number;
+  readyBreeders: number;
+  breedingReserve: CompoundStorage;
   averageSurvivalTime: number;
   generation: number;
   diversity: number; // Genetic diversity measure
@@ -30,7 +32,9 @@ export class PlayerSpeciesManager {
   private totalBirths = 0;
   private generation = 1;
   private speciesColor: number;
-  private initialPopulationSize = 15; // Increased for better visibility
+  private readonly initialPopulationSize = 15; // Increased for better visibility
+  private readonly maxPopulationSize = 60;
+  private breedingReserve: CompoundStorage = { glucose: 0, aminoAcids: 0, phosphates: 0 };
 
   constructor(renderer: PixiApp, biomeGenerator: BiomeGenerator, initialGenome?: Genome) {
     this.renderer = renderer;
@@ -66,7 +70,7 @@ export class PlayerSpeciesManager {
       const sprite = this.renderer.createCircle(x, y, radius, genome.traits.color);
       this.renderer.addToWorld(sprite);
 
-      const cell = new Cell(`player-species-${i}`, x, y, genome, sprite, false);
+      const cell = new Cell(`player-species-${i}`, x, y, genome, sprite, true);
       
       // Give cells initial random velocity so they start moving
       const velocityAngle = Math.random() * Math.PI * 2;
@@ -155,18 +159,26 @@ export class PlayerSpeciesManager {
         this.getResourceColor(resource.type)
       );
 
+      const reserveUnits = Math.max(1, Math.round(resource.amount / 5));
+
       if (resource.type === 'glucose') {
         const atpBefore = cell.traits.atp;
-        cell.restoreATP(Config.ATP_FROM_GLUCOSE);
-        cell.collectCompound('glucose', 5);
+        const atpGain = resource.rarity === 'golden'
+          ? Config.ATP_FROM_GLUCOSE * Config.GOLDEN_RESOURCE_DNA_MULTIPLIER
+          : Config.ATP_FROM_GLUCOSE;
+        cell.restoreATP(atpGain);
+        cell.collectCompound('glucose', reserveUnits);
+        this.addToBreedingReserve('glucose', reserveUnits);
         const atpGained = cell.traits.atp - atpBefore;
         if (atpGained > 0) {
           this.renderer.particleSystem.createATPText(cell.position.x, cell.position.y, atpGained);
         }
       } else if (resource.type === 'aminoAcid') {
-        cell.collectCompound('aminoAcid', 3);
+        cell.collectCompound('aminoAcid', reserveUnits);
+        this.addToBreedingReserve('aminoAcid', reserveUnits);
       } else if (resource.type === 'phosphate') {
-        cell.collectCompound('phosphate', 2);
+        cell.collectCompound('phosphate', reserveUnits);
+        this.addToBreedingReserve('phosphate', reserveUnits);
       }
     });
   }
@@ -177,22 +189,36 @@ export class PlayerSpeciesManager {
     return Config.GLUCOSE_COLOR;
   }
 
+  private addToBreedingReserve(type: Resource['type'], amount: number): void {
+    const maxReserve = Math.max(180, this.cells.length * 24);
+
+    if (type === 'glucose') {
+      this.breedingReserve.glucose = Math.min(maxReserve, this.breedingReserve.glucose + amount);
+    } else if (type === 'aminoAcid') {
+      this.breedingReserve.aminoAcids = Math.min(maxReserve, this.breedingReserve.aminoAcids + amount);
+    } else if (type === 'phosphate') {
+      this.breedingReserve.phosphates = Math.min(maxReserve, this.breedingReserve.phosphates + amount);
+    }
+  }
+
   // Handle natural reproduction within the species
   private handleNaturalReproduction(reproductionMode: 'asexual' | 'sexual'): void {
-    const readyCells = this.cells.filter(cell => cell.canReproduce());
-    if (readyCells.length === 0 || this.cells.length >= 50) return;
+    if (this.cells.length >= this.maxPopulationSize) return;
+
+    const readyCells = this.cells.filter(cell => this.isReadyToBreed(cell));
+    if (readyCells.length === 0) return;
 
     if (reproductionMode === 'asexual') {
       for (const parent of readyCells) {
+        if (!this.hasBreedingReserve() || this.cells.length >= this.maxPopulationSize) break;
         this.createOffspring(parent);
-        if (this.cells.length >= 50) break;
       }
       return;
     }
 
     const usedParents = new Set<string>();
     for (const parent1 of readyCells) {
-      if (usedParents.has(parent1.id)) continue;
+      if (usedParents.has(parent1.id) || !this.hasBreedingReserve()) continue;
 
       const parent2 = readyCells.find(candidate =>
         candidate.id !== parent1.id &&
@@ -207,20 +233,58 @@ export class PlayerSpeciesManager {
       this.createOffspring(parent1, parent2);
       usedParents.add(parent1.id);
       usedParents.add(parent2.id);
-      if (this.cells.length >= 50) break;
+      if (this.cells.length >= this.maxPopulationSize) break;
     }
+  }
+
+  private isReadyToBreed(cell: Cell): boolean {
+    return this.isPhysicallyReadyToBreed(cell) && this.hasBreedingReserve();
+  }
+
+  private isPhysicallyReadyToBreed(cell: Cell): boolean {
+    const atpPercent = (cell.traits.atp / cell.traits.maxATP) * 100;
+    const healthPercent = cell.traits.maxHealth > 0 ? (cell.traits.health / cell.traits.maxHealth) * 100 : 0;
+    const timeSinceLastReproduction = (Date.now() - cell.lastReproductionTime) / 1000;
+
+    return (
+      atpPercent >= Config.REPRODUCTION_ATP_THRESHOLD &&
+      healthPercent >= 35 &&
+      timeSinceLastReproduction >= Config.REPRODUCTION_COOLDOWN_SECONDS
+    );
+  }
+
+  private hasBreedingReserve(): boolean {
+    return (
+      this.breedingReserve.glucose >= Config.REPRODUCTION_GLUCOSE_REQUIRED &&
+      this.breedingReserve.aminoAcids >= Config.REPRODUCTION_AMINO_ACIDS_REQUIRED &&
+      this.breedingReserve.phosphates >= Config.REPRODUCTION_PHOSPHATES_REQUIRED
+    );
+  }
+
+  private getReadyBreederCount(): number {
+    if (!this.hasBreedingReserve()) return 0;
+    return this.cells.filter(cell => this.isPhysicallyReadyToBreed(cell)).length;
+  }
+
+  private getBreedingReserveSnapshot(): CompoundStorage {
+    return { ...this.breedingReserve };
   }
 
   private createOffspring(parent1: Cell, parent2?: Cell): void {
     const offspringGenome = parent1.genome.clone();
     const mate = parent2 || parent1;
 
+    const inheritedSpeciesId = parent1.genome.lineage.speciesId || this.baseGenome.lineage.speciesId || 'species-001';
+    const inheritedColor = parent1.traits.color || this.speciesColor;
+
     offspringGenome.traits.size = (parent1.traits.size + mate.traits.size) / 2;
     offspringGenome.traits.speed = (parent1.traits.speed + mate.traits.speed) / 2;
     offspringGenome.traits.maxATP = (parent1.traits.maxATP + mate.traits.maxATP) / 2;
     offspringGenome.traits.maxHealth = (parent1.traits.maxHealth + mate.traits.maxHealth) / 2;
-    offspringGenome.traits.color = this.speciesColor;
+    offspringGenome.lineage.speciesId = inheritedSpeciesId;
+    offspringGenome.traits.color = inheritedColor;
     offspringGenome.traits.gender = Math.random() < 0.5 ? 'male' : 'female';
+    this.applyNaturalMutation(offspringGenome.traits, offspringGenome.lineage.mutations);
     offspringGenome.traits.atp = offspringGenome.traits.maxATP;
     offspringGenome.traits.health = offspringGenome.traits.maxHealth;
 
@@ -232,7 +296,7 @@ export class PlayerSpeciesManager {
       : parent1.position.y + (Math.random() - 0.5) * 60;
 
     const radius = 10 + offspringGenome.traits.size;
-    const sprite = this.renderer.createCircle(spawnX, spawnY, radius, offspringGenome.traits.color);
+    const sprite = this.renderer.createCircle(spawnX, spawnY, radius, inheritedColor);
     this.renderer.addToWorld(sprite);
 
     const offspring = new Cell(
@@ -241,7 +305,7 @@ export class PlayerSpeciesManager {
       spawnY,
       offspringGenome,
       sprite,
-      false
+      true
     );
 
     const velocityAngle = Math.random() * Math.PI * 2;
@@ -250,22 +314,52 @@ export class PlayerSpeciesManager {
     offspring.velocity.y = Math.sin(velocityAngle) * speed;
     offspring.markReproduction();
 
-    this.spendReproductionCompounds(parent1);
+    this.spendReproductionCompounds();
     parent1.markReproduction();
     if (parent2) {
-      this.spendReproductionCompounds(parent2);
       parent2.markReproduction();
     }
 
     this.cells.push(offspring);
     this.totalBirths++;
-    this.renderer.particleSystem.createEatingEffect(spawnX, spawnY, this.speciesColor);
+    this.renderer.particleSystem.createEatingEffect(spawnX, spawnY, inheritedColor);
   }
 
-  private spendReproductionCompounds(cell: Cell): void {
-    cell.compounds.glucose = Math.max(0, cell.compounds.glucose - Config.REPRODUCTION_GLUCOSE_REQUIRED);
-    cell.compounds.aminoAcids = Math.max(0, cell.compounds.aminoAcids - Config.REPRODUCTION_AMINO_ACIDS_REQUIRED);
-    cell.compounds.phosphates = Math.max(0, cell.compounds.phosphates - Config.REPRODUCTION_PHOSPHATES_REQUIRED);
+  private applyNaturalMutation(traits: Traits, mutationLog: string[]): void {
+    const drift = (key: keyof Traits, min: number, max: number, amount: number, chance = 0.45) => {
+      const currentValue = traits[key];
+      if (typeof currentValue !== 'number' || Math.random() > chance) return;
+
+      const direction = Math.random() < 0.5 ? -1 : 1;
+      const magnitude = amount * (0.5 + Math.random());
+      const nextValue = Math.max(min, Math.min(max, currentValue + direction * magnitude));
+      (traits[key] as number) = Number(nextValue.toFixed(amount < 1 ? 2 : 1));
+      mutationLog.push(`${String(key)} ${direction > 0 ? '+' : '-'}${magnitude.toFixed(2)}`);
+    };
+
+    drift('size', 1, 10, 0.35);
+    drift('speed', 1, 10, 0.4);
+    drift('armor', 0, 10, 0.35);
+    drift('regeneration', 0, 5, 0.22);
+    drift('visionRange', 50, 500, 18, 0.5);
+    drift('chemotaxis', 0, 10, 0.4);
+    drift('hearing', 0, 10, 0.35);
+    drift('aggression', 0, 10, 0.45);
+    drift('intelligence', 0, 10, 0.35);
+    drift('fearResponse', 0, 10, 0.45);
+    drift('toxinStrength', 0, 10, 0.28);
+    drift('speedBurstPower', 0, 10, 0.32);
+    drift('camouflage', 0, 10, 0.28);
+    drift('photosynthesis', 0, 1, 0.05, 0.28);
+    drift('temperatureTolerance', 0, 10, 0.32);
+    drift('pressureResistance', 0, 10, 0.28);
+    drift('toxinResistance', 0, 10, 0.3);
+  }
+
+  private spendReproductionCompounds(): void {
+    this.breedingReserve.glucose = Math.max(0, this.breedingReserve.glucose - Config.REPRODUCTION_GLUCOSE_REQUIRED);
+    this.breedingReserve.aminoAcids = Math.max(0, this.breedingReserve.aminoAcids - Config.REPRODUCTION_AMINO_ACIDS_REQUIRED);
+    this.breedingReserve.phosphates = Math.max(0, this.breedingReserve.phosphates - Config.REPRODUCTION_PHOSPHATES_REQUIRED);
   }
 
   // Apply evolution modifications to the whole species
@@ -310,6 +404,8 @@ export class PlayerSpeciesManager {
         averageTraits: {},
         totalResourcesCollected: this.totalResourcesCollected,
         totalBirths: this.totalBirths,
+        readyBreeders: 0,
+        breedingReserve: this.getBreedingReserveSnapshot(),
         averageSurvivalTime: 0,
         generation: this.generation,
         diversity: 0,
@@ -360,6 +456,8 @@ export class PlayerSpeciesManager {
       averageTraits: avgTraits,
       totalResourcesCollected: this.totalResourcesCollected,
       totalBirths: this.totalBirths,
+      readyBreeders: this.getReadyBreederCount(),
+      breedingReserve: this.getBreedingReserveSnapshot(),
       averageSurvivalTime: totalSurvivalTime / this.cells.length,
       generation: this.generation,
       diversity,

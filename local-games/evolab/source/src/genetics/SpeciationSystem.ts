@@ -19,9 +19,13 @@ export class SpeciationSystem {
   private phylogeneticTree: PhylogeneticNode[] = [];
   private extinctionEvents: Array<{ speciesId: string; time: number; reason: string }> = [];
   private speciesNameCounter = 0;
+  private readonly speciesPalette = [
+    0x38d5ff, 0xffd166, 0x06d6a0, 0xef476f, 0xa78bfa, 0xf97316,
+    0x84cc16, 0x22c55e, 0xe879f9, 0x14b8a6, 0xf43f5e, 0x60a5fa,
+  ];
 
   // Speciation constants
-  private readonly GENETIC_DISTANCE_THRESHOLD = 0.4; // When populations are this different, they're separate species
+  private readonly GENETIC_DISTANCE_THRESHOLD = 0.12; // Gameplay-visible branch distance for the player lineage
   private readonly REPRODUCTIVE_ISOLATION_THRESHOLD = 0.15; // When compatibility drops below this
   private readonly MIN_POPULATION_FOR_SPECIES = 5; // Minimum population to be considered a species
   private readonly EXTINCTION_THRESHOLD_TIME = 300000; // 5 minutes without any individuals = extinct
@@ -32,6 +36,11 @@ export class SpeciationSystem {
 
   // Initialize base species
   initializeBaseSpecies(initialGenome: Genome, population: number = 10): Species {
+    this.species.clear();
+    this.phylogeneticTree = [];
+    this.extinctionEvents = [];
+    this.speciesNameCounter = 1;
+
     const species: Species = {
       id: 'species-001',
       name: this.generateSpeciesName(1),
@@ -42,6 +51,9 @@ export class SpeciationSystem {
       isExtinct: false,
       color: initialGenome.traits.color,
     };
+
+    initialGenome.lineage.speciesId = species.id;
+    initialGenome.traits.color = species.color;
 
     this.species.set(species.id, species);
 
@@ -190,34 +202,65 @@ export class SpeciationSystem {
 
   // Create a new species from a population cluster
   private createNewSpecies(cells: Cell[], parentSpeciesId: string): Species {
-    this.speciesNameCounter++;
+    const speciesNumber = this.allocateSpeciesNumber();
 
     const averageTraits = this.calculateAverageTraits(cells);
     const firstCell = cells[0];
     const commonAncestor = firstCell?.genome.lineage.lineageId || 'unknown';
+    const color = this.generateSpeciesColor(speciesNumber);
 
     const newSpecies: Species = {
-      id: `species-${String(this.speciesNameCounter).padStart(3, '0')}`,
-      name: this.generateSpeciesName(this.speciesNameCounter),
+      id: this.formatSpeciesId(speciesNumber),
+      name: this.generateSpeciesName(speciesNumber),
       commonAncestorLineageId: commonAncestor,
       divergenceTime: Date.now(),
       population: cells.length,
       averageTraits: averageTraits,
       isExtinct: false,
-      color: averageTraits.color || 0x00ff00,
+      color,
     };
 
     this.species.set(newSpecies.id, newSpecies);
 
     // Update cells to belong to new species
     for (const cell of cells) {
-      cell.genome.lineage.speciesId = newSpecies.id;
+      this.applySpeciesIdentity(cell, newSpecies);
     }
 
     // Add to phylogenetic tree
     this.addToPhylogeneticTree(newSpecies.id, parentSpeciesId);
 
     return newSpecies;
+  }
+
+  private allocateSpeciesNumber(): number {
+    let nextNumber = this.speciesNameCounter + 1;
+    while (this.species.has(this.formatSpeciesId(nextNumber))) {
+      nextNumber++;
+    }
+    this.speciesNameCounter = nextNumber;
+    return nextNumber;
+  }
+
+  private formatSpeciesId(number: number): string {
+    return `species-${String(number).padStart(3, '0')}`;
+  }
+
+  private generateSpeciesColor(number: number): number {
+    return this.speciesPalette[(number - 1) % this.speciesPalette.length] ?? 0x38d5ff;
+  }
+
+  private applySpeciesIdentity(cell: Cell, species: Species): void {
+    cell.genome.lineage.speciesId = species.id;
+    cell.traits.color = species.color;
+    cell.genome.traits.color = species.color;
+
+    cell.sprite.clear();
+    const radius = 10 + cell.traits.size;
+    cell.sprite.circle(0, 0, radius);
+    cell.sprite.fill(species.color);
+    cell.sprite.circle(0, 0, radius);
+    cell.sprite.stroke({ width: 1.5, color: 0xffffff, alpha: 0.65 });
   }
 
   // Add species to phylogenetic tree
@@ -341,7 +384,7 @@ export class SpeciationSystem {
     const alpha = 0.05; // Smoothing factor
 
     for (const [key, value] of Object.entries(traits)) {
-      if (typeof value === 'number' && key in species.averageTraits) {
+      if (typeof value === 'number' && key !== 'color' && key in species.averageTraits) {
         const oldValue = species.averageTraits[key as keyof typeof species.averageTraits] as number;
         const newValue = oldValue * (1 - alpha) + value * alpha;
         (species.averageTraits as Record<string, unknown>)[key] = newValue;

@@ -483,3 +483,88 @@ qa/reports/evolab-trait-editor-check-20260613T083210Z/ # Trait editor visible; V
 ```
 
 Static audit after final deploy: 61 games OK, 0 entrypoint external dependency refs.
+
+
+## EvoLab Species/Library Follow-Up - 2026-06-13
+
+Dylan reported EvoLab was still confusing: cells did not visibly breed, evolution felt always available, high speed felt slow or unstable, and long runs produced strange stats. Follow-up changes on GannanNet:
+
+- Player species cells are now internally marked as player-owned.
+- Species play now uses a shared breeding reserve instead of requiring one hidden cell to personally collect every resource type.
+- HUD shows `Ready Breeders` and `Births` during species play.
+- Evolution button is paced by newly earned DNA and shows the pending DNA amount.
+- Random event stat effects are clamped to trait ranges, preventing runaway size/health/vision/speed values.
+- Vite build now uses `base: './'` so `/mirrors/evolab/` assets remain subpath/offline safe.
+- High-speed simulation now caps per-frame effective delta to match the cell simulation stability envelope.
+- A narrow Pixi headless shader-log exception handler suppresses the known null shader-log pageerror while preserving other runtime errors.
+
+Passing focused regression after deploy:
+
+```text
+qa/reports/game-regression/evolab-20260613T182505Z-desktop/
+qa/reports/game-regression/evolab-20260613T182505Z-mobile/
+```
+
+Dogfood checks:
+
+```text
+qa/reports/evolab-agent-playtest-20260613T182703Z-fastcheck/
+```
+
+Fast-check result: 5 minutes at the high-speed setting, population stayed between 43 and 60, births reached 86, final avg ATP 72, final avg health 99, no page errors or console errors. A longer 20-minute run was started in:
+
+```text
+qa/reports/evolab-agent-playtest-20260613T183314Z-20min/
+```
+
+Final 20-minute result: 37 samples, population stayed between 49 and 60, births reached 258, final avg ATP 70, final avg health 99, no page errors or console errors, and two evolution edits were applied.
+
+## Offline Library Expansion - 2026-06-13
+
+Added/updated catalog entries:
+
+- `mindustry-lan`
+- `unciv-lan`
+- `retro-emulator-lab`
+
+EmulatorJS 4.2.3 runtime is cached outside Git and served locally at:
+
+```text
+/var/www/html/mirrors/emulatorjs-runtime/4.2.3/
+http://127.0.0.1/mirrors/emulatorjs-runtime/4.2.3/data/loader.js
+```
+
+The archive was verified with `7z t`; extracted runtime size is about 297 MB. Directory permissions were fixed to allow nginx to serve nested `data/` and `docs/` assets. Do not commit the runtime or archive to Git.
+
+Retro Emulator Lab regression:
+
+```text
+qa/reports/game-regression/retro-emulator-lab-20260613T183816Z-desktop/
+qa/reports/game-regression/retro-emulator-lab-20260613T183844Z-mobile/
+```
+
+Current roadmap doc:
+
+```text
+docs/OFFLINE_GAME_LIBRARY_ROADMAP.md
+```
+
+It captures the hardware tiers, intake lifecycle, regression gates, EmulatorJS ROM policy, and Steam-like library direction.
+
+
+## Unciv On-Demand Service Smoke - 2026-06-13
+
+Unciv initially failed to start because `/var/lib/lan-arcade/unciv` was root-owned while the container runs as UID/GID `10002`. Fixed on GannanNet with:
+
+```sh
+sudo mkdir -p /var/lib/lan-arcade/unciv
+sudo chown -R 10002:10002 /var/lib/lan-arcade/unciv
+```
+
+Passing on-demand smoke after fix:
+
+```text
+qa/reports/service-smoke/unciv-on-demand-20260613T184532Z.json
+```
+
+Result: `/isalive` returned HTTP 200 with `{"authVersion":1,"chatVersion":1}`, memory was about 129.5 MiB, and the container was stopped with `docker compose -f deploy/unciv.compose.yml down`.

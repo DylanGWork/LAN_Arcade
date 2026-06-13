@@ -34,6 +34,13 @@ Server data is stored at:
 /var/lib/lan-arcade/unciv
 ```
 
+The container runs as UID/GID `10002`, so the host data directory must be writable by that ID:
+
+```sh
+sudo mkdir -p /var/lib/lan-arcade/unciv
+sudo chown -R 10002:10002 /var/lib/lan-arcade/unciv
+```
+
 Default LAN URL:
 
 ```text
@@ -73,11 +80,14 @@ After 500 /isalive requests:    about 137 MiB
 Request result:                 500/500 HTTP 200
 ```
 
-Raw report:
+Raw reports:
 
 ```text
 qa/reports/strategy-spike/unciv-load.json
+qa/reports/service-smoke/unciv-on-demand-20260613T184532Z.json
 ```
+
+The 2026-06-13 on-demand smoke initially failed because the host data directory was root-owned. After `chown -R 10002:10002 /var/lib/lan-arcade/unciv`, `/isalive` returned HTTP 200 and the container was stopped cleanly.
 
 ## Offline Checklist
 
