@@ -1,0 +1,12 @@
+Apotris
+
+Homebrew Hub slug: apotris
+Homebrew Hub manifest: https://hh3.gbdev.io/api/entry/apotris.json
+Platform: GBA
+Developer: akouzoukos
+License: GPL-3.0
+Repository: https://gitea.com/akouzoukos/apotris
+ROM file: roms/Apotris.gba
+ROM SHA-256: e5e7b124407d97cb1268b3bde4239bd2f018e133b1cb7990a635fc01937e78f6
+
+Imported from Homebrew Hub for offline LAN Arcade play. Homebrew Hub metadata says each entry and asset has its own license; verify the manifest and upstream repository before treating an entry as redistributable beyond personal LAN/offline use.

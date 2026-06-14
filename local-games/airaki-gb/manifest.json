@@ -1,0 +1,32 @@
+{
+  "devWebsite": "http://furrtek.free.fr",
+  "developer": "furrtek",
+  "files": [
+    {
+      "default": true,
+      "filename": "airaki.gb",
+      "playable": true
+    }
+  ],
+  "gameWebsite": "http://furrtek.free.fr/fse/?p=airakien",
+  "license": "GPL-3.0-or-later",
+  "onlineplay": false,
+  "platform": "GBC",
+  "repository": "https://github.com/furrtek/Airaki",
+  "screenshots": [
+    "screenshot.png"
+  ],
+  "slug": "airaki",
+  "tags": [
+    "RPG",
+    "Puzzle",
+    "Open Source"
+  ],
+  "title": "Airaki",
+  "typetag": "game",
+  "video": "https://www.youtube.com/watch?v=8GFgJEFDKvY",
+  "basepath": "database-gb",
+  "baserepo": "https://github.com/gbdev/database",
+  "firstadded_date": "2018-01-14T17:34:43Z",
+  "devtoolinfo": ""
+}

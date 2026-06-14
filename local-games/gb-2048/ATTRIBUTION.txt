@@ -1,0 +1,12 @@
+2048gb
+
+Homebrew Hub slug: 2048gb
+Homebrew Hub manifest: https://hh3.gbdev.io/api/entry/2048gb.json
+Platform: GB
+Developer: Sanqui
+License: Zlib
+Repository: https://github.com/Sanqui/2048-gb
+ROM file: roms/2048.gb
+ROM SHA-256: 3ea2376b15b34bd26b10e6b31d2753bf8b086098dbdb5ee84d9c0f03d66d3d7f
+
+Imported from Homebrew Hub for offline LAN Arcade play. Homebrew Hub metadata says each entry and asset has its own license; verify the manifest and upstream repository before treating an entry as redistributable beyond personal LAN/offline use.

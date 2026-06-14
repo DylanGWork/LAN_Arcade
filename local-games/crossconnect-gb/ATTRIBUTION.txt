@@ -1,0 +1,12 @@
+CrossConnect
+
+Homebrew Hub slug: crossconnect
+Homebrew Hub manifest: https://hh3.gbdev.io/api/entry/crossconnect.json
+Platform: GB
+Developer: quinnp
+License: MIT
+Repository: https://github.com/QuinnPainter/CrossConnect
+ROM file: roms/CrossConnect.gbc
+ROM SHA-256: 5465e7b4aa37ee0d630d2e63a026f282e8d17c213a2bd9f087417e68061e8b95
+
+Imported from Homebrew Hub for offline LAN Arcade play. Homebrew Hub metadata says each entry and asset has its own license; verify the manifest and upstream repository before treating an entry as redistributable beyond personal LAN/offline use.

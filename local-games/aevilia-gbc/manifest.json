@@ -1,0 +1,28 @@
+{
+  "developer": "ISSOtm, Kai, Parzival, Charmy",
+  "files": [
+    {
+      "default": true,
+      "filename": "aevilia.gbc",
+      "playable": true
+    }
+  ],
+  "license": "Apache-2.0",
+  "platform": "GBC",
+  "repository": "https://github.com/ISSOtm/Aevilia-GB",
+  "screenshots": [
+    "aevilia1.png"
+  ],
+  "slug": "aevilia",
+  "tags": [
+    "Open Source",
+    "RPG"
+  ],
+  "title": "Aevilia",
+  "typetag": "game",
+  "wip": true,
+  "basepath": "database-gb",
+  "baserepo": "https://github.com/gbdev/database",
+  "firstadded_date": "2018-01-15T17:49:28Z",
+  "devtoolinfo": ""
+}

@@ -1,0 +1,12 @@
+Grub Glide
+
+Homebrew Hub slug: grub-glide
+Homebrew Hub manifest: https://hh3.gbdev.io/api/entry/grub-glide.json
+Platform: GB
+Developer: Ethan Hazel
+License: Zlib
+Repository: https://github.com/Exetric/GrubGlide
+ROM file: roms/GrubGlide.gb
+ROM SHA-256: 7cb3d8ae5dd5d042436982f0e78a5daab4d99620eb50adb260cab9b37221b9c0
+
+Imported from Homebrew Hub for offline LAN Arcade play. Homebrew Hub metadata says each entry and asset has its own license; verify the manifest and upstream repository before treating an entry as redistributable beyond personal LAN/offline use.

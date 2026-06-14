@@ -1,0 +1,33 @@
+{
+  "screenshots": [
+    "cover.gif",
+    "demo1.gif",
+    "demo2.gif",
+    "demo3.png",
+    "demo4.png"
+  ],
+  "typetag": "game",
+  "tags": [
+    "Open Source",
+    "Puzzle"
+  ],
+  "developer": "akouzoukos",
+  "website": "https://akouzoukos.com/apotris",
+  "repository": "https://gitea.com/akouzoukos/apotris",
+  "slug": "apotris",
+  "title": "Apotris",
+  "description": "A Block Stacking Game for the GBA",
+  "platform": "GBA",
+  "license": "GPL-3.0",
+  "files": [
+    {
+      "default": true,
+      "filename": "Apotris.gba",
+      "playable": true
+    }
+  ],
+  "basepath": "database-gba",
+  "baserepo": "https://github.com/gbadev-org/games",
+  "firstadded_date": "2023-01-20T15:14:26Z",
+  "devtoolinfo": ""
+}

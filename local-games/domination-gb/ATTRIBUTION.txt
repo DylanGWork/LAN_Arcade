@@ -1,0 +1,12 @@
+Domination
+
+Homebrew Hub slug: domination
+Homebrew Hub manifest: https://hh3.gbdev.io/api/entry/domination.json
+Platform: GB
+Developer: Graham Coulby (IonicLimb)
+License: MIT
+Repository: https://github.com/gcoulby/Domination
+ROM file: roms/domination.gb
+ROM SHA-256: 3e87c6be7de03ecb97690a5dbcffac312344807eaae31ceaec71df9d24c0c133
+
+Imported from Homebrew Hub for offline LAN Arcade play. Homebrew Hub metadata says each entry and asset has its own license; verify the manifest and upstream repository before treating an entry as redistributable beyond personal LAN/offline use.

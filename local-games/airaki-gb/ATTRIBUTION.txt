@@ -1,0 +1,12 @@
+Airaki
+
+Homebrew Hub slug: airaki
+Homebrew Hub manifest: https://hh3.gbdev.io/api/entry/airaki.json
+Platform: GBC
+Developer: furrtek
+License: GPL-3.0-or-later
+Repository: https://github.com/furrtek/Airaki
+ROM file: roms/airaki.gb
+ROM SHA-256: 45d2136dff7a4b51bd1a5a7ef428763be61baa2d91e48beef2be8c6c6c3735f6
+
+Imported from Homebrew Hub for offline LAN Arcade play. Homebrew Hub metadata says each entry and asset has its own license; verify the manifest and upstream repository before treating an entry as redistributable beyond personal LAN/offline use.

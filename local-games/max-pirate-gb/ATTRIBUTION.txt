@@ -1,0 +1,12 @@
+Max Pirate
+
+Homebrew Hub slug: maxpirate
+Homebrew Hub manifest: https://hh3.gbdev.io/api/entry/maxpirate.json
+Platform: GB
+Developer: Lemmy Hawkins
+License: MIT
+Repository: https://github.com/MWehrstedt/MaxPirate
+ROM file: roms/maxpirate.gb
+ROM SHA-256: ade748a976cc87d382cf538daf441a3545c324c81d5fcda1f89ec0511b227d7a
+
+Imported from Homebrew Hub for offline LAN Arcade play. Homebrew Hub metadata says each entry and asset has its own license; verify the manifest and upstream repository before treating an entry as redistributable beyond personal LAN/offline use.

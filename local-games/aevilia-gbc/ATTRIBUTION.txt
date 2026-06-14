@@ -1,0 +1,12 @@
+Aevilia
+
+Homebrew Hub slug: aevilia
+Homebrew Hub manifest: https://hh3.gbdev.io/api/entry/aevilia.json
+Platform: GBC
+Developer: ISSOtm, Kai, Parzival, Charmy
+License: Apache-2.0
+Repository: https://github.com/ISSOtm/Aevilia-GB
+ROM file: roms/aevilia.gbc
+ROM SHA-256: 67e784ed61846bc84bfe9f45b9da343371eec6b896ed1b945b64c0aec7aa735b
+
+Imported from Homebrew Hub for offline LAN Arcade play. Homebrew Hub metadata says each entry and asset has its own license; verify the manifest and upstream repository before treating an entry as redistributable beyond personal LAN/offline use.

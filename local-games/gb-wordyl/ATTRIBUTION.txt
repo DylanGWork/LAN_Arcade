@@ -1,0 +1,12 @@
+GB-Wordyl
+
+Homebrew Hub slug: gb-wordyl
+Homebrew Hub manifest: https://hh3.gbdev.io/api/entry/gb-wordyl.json
+Platform: GB
+Developer: bbbbbr
+License: GPL-3.0
+Repository: https://github.com/bbbbbr/gb-wordle
+ROM file: roms/GBWORDYL_0.85_en.gb
+ROM SHA-256: acc12e3e920e0c432606846da60a5ca9bba21f8012304e8de4a26f88273d14de
+
+Imported from Homebrew Hub for offline LAN Arcade play. Homebrew Hub metadata says each entry and asset has its own license; verify the manifest and upstream repository before treating an entry as redistributable beyond personal LAN/offline use.

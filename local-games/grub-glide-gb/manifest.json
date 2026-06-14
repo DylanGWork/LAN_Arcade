@@ -1,0 +1,29 @@
+{
+  "developer": "Ethan Hazel",
+  "files": [
+    {
+      "default": true,
+      "filename": "GrubGlide.gb",
+      "playable": true
+    }
+  ],
+  "license": "Zlib",
+  "platform": "GB",
+  "repository": "https://github.com/Exetric/GrubGlide",
+  "screenshots": [
+    "1.png",
+    "2.png",
+    "3.png"
+  ],
+  "slug": "grub-glide",
+  "tags": [
+    "Open Source",
+    "Action"
+  ],
+  "title": "Grub Glide",
+  "typetag": "game",
+  "basepath": "database-gb",
+  "baserepo": "https://github.com/gbdev/database",
+  "firstadded_date": "2021-12-28T16:47:54Z",
+  "devtoolinfo": ""
+}

@@ -1,0 +1,29 @@
+{
+  "date": "12-13-2015",
+  "developer": "exezin",
+  "files": [
+    {
+      "default": true,
+      "filename": "PlantBoy.gb",
+      "playable": true
+    }
+  ],
+  "license": "MIT",
+  "onlineplay": true,
+  "platform": "GB",
+  "repository": "https://github.com/exezin/PlantBoy",
+  "screenshots": [
+    "screenshot01.bmp"
+  ],
+  "slug": "plantboy",
+  "tags": [
+    "Open Source",
+    "Action"
+  ],
+  "title": "PlantBoy",
+  "typetag": "game",
+  "basepath": "database-gb",
+  "baserepo": "https://github.com/gbdev/database",
+  "firstadded_date": "2018-01-11T19:00:38Z",
+  "devtoolinfo": ""
+}

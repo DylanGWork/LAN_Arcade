@@ -1,0 +1,12 @@
+PlantBoy
+
+Homebrew Hub slug: plantboy
+Homebrew Hub manifest: https://hh3.gbdev.io/api/entry/plantboy.json
+Platform: GB
+Developer: exezin
+License: MIT
+Repository: https://github.com/exezin/PlantBoy
+ROM file: roms/PlantBoy.gb
+ROM SHA-256: 4b62569dfa8eda20912166b66306ff71885282916e78d760e2a7e3ec4ab3aa01
+
+Imported from Homebrew Hub for offline LAN Arcade play. Homebrew Hub metadata says each entry and asset has its own license; verify the manifest and upstream repository before treating an entry as redistributable beyond personal LAN/offline use.
