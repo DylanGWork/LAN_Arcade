@@ -1,0 +1,17 @@
+Freeciv LAN Hub
+
+Game: Freeciv
+Official website: https://www.freeciv.org/
+Source repository: https://github.com/freeciv/freeciv
+License: GPL-2.0-or-later for the Freeciv project, per upstream repository and official project descriptions.
+
+Images:
+- assets/official-screenshot.png is cached from https://www.freeciv.org/images/freeciv-screenshot-2.5.0.png
+- assets/vm-client-launch.png is an actual GannanNet Xvfb launch screenshot from qa/reports/native-client-launch/freeciv-lan-20260614T054915Z/screenshot.png
+
+VM smoke evidence on 2026-06-14:
+- Server smoke report: qa/reports/service-smoke/freeciv-lan-20260614T053247Z/report.txt
+- Client launch smoke report: qa/reports/native-client-launch/freeciv-lan-20260614T054915Z/report.txt
+
+Current limitation:
+The VM can start the Freeciv server and launch the GTK client, but a real player/client join smoke from another LAN device is still pending.

@@ -1,3 +1,17 @@
+# Latest Native Game Testing Update - 2026-06-14
+
+Added real native-game test gates and first server/client evidence. Do not describe larger native games as playable from HTTP 200 alone. Use `docs/NATIVE_GAME_TESTING.md` and `scripts/native_service_smoke.sh`.
+
+Current native evidence:
+
+- OpenTTD: Debian packages installed; dedicated server TCP smoke passed; VM client launch screenshot passed. Reports: `qa/reports/service-smoke/openttd-lan-20260614T053239Z/report.txt`, `qa/reports/native-client-launch/openttd-lan-20260614T054903Z/report.txt`.
+- Freeciv: added `freeciv-lan` hub; Debian server/client installed; server TCP smoke passed; VM GTK client launch screenshot passed. Reports: `qa/reports/service-smoke/freeciv-lan-20260614T053247Z/report.txt`, `qa/reports/native-client-launch/freeciv-lan-20260614T054915Z/report.txt`.
+- Wesnoth: server package installed; TCP smoke passed; client install/launch pending. Report: `qa/reports/service-smoke/wesnoth-lan-20260614T053253Z/report.txt`.
+- Stendhal: cached ZIP integrity smoke passed; local server pending. Report: `qa/reports/service-smoke/stendhal-lan-20260614T053259Z/report.txt`.
+- Veloren: added `veloren-lan` hub and cached official Airshipper Linux ZIP under `/var/www/html/mirrors/veloren/downloads/`; latest binary is blocked on Debian 12 glibc 2.38/2.39, so server/full game intake is pending. Report: `qa/reports/service-smoke/veloren-lan-20260614T053300Z/report.txt`.
+
+Also added `docs/OPEN_SOURCE_GAME_CANDIDATES.md` with a first candidate backlog from Reddit/search themes plus Debian package availability. The VM Reddit JSON scrape was blocked by HTTP 403, so the backlog is a researched first pass, not a complete scrape.
+
 # LAN Arcade Agent Handover
 
 You are helping Dylan work on LAN Arcade, an offline-friendly browser game arcade hosted on the GannanNet VM.

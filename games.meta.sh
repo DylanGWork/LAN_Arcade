@@ -74,12 +74,14 @@ declare -A GAMES=(
   ["unciv-lan"]="LOCAL_DIR::local-games/unciv-lan"
   ["stendhal-lan"]="LOCAL_DIR::local-games/stendhal-lan"
   ["freecol-lan"]="LOCAL_DIR::local-games/freecol-lan"
+  ["freeciv-lan"]="LOCAL_DIR::local-games/freeciv-lan"
   ["openttd-lan"]="LOCAL_DIR::local-games/openttd-lan"
   ["wesnoth-lan"]="LOCAL_DIR::local-games/wesnoth-lan"
   ["zero-ad-lan"]="LOCAL_DIR::local-games/zero-ad-lan"
   ["tobu-tobu-girl-deluxe"]="LOCAL_DIR::local-games/tobu-tobu-girl-deluxe"
   ["skyland-gba"]="LOCAL_DIR::local-games/skyland-gba"
   ["retro-emulator-lab"]="LOCAL_DIR::local-games/retro-emulator-lab"
+  ["veloren-lan"]="LOCAL_DIR::local-games/veloren-lan"
 
 )
 
@@ -153,12 +155,14 @@ declare -A GAME_INFO=(
   ["unciv-lan"]="Unciv LAN Server|CIV|LAN Service - Turn Strategy|Host Unciv multiplayer turn files locally for Civilization-style games on phones and desktops.|Strategy,Multiplayer,Server"
   ["stendhal-lan"]="Stendhal LAN Hub|RPG|Native MORPG - Quest World|Promoted offline hub for the existing Stendhal mirror: client downloads, player guide, world map, quests, and local-server next steps.|RPG,Multiplayer,Native"
   ["freecol-lan"]="FreeCol LAN Hub|COL|Native Strategy - Colonization|Promoted offline hub for the existing FreeCol mirror: colony management, trade, independence, screenshots, and mirrored user manual.|Strategy,Historical,Native"
+  ["freeciv-lan"]="Freeciv LAN Hub|CIV|Native Strategy - 4X Empire|Server/client-smoked Freeciv hub: Civilization-style empire building, local server notes, VM client screenshot, and real-device join next step.|Strategy,4X,Native"
   ["openttd-lan"]="OpenTTD LAN Hub|TTD|Native Sim - Transport Tycoon|Promoted offline hub for the existing OpenTTD mirror: rail, road, air, ship networks, cargo economies, screenshots, and LAN server next steps.|Simulation,Tycoon,Native"
   ["wesnoth-lan"]="Battle for Wesnoth LAN Hub|WES|Native Tactics - Fantasy Strategy|Promoted offline hub for the existing Wesnoth website/wiki mirror: hex tactics, campaigns, villages, terrain, manuals, and client-cache next steps.|Strategy,Tactics,Native"
   ["zero-ad-lan"]="0 A.D. LAN Hub|0AD|Native RTS - Ancient Warfare|Promoted offline hub for the existing 0 A.D. mirror: Age-of-Empires-style economy, armies, ancient civilizations, manuals, and next client-cache steps.|Strategy,RTS,Native"
   ["tobu-tobu-girl-deluxe"]="Tobu Tobu Girl Deluxe|GB|Retro - Game Boy Homebrew|Fast vertical platformer for Game Boy Color, bundled as a legal homebrew ROM and played through the local EmulatorJS runtime.|Retro,Platformer,Homebrew"
   ["skyland-gba"]="Skyland GBA|GBA|Retro - Strategy Homebrew|FTL-inspired Game Boy Advance strategy adventure cached from the official open-source release and played through EmulatorJS.|Retro,Strategy,Homebrew"
   ["retro-emulator-lab"]="Retro Emulator Lab|ROM|Emulator - Homebrew Intake|Offline retro-emulation staging area for legal homebrew/public-domain ROMs using EmulatorJS.|Retro,Emulator,Homebrew"
+  ["veloren-lan"]="Veloren LAN Candidate|VEL|Native RPG - Voxel World|Transparent intake hub for Veloren: official screenshots, cached Airshipper launcher, LAN server notes, and current Debian 12 compatibility blocker.|RPG,Multiplayer,Native"
 
 )
 
@@ -236,10 +240,12 @@ declare -A GAME_CATEGORIES=(
   ["unciv-lan"]="multiplayer,strategy,simulation,management,age-10-plus"
   ["stendhal-lan"]="multiplayer,rpg,adventure,age-10-plus"
   ["freecol-lan"]="strategy,simulation,management,age-13-plus"
+  ["freeciv-lan"]="multiplayer,strategy,simulation,management,age-10-plus"
   ["openttd-lan"]="multiplayer,strategy,simulation,management,age-10-plus,family"
   ["wesnoth-lan"]="multiplayer,strategy,tactical,age-10-plus,family"
   ["zero-ad-lan"]="multiplayer,strategy,simulation,management,age-13-plus"
   ["tobu-tobu-girl-deluxe"]="retro,arcade,platformer,mobile-friendly,age-10-plus"
   ["skyland-gba"]="retro,strategy,simulation,age-10-plus"
   ["retro-emulator-lab"]="retro,arcade,age-10-plus"
+  ["veloren-lan"]="multiplayer,rpg,adventure,simulation,age-13-plus"
 )

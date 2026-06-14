@@ -14,10 +14,15 @@
       "tier": "native-docker-service",
       "catalogHub": "/mirrors/mindustry-lan/",
       "composeFile": "deploy/mindustry.compose.yml",
-      "ports": ["6567/tcp", "6567/udp"],
+      "ports": [
+        "6567/tcp",
+        "6567/udp"
+      ],
       "dataDir": "/var/lib/lan-arcade/mindustry",
       "recommendedMemory": "512 MiB heap for Pi trial; 256 MiB smoke passed on VM",
-      "startEnv": { "MINDUSTRY_XMX": "512m" },
+      "startEnv": {
+        "MINDUSTRY_XMX": "512m"
+      },
       "healthCheck": "logs contain 'Opened a server' and TCP 6567 accepts connections",
       "smokeStatus": "passed",
       "lastReport": "qa/reports/service-smoke/mindustry-host-final-20260614T001049Z.txt",
@@ -29,14 +34,37 @@
       "tier": "native-docker-service",
       "catalogHub": "/mirrors/unciv-lan/",
       "composeFile": "deploy/unciv.compose.yml",
-      "ports": ["8090/tcp"],
+      "ports": [
+        "8090/tcp"
+      ],
       "dataDir": "/var/lib/lan-arcade/unciv",
       "recommendedMemory": "-Xms64m -Xmx256m",
-      "startEnv": { "UNCIV_JAVA_OPTS": "-Xms64m -Xmx256m" },
+      "startEnv": {
+        "UNCIV_JAVA_OPTS": "-Xms64m -Xmx256m"
+      },
       "healthCheck": "GET /isalive returns authVersion/chatVersion JSON; auth/file loop passes",
       "smokeStatus": "passed",
       "lastReport": "qa/reports/service-smoke/unciv-file-loop-final-20260614T001555Z.json",
       "adminState": "startable"
+    },
+    {
+      "id": "freeciv-lan",
+      "label": "Freeciv LAN Server",
+      "tier": "native-package-client-and-server",
+      "catalogHub": "/mirrors/freeciv-lan/",
+      "packageNames": [
+        "freeciv-server",
+        "freeciv-client-gtk3"
+      ],
+      "ports": [
+        "5556/tcp"
+      ],
+      "dataDir": "/var/lib/lan-arcade/freeciv",
+      "recommendedMemory": "server smoke used about 48 MiB RSS; GTK client launch smoke pending real join",
+      "healthCheck": "freeciv-server starts on 127.0.0.1:5556, TCP accepts, client launches under Xvfb",
+      "smokeStatus": "server-tcp-and-client-launch-passed",
+      "lastReport": "qa/reports/service-smoke/freeciv-lan-20260614T053247Z/report.txt; qa/reports/native-client-launch/freeciv-lan-20260614T054915Z/report.txt",
+      "adminState": "server-smoked"
     },
     {
       "id": "stendhal-lan",
@@ -48,19 +76,30 @@
         "/mirrors/stendhal/stendhalgame.org/download/org.stendhalgame.client-1048005-debug.apk"
       ],
       "ports": [],
-      "healthCheck": "pending local server launch and two-client smoke",
-      "smokeStatus": "pending",
-      "adminState": "research"
+      "healthCheck": "cached stendhal.zip passes archive integrity; local server launch and two-client smoke still pending",
+      "smokeStatus": "artifact-zip-smoke-passed",
+      "adminState": "research",
+      "lastReport": "qa/reports/service-smoke/stendhal-lan-20260614T053259Z/report.txt"
     },
     {
       "id": "openttd-lan",
       "label": "OpenTTD LAN Hub",
-      "tier": "native-client-and-future-server",
+      "tier": "native-package-client-and-server",
       "catalogHub": "/mirrors/openttd-lan/",
-      "ports": [],
-      "healthCheck": "pending installer cache and dedicated-server/client smoke",
-      "smokeStatus": "pending",
-      "adminState": "research"
+      "ports": [
+        "3979/tcp",
+        "3979/udp"
+      ],
+      "healthCheck": "openttd dedicated server starts, generates a map, listens on 127.0.0.1:3979, and a VM client launch screenshot exists",
+      "smokeStatus": "server-tcp-and-client-launch-passed",
+      "adminState": "server-smoked",
+      "packageNames": [
+        "openttd",
+        "openttd-opengfx",
+        "openttd-openmsx",
+        "openttd-opensfx"
+      ],
+      "lastReport": "qa/reports/service-smoke/openttd-lan-20260614T053239Z/report.txt; qa/reports/native-client-launch/openttd-lan-20260614T054903Z/report.txt"
     },
     {
       "id": "zero-ad-lan",
@@ -75,12 +114,18 @@
     {
       "id": "wesnoth-lan",
       "label": "Battle for Wesnoth LAN Hub",
-      "tier": "native-client-only-until-tested",
+      "tier": "native-server-package-client-pending",
       "catalogHub": "/mirrors/wesnoth-lan/",
-      "ports": [],
-      "healthCheck": "pending client installer cache and hotseat/LAN smoke",
-      "smokeStatus": "pending",
-      "adminState": "research"
+      "ports": [
+        "15000/tcp"
+      ],
+      "healthCheck": "wesnothd-1.16 starts, listens on port 15000, TCP accepts; native client package/install smoke still pending",
+      "smokeStatus": "server-tcp-smoke-passed",
+      "adminState": "server-smoked",
+      "packageNames": [
+        "wesnoth-1.16-server"
+      ],
+      "lastReport": "qa/reports/service-smoke/wesnoth-lan-20260614T053253Z/report.txt"
     },
     {
       "id": "freecol-lan",
@@ -95,12 +140,20 @@
     {
       "id": "veloren-lan",
       "label": "Veloren LAN Candidate",
-      "tier": "not-present",
-      "catalogHub": null,
-      "ports": [],
-      "healthCheck": "not mirrored on this VM yet; needs license/resource/server intake",
-      "smokeStatus": "not-started",
-      "adminState": "candidate"
+      "tier": "native-launcher-cached-server-pending",
+      "catalogHub": "/mirrors/veloren-lan/",
+      "ports": [
+        "14004/tcp",
+        "14004/udp"
+      ],
+      "healthCheck": "Airshipper ZIP cached and checksummed; current Linux binary blocked on Debian 12 glibc 2.38/2.39 requirement; server/full profile pending",
+      "smokeStatus": "launcher-cached-blocked-on-debian12-glibc",
+      "adminState": "blocked-intake",
+      "cachedArtifacts": [
+        "/mirrors/veloren/downloads/airshipper-linux-x86_64.zip",
+        "/mirrors/veloren/downloads/SHA256SUMS.txt"
+      ],
+      "lastReport": "qa/reports/service-smoke/veloren-lan-20260614T053300Z/report.txt"
     }
   ]
 }

@@ -1,0 +1,13 @@
+Veloren LAN Candidate hub
+
+Game: Veloren
+Official website: https://veloren.net/
+Source repository: https://gitlab.com/veloren/veloren
+License: GPL-3.0-or-later for the Veloren project, per upstream repository LICENSE.
+Launcher source: https://gitlab.com/veloren/airshipper
+Cached launcher URL: https://gitlab.com/veloren/airshipper/-/releases/permalink/latest/downloads/binaries/linux-client-x86_64.zip
+
+Screenshots are selected from the official Veloren website gallery and used as local explanatory media for this LAN Arcade intake hub.
+
+Known VM note on 2026-06-14:
+The cached latest Airshipper Linux binary does not execute on Debian 12 because it requires GLIBC_2.38/GLIBC_2.39. Treat this hub as an intake/cache page until the server/client path is proven.
