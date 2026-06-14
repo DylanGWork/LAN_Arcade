@@ -106,4 +106,9 @@ Front page sections should prioritize:
 3. Promote Mindustry further by testing with a real native client on the LAN; on-demand server smoke now passes.
 4. Promote Unciv further by completing a phone/desktop client loop; raw HTTP auth/file loop now passes.
 5. Revisit Freeciv-web as a heavier research item only after memory and external-request issues are bounded.
-6. Investigate Veloren, open-source RPG/MMO servers, and OSRS-like projects one at a time with strict license and resource notes.
+6. Native mirror hubs are now integrated for 0 A.D., Wesnoth, OpenTTD, FreeCol, and Stendhal; promote them from research-ready to play-ready only after installer/client/service smokes.
+7. Investigate Veloren, open-source RPG/MMO servers, and OSRS-like projects one at a time with strict license and resource notes.
+
+## Native Service Management
+
+Heavy native games should use `config/native-services.json` as an allowlist and follow `docs/NATIVE_SERVICE_ORCHESTRATION.md`. The admin UI should start, stop, and smoke-test only registered services, with one heavy smoke running at a time.

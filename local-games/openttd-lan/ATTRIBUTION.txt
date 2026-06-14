@@ -1,0 +1,13 @@
+OpenTTD LAN Hub attribution
+
+Game/site mirror: /var/www/html/mirrors/openttd/www.openttd.org/
+Original official site: https://www.openttd.org/
+Source/project: https://github.com/OpenTTD/OpenTTD
+Manual/wiki: https://wiki.openttd.org/
+
+Local page screenshots copied from the existing GannanNet OpenTTD mirror:
+- screenshots/1.3-03-opengfx-1920x1200.png -> assets/network.jpg
+- screenshots/1.9-industry_trams.png -> assets/industry.jpg
+- screenshots/special-r10000.png -> assets/big-map.jpg
+
+LAN Arcade page text is an original summary for offline discovery and QA.

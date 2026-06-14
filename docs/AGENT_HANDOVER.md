@@ -6,6 +6,38 @@ LAN Arcade is meant to be a local kids/family game portal: ad-free, no accounts,
 
 
 
+
+## 2026-06-14 Native Mirror Hub Integration
+
+Promoted five older deployed mirrors into proper arcade hub entries:
+
+- `zero-ad-lan` -> existing `/mirrors/0ad/play0ad.com/` mirror, about 1.7 GB.
+- `wesnoth-lan` -> existing `/mirrors/wesnoth/` website/wiki/manual mirror, about 159 MB.
+- `openttd-lan` -> existing `/mirrors/openttd/www.openttd.org/` mirror, about 123 MB.
+- `freecol-lan` -> existing `/mirrors/freecol/www.freecol.org/` mirror, about 83 MB.
+- `stendhal-lan` -> existing `/mirrors/stendhal/` website/wiki/client-download mirror, about 907 MB.
+
+These are hub pages, not proven full play packs yet. They explain the game, include optimized local screenshots, link to the existing offline mirrors/manuals/downloads, and state the next client/service smoke step. Catalog count is now 71.
+
+Veloren was not found under `/var/www/html/mirrors/` or the repo; track it as a fresh intake candidate in `config/native-services.json`.
+
+Native hub QA passed:
+
+```text
+qa/reports/game-regression/native-hub-content-20260614T043722Z/native-hub-content-report.json
+```
+
+Static audit after integration: 71 scanned, 71 OK, 0 entrypoint external refs.
+
+A service control design and allowlist registry were added:
+
+```text
+docs/NATIVE_SERVICE_ORCHESTRATION.md
+config/native-services.json
+```
+
+Policy: heavy native services should be on-demand, allowlisted, observable, and smoke-tested one at a time. Do not add arbitrary shell execution to the web admin UI.
+
 ## 2026-06-14 Native Service Page Quality Update
 
 Dylan flagged that the Unciv/Mindustry service pages were technically reachable but not good enough as game front pages. The fix was to rebuild them as offline game hubs, not placeholder service cards.

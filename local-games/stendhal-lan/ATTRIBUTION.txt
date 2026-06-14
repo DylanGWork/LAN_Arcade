@@ -1,0 +1,13 @@
+Stendhal LAN Hub attribution
+
+Game/site mirror: /var/www/html/mirrors/stendhal/stendhalgame.org/
+World map mirror: /var/www/html/mirrors/stendhal/worldmap/
+Original official site: https://stendhalgame.org/
+Source/project: https://github.com/arianne/stendhal
+
+Local page screenshots copied from the existing GannanNet Stendhal mirror:
+- worldmap/world_labelled.png -> assets/world.jpg
+- stendhalgame.org/images/screenshot.jpg -> assets/game.jpg
+- stendhalgame.org/images/header_background.jpg -> assets/header.jpg
+
+LAN Arcade page text is an original summary for offline discovery and QA.

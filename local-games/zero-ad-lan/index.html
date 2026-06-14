@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>0 A.D. LAN Hub - LAN Arcade</title>
+  <style>
+    :root { color-scheme: dark; --bg:#14110d; --panel:#2b2118; --line:#56412a; --text:#fff1dc; --muted:#d0c8bb; --soft:#aaa093; --accent:#f2b35e; --accent-2:#70c2b5; --ink:#0d0b08; }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body { margin:0; font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif; background:var(--bg); color:var(--text); }
+    a { color: inherit; }
+    .hero { min-height: 84vh; position: relative; display:grid; align-items:end; overflow:hidden; border-bottom:1px solid var(--line); }
+    .hero::before { content:""; position:absolute; inset:0; background:linear-gradient(90deg, rgba(8,8,8,.94) 0%, rgba(8,8,8,.72) 43%, rgba(8,8,8,.18) 100%), url("assets/empire.jpg") center / cover no-repeat; transform:scale(1.02); }
+    .hero-inner { position:relative; width:min(1180px,94vw); margin:0 auto; padding:34px 0 72px; }
+    .eyebrow { display:inline-flex; color:var(--accent); font-weight:850; letter-spacing:.02em; text-transform:uppercase; font-size:12px; }
+    h1 { margin:12px 0; font-size:clamp(40px,8vw,88px); line-height:.92; letter-spacing:0; max-width:900px; }
+    .lede { margin:0; max-width:800px; color:var(--text); font-size:clamp(18px,2.1vw,24px); line-height:1.42; }
+    .quick,.nav { display:flex; flex-wrap:wrap; gap:10px; }
+    .quick { margin-top:22px; }
+    .pill { border:1px solid rgba(255,255,255,.24); background:rgba(0,0,0,.42); color:var(--text); border-radius:8px; padding:9px 11px; font-weight:850; font-size:13px; }
+    .nav { margin-top:26px; }
+    .nav a { text-decoration:none; border-radius:8px; padding:11px 14px; font-weight:850; background:var(--accent); color:var(--ink); }
+    .nav a.secondary { background:rgba(255,255,255,.08); color:var(--text); border:1px solid rgba(255,255,255,.2); }
+    main { background:linear-gradient(180deg, var(--bg) 0, #151515 100%); }
+    .band { border-bottom:1px solid rgba(255,255,255,.08); }
+    .wrap { width:min(1180px,94vw); margin:0 auto; padding:42px 0; }
+    .section-head { display:flex; justify-content:space-between; gap:24px; align-items:end; margin-bottom:18px; }
+    h2 { margin:0; font-size:clamp(25px,3vw,38px); letter-spacing:0; }
+    .section-head p { margin:0; max-width:650px; color:var(--muted); line-height:1.55; }
+    .grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; min-width:0; }
+    .two { grid-template-columns: minmax(0,.9fr) minmax(0,1.1fr); }
+    .panel { min-width:0; overflow-wrap:anywhere; background:rgba(255,255,255,.055); border:1px solid var(--line); border-radius:8px; padding:18px; }
+    .panel h3 { margin:0 0 8px; font-size:18px; color:var(--accent); }
+    .panel p,.panel li { color:var(--muted); line-height:1.58; }
+    .panel p { margin:0 0 10px; }
+    .panel ul,.panel ol { margin:0; padding-left:21px; }
+    .panel a { color:var(--text); text-decoration-color:var(--accent); text-underline-offset:3px; }
+    .gallery { display:grid; grid-template-columns:1.1fr .95fr .95fr; gap:14px; }
+    figure { margin:0; border:1px solid var(--line); border-radius:8px; overflow:hidden; background:#0c0c0c; }
+    figure.feature { grid-row:span 2; }
+    figure img { width:100%; height:100%; min-height:210px; object-fit:cover; display:block; }
+    figcaption { padding:10px 12px; color:var(--muted); font-size:13px; border-top:1px solid rgba(255,255,255,.08); }
+    .manual { display:grid; grid-template-columns:minmax(0,.95fr) minmax(0,1.05fr); gap:18px; }
+    .callout { border-left:4px solid var(--accent); background:rgba(255,255,255,.06); padding:14px 16px; border-radius:0 8px 8px 0; color:var(--muted); line-height:1.55; }
+    .steps { counter-reset:step; display:grid; gap:10px; }
+    .step { display:grid; grid-template-columns:38px minmax(0,1fr); gap:12px; align-items:start; }
+    .step::before { counter-increment:step; content:counter(step); display:grid; place-items:center; width:32px; height:32px; border-radius:50%; background:var(--accent-2); color:#071012; font-weight:900; }
+    .step h3 { margin:2px 0 4px; color:var(--text); font-size:17px; }
+    .step p { margin:0; color:var(--muted); line-height:1.5; }
+    .metric { display:grid; gap:8px; }
+    .metric strong { display:block; color:var(--text); font-size:22px; }
+    code { display:inline-block; max-width:100%; overflow-wrap:anywhere; white-space:normal; color:#ffe08a; background:#0b0b0b; border:1px solid rgba(255,255,255,.09); padding:3px 6px; border-radius:5px; }
+    footer { width:min(1180px,94vw); margin:0 auto; padding:24px 0 36px; color:var(--soft); font-size:13px; }
+    @media (max-width:900px) { .hero { min-height:76vh; } .section-head { display:block; } .section-head p { margin-top:10px; } .grid,.two,.gallery,.manual { grid-template-columns:minmax(0,1fr); } figure.feature { grid-row:auto; } figure img { min-height:190px; } }
+  </style>
+</head>
+<body>
+  <header class="hero"><div class="hero-inner">
+    <div class="eyebrow">Native RTS candidate</div>
+    <h1>0 A.D. LAN Hub</h1>
+    <p class="lede">A free, open-source ancient-warfare real-time strategy game: gather resources, build a town, train armies, research upgrades, and fight historical civilizations on large maps.</p>
+    <div class="quick" aria-label="Game facts"><span class="pill">Real-time strategy</span>
+<span class="pill">Native client required</span>
+<span class="pill">Single-player and multiplayer</span>
+<span class="pill">Mirror: 1.7 GB</span></div>
+    <nav class="nav" aria-label="Page sections"><a href="#links">Open Mirrors</a><a class="secondary" href="#manual">Quick Manual</a><a class="secondary" href="#screenshots">Screenshots</a><a class="secondary" href="../games/">Back to Arcade</a></nav>
+  </div></header>
+  <main>
+    <section class="band"><div class="wrap"><div class="section-head"><h2>Should You Play?</h2><p>Choose 0 A.D. when you want the closest open-source equivalent to an Age of Empires style session. It is bigger and heavier than the browser arcade, so it belongs in the desktop/VM tier rather than the Raspberry Pi weekend tier until client installers are cached and tested.</p></div><div class="grid"><article class="panel"><h3>What the game is</h3><p>Economic base building plus real-time battles. Villagers gather food, wood, stone, and metal; military units defend, raid, and push across the map.</p></article>
+<article class="panel"><h3>What LAN Arcade has</h3><p>A large static mirror of the official website and game manual is already on GannanNet, with screenshots and background material available offline.</p></article>
+<article class="panel"><h3>What is still missing</h3><p>No offline client installers were found in the current mirror. The hub is useful for discovery and manuals, but a real offline play pack still needs installers and a client smoke test.</p></article></div></div></section>
+    <section class="band" id="screenshots"><div class="wrap"><div class="section-head"><h2>What It Looks Like</h2><p>Selected screenshots are cached inside this hub so the arcade can explain the game offline.</p></div><div class="gallery"><figure class="feature"><img src="assets/empire.jpg" alt="A 0 A.D. settlement with buildings and units"><figcaption>Build settlements, gather resources, and expand into a defensible economy.</figcaption></figure>
+<figure class=""><img src="assets/fleet.jpg" alt="0 A.D. ships and naval combat"><figcaption>Maps can include ships, docks, trade, and naval pressure.</figcaption></figure>
+<figure class=""><img src="assets/lobby.jpg" alt="0 A.D. multiplayer lobby"><figcaption>Multiplayer exists, but the offline LAN path still needs a native-client test.</figcaption></figure></div></div></section>
+    <section class="band" id="manual"><div class="wrap manual"><div><h2>Quick Manual</h2><p class="callout">This is a starter guide, not a full manual. Use the local mirror links for deeper offline reading where available.</p></div><div class="steps"><div class="step"><div><h3>Start with workers</h3><p>Send citizens to gather food and wood, then branch into stone and metal as your build order develops.</p></div></div>
+<div class="step"><div><h3>Scout immediately</h3><p>Find resources, choke points, animals, relics, and enemy bases before committing your army.</p></div></div>
+<div class="step"><div><h3>Balance economy and defense</h3><p>Too many soldiers too early slows your economy; too little defense invites raids.</p></div></div>
+<div class="step"><div><h3>Advance phases</h3><p>Town and city phases unlock stronger structures, technologies, and military options.</p></div></div>
+<div class="step"><div><h3>Win with pressure</h3><p>Harass resources, deny expansions, and attack when your economy can replace losses.</p></div></div></div></div></section>
+    <section class="band" id="links"><div class="wrap"><div class="section-head"><h2>Local Links</h2><p>These links point at the current GannanNet mirror. If the internet is down, the local mirror links should still work.</p></div><div class="two grid"><article class="panel"><h3>Open locally</h3><ul><li><a href="../0ad/play0ad.com/">Offline website mirror</a></li>
+<li><a href="../0ad/play0ad.com/download.html">Offline download page mirror</a></li>
+<li><a href="../0ad/play0ad.com/category/game-manual/">Offline game manual mirror</a></li>
+<li><a href="https://play0ad.com/">Original official website</a></li></ul></article><article class="panel"><h3>Offline note</h3><p>Official website mirror and 0 A.D. project pages. Upstream project is open-source; confirm current packaging/licensing before mirroring installers.</p><p>See <a href="ATTRIBUTION.txt">ATTRIBUTION.txt</a> for screenshot and source notes.</p></article></div></div></section>
+    <section class="band"><div class="wrap"><div class="section-head"><h2>Arcade Status</h2><p>This tells players whether the entry is ready to play or only ready to research.</p></div><div class="grid"><article class="panel metric"><h3>Mirror found</h3><strong>/var/www/html/mirrors/0ad</strong><p>/var/www/html/mirrors/0ad, about 1.7 GB</p></article>
+<article class="panel metric"><h3>Installers</h3><strong>Not found in mirror yet</strong><p>Not found in mirror yet</p></article>
+<article class="panel metric"><h3>Next QA</h3><strong>Cache clients and run real LAN multiplayer/client smoke</strong><p>Cache clients and run real LAN multiplayer/client smoke</p></article></div></div></section>
+  </main>
+  <footer>LAN Arcade hub page. Built to promote an existing mirror into the arcade without claiming full play-readiness before client/service QA.</footer>
+</body>
+</html>

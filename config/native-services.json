@@ -1,0 +1,106 @@
+{
+  "version": 1,
+  "policy": {
+    "defaultMode": "on-demand",
+    "maxHeavyServicesRunning": 1,
+    "smokeLock": "/tmp/lan-arcade-native-service-smoke.lock",
+    "reportDir": "qa/reports/service-smoke",
+    "adminRule": "Only execute commands from this allowlist; never accept arbitrary shell from the browser UI."
+  },
+  "services": [
+    {
+      "id": "mindustry-lan",
+      "label": "Mindustry LAN Server",
+      "tier": "native-docker-service",
+      "catalogHub": "/mirrors/mindustry-lan/",
+      "composeFile": "deploy/mindustry.compose.yml",
+      "ports": ["6567/tcp", "6567/udp"],
+      "dataDir": "/var/lib/lan-arcade/mindustry",
+      "recommendedMemory": "512 MiB heap for Pi trial; 256 MiB smoke passed on VM",
+      "startEnv": { "MINDUSTRY_XMX": "512m" },
+      "healthCheck": "logs contain 'Opened a server' and TCP 6567 accepts connections",
+      "smokeStatus": "passed",
+      "lastReport": "qa/reports/service-smoke/mindustry-host-final-20260614T001049Z.txt",
+      "adminState": "startable"
+    },
+    {
+      "id": "unciv-lan",
+      "label": "Unciv LAN Server",
+      "tier": "native-docker-service",
+      "catalogHub": "/mirrors/unciv-lan/",
+      "composeFile": "deploy/unciv.compose.yml",
+      "ports": ["8090/tcp"],
+      "dataDir": "/var/lib/lan-arcade/unciv",
+      "recommendedMemory": "-Xms64m -Xmx256m",
+      "startEnv": { "UNCIV_JAVA_OPTS": "-Xms64m -Xmx256m" },
+      "healthCheck": "GET /isalive returns authVersion/chatVersion JSON; auth/file loop passes",
+      "smokeStatus": "passed",
+      "lastReport": "qa/reports/service-smoke/unciv-file-loop-final-20260614T001555Z.json",
+      "adminState": "startable"
+    },
+    {
+      "id": "stendhal-lan",
+      "label": "Stendhal LAN Hub",
+      "tier": "native-client-and-future-server",
+      "catalogHub": "/mirrors/stendhal-lan/",
+      "cachedArtifacts": [
+        "/mirrors/stendhal/stendhal.zip",
+        "/mirrors/stendhal/stendhalgame.org/download/org.stendhalgame.client-1048005-debug.apk"
+      ],
+      "ports": [],
+      "healthCheck": "pending local server launch and two-client smoke",
+      "smokeStatus": "pending",
+      "adminState": "research"
+    },
+    {
+      "id": "openttd-lan",
+      "label": "OpenTTD LAN Hub",
+      "tier": "native-client-and-future-server",
+      "catalogHub": "/mirrors/openttd-lan/",
+      "ports": [],
+      "healthCheck": "pending installer cache and dedicated-server/client smoke",
+      "smokeStatus": "pending",
+      "adminState": "research"
+    },
+    {
+      "id": "zero-ad-lan",
+      "label": "0 A.D. LAN Hub",
+      "tier": "native-client-only-until-tested",
+      "catalogHub": "/mirrors/zero-ad-lan/",
+      "ports": [],
+      "healthCheck": "pending client installer cache and LAN multiplayer smoke",
+      "smokeStatus": "pending",
+      "adminState": "research"
+    },
+    {
+      "id": "wesnoth-lan",
+      "label": "Battle for Wesnoth LAN Hub",
+      "tier": "native-client-only-until-tested",
+      "catalogHub": "/mirrors/wesnoth-lan/",
+      "ports": [],
+      "healthCheck": "pending client installer cache and hotseat/LAN smoke",
+      "smokeStatus": "pending",
+      "adminState": "research"
+    },
+    {
+      "id": "freecol-lan",
+      "label": "FreeCol LAN Hub",
+      "tier": "native-client-only-until-tested",
+      "catalogHub": "/mirrors/freecol-lan/",
+      "ports": [],
+      "healthCheck": "pending Java release cache and launch smoke",
+      "smokeStatus": "pending",
+      "adminState": "research"
+    },
+    {
+      "id": "veloren-lan",
+      "label": "Veloren LAN Candidate",
+      "tier": "not-present",
+      "catalogHub": null,
+      "ports": [],
+      "healthCheck": "not mirrored on this VM yet; needs license/resource/server intake",
+      "smokeStatus": "not-started",
+      "adminState": "candidate"
+    }
+  ]
+}

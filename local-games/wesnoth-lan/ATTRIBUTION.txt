@@ -1,0 +1,13 @@
+Battle for Wesnoth LAN Hub attribution
+
+Game/site mirror: /var/www/html/mirrors/wesnoth/www.wesnoth.org/
+Wiki mirror: /var/www/html/mirrors/wesnoth/wiki.wesnoth.org/
+Original official site: https://www.wesnoth.org/
+Source/project: https://github.com/wesnoth/wesnoth
+
+Local page screenshots copied from the existing GannanNet Wesnoth mirror:
+- start/1.18/images/start-2.png -> assets/battle.jpg
+- manual/stable/images/game-screen-1.13.11+dev.jpg -> assets/manual-screen.jpg
+- start/1.18/images/drakes-engage-fleet.webp -> assets/fleet.jpg
+
+LAN Arcade page text is an original summary for offline discovery and QA.
