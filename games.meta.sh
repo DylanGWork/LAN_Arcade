@@ -91,6 +91,7 @@ declare -A GAMES=(
   ["max-pirate-gb"]="LOCAL_DIR::local-games/max-pirate-gb"
   ["domination-gb"]="LOCAL_DIR::local-games/domination-gb"
   ["retro-emulator-lab"]="LOCAL_DIR::local-games/retro-emulator-lab"
+  ["private-gbc-vault"]="LOCAL_DIR::local-games/private-gbc-vault"
   ["veloren-lan"]="LOCAL_DIR::local-games/veloren-lan"
 
 )
@@ -182,6 +183,7 @@ declare -A GAME_INFO=(
   ["max-pirate-gb"]="Max Pirate|PIR|Retro - Game Boy Action|Official Homebrew Hub ROM for Max Pirate, a pirate-themed Game Boy action game.|Retro,Action,Homebrew"
   ["domination-gb"]="Domination GB|DOM|Retro - Game Boy Puzzle|Official Homebrew Hub ROM for Domination, a Game Boy puzzle game.|Retro,Puzzle,Homebrew"
   ["retro-emulator-lab"]="Retro Emulator Lab|ROM|Emulator - Homebrew Intake|Offline retro-emulation staging area for legal homebrew/public-domain ROMs using EmulatorJS.|Retro,Emulator,Homebrew"
+  ["private-gbc-vault"]="Private GBC Vault|GBC|Private Retro Shelf - VM Local|Private Game Boy and Game Boy Color vault built from Dylan-provided ROM files, with a full per-game EmulatorJS smoke/play report. ROMs are VM-local and not committed to GitHub.|Retro,Emulator,Private"
   ["veloren-lan"]="Veloren LAN Candidate|VEL|Native RPG - Voxel World|Transparent intake hub for Veloren: official screenshots, cached Airshipper launcher, LAN server notes, and current Debian 12 compatibility blocker.|RPG,Multiplayer,Native"
 
 )
@@ -277,5 +279,6 @@ declare -A GAME_CATEGORIES=(
   ["max-pirate-gb"]="retro,arcade,action,mobile-friendly,age-10-plus"
   ["domination-gb"]="retro,puzzle,mobile-friendly,age-10-plus,family"
   ["retro-emulator-lab"]="retro,arcade,age-10-plus"
+  ["private-gbc-vault"]="retro,arcade,private,age-10-plus"
   ["veloren-lan"]="multiplayer,rpg,adventure,simulation,age-13-plus"
 )
