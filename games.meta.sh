@@ -72,6 +72,8 @@ declare -A GAMES=(
   ["gene-garden"]="LOCAL_DIR::local-games/gene-garden"
   ["mindustry-lan"]="LOCAL_DIR::local-games/mindustry-lan"
   ["unciv-lan"]="LOCAL_DIR::local-games/unciv-lan"
+  ["tobu-tobu-girl-deluxe"]="LOCAL_DIR::local-games/tobu-tobu-girl-deluxe"
+  ["skyland-gba"]="LOCAL_DIR::local-games/skyland-gba"
   ["retro-emulator-lab"]="LOCAL_DIR::local-games/retro-emulator-lab"
 
 )
@@ -144,6 +146,8 @@ declare -A GAME_INFO=(
   ["gene-garden"]="Gene Garden|GENE|Artificial Life - Genetics Garden|Original LAN Arcade evolution sandbox where grass, seasons, walls, mutation, and inherited genes shape competing critter family lines.|Evolution,Genetics,Simulation"
   ["mindustry-lan"]="Mindustry LAN Server|MIND|LAN Service - Factory RTS|Host a Mindustry dedicated server on the arcade box while phones and laptops run native clients.|Multiplayer,Factory,Server"
   ["unciv-lan"]="Unciv LAN Server|CIV|LAN Service - Turn Strategy|Host Unciv multiplayer turn files locally for Civilization-style games on phones and desktops.|Strategy,Multiplayer,Server"
+  ["tobu-tobu-girl-deluxe"]="Tobu Tobu Girl Deluxe|GB|Retro - Game Boy Homebrew|Fast vertical platformer for Game Boy Color, bundled as a legal homebrew ROM and played through the local EmulatorJS runtime.|Retro,Platformer,Homebrew"
+  ["skyland-gba"]="Skyland GBA|GBA|Retro - Strategy Homebrew|FTL-inspired Game Boy Advance strategy adventure cached from the official open-source release and played through EmulatorJS.|Retro,Strategy,Homebrew"
   ["retro-emulator-lab"]="Retro Emulator Lab|ROM|Emulator - Homebrew Intake|Offline retro-emulation staging area for legal homebrew/public-domain ROMs using EmulatorJS.|Retro,Emulator,Homebrew"
 
 )
@@ -220,5 +224,7 @@ declare -A GAME_CATEGORIES=(
   ["gene-garden"]="simulation,strategy,science,educational,biology,mobile-friendly,age-10-plus,family"
   ["mindustry-lan"]="multiplayer,strategy,simulation,management,age-10-plus"
   ["unciv-lan"]="multiplayer,strategy,simulation,management,age-10-plus"
+  ["tobu-tobu-girl-deluxe"]="retro,arcade,platformer,mobile-friendly,age-10-plus"
+  ["skyland-gba"]="retro,strategy,simulation,age-10-plus"
   ["retro-emulator-lab"]="retro,arcade,age-10-plus"
 )

@@ -33,12 +33,31 @@ Server data is stored at:
 /var/lib/lan-arcade/mindustry
 ```
 
+Default hosted map/mode:
+
+```text
+Ancient_Caldera survival
+```
+
+`groundZero` is a campaign sector name and is not a valid dedicated-server built-in map name for v157.4. Use `maps all` in the server console to list valid built-in maps.
+
+The entrypoint hosts this map immediately with `host Ancient_Caldera survival`; it does not rely on deferred `startCommands`.
+
 Default LAN port:
 
 ```text
 6567/tcp
 6567/udp
 ```
+
+VM service smoke on 2026-06-14:
+
+```text
+Report:      qa/reports/service-smoke/mindustry-host-final-20260614T001049Z.txt
+Host result: hosted `Ancient_Caldera survival`, TCP 6567 open, no bad log markers
+Memory:      about 138 MiB with MINDUSTRY_XMX=256m
+```
+
 
 On each phone or desktop, install Mindustry before the trip, open Multiplayer, and join:
 
@@ -53,7 +72,7 @@ Use environment variables at build/run time:
 ```sh
 MINDUSTRY_VERSION=v157.4 \
 MINDUSTRY_SERVER_NAME="Camp Mindustry" \
-MINDUSTRY_MAP=groundZero \
+MINDUSTRY_MAP=Ancient_Caldera \
 MINDUSTRY_MODE=survival \
 MINDUSTRY_XMX=512m \
 docker compose -f deploy/mindustry.compose.yml up -d --build

@@ -10,7 +10,7 @@ services:
     environment:
       MINDUSTRY_SERVER_NAME: ${MINDUSTRY_SERVER_NAME:-LAN Arcade Mindustry}
       MINDUSTRY_SERVER_DESC: ${MINDUSTRY_SERVER_DESC:-Offline camping LAN server}
-      MINDUSTRY_MAP: ${MINDUSTRY_MAP:-groundZero}
+      MINDUSTRY_MAP: ${MINDUSTRY_MAP:-Ancient_Caldera}
       MINDUSTRY_MODE: ${MINDUSTRY_MODE:-survival}
       MINDUSTRY_XMS: ${MINDUSTRY_XMS:-128m}
       MINDUSTRY_XMX: ${MINDUSTRY_XMX:-512m}

@@ -1,0 +1,12 @@
+Tobu Tobu Girl Deluxe
+Author: Tangram Games
+Game page: https://tangramgames.itch.io/tobu-tobu-girl-deluxe
+Source: https://github.com/SimonLarsen/tobutobugirl-dx
+ROM file: roms/tobudx.gb
+ROM SHA-256: 0a0e8018dbbc8d7f8cd99f05e7cdc7b4cc9e358ecfe9377ebfb2291a84c6e310
+Downloaded through the official itch.io free-download flow on 2026-06-14.
+
+License notes from upstream README:
+- Source code: MIT License. See LICENSE-MIT.txt.
+- Assets, images, text, sound, and music: Creative Commons Attribution 4.0 International.
+Attribution: Tobu Tobu Girl Deluxe by Tangram Games.

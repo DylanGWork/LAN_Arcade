@@ -89,6 +89,26 @@ qa/reports/service-smoke/unciv-on-demand-20260613T184532Z.json
 
 The 2026-06-13 on-demand smoke initially failed because the host data directory was root-owned. After `chown -R 10002:10002 /var/lib/lan-arcade/unciv`, `/isalive` returned HTTP 200 and the container was stopped cleanly.
 
+VM file-loop smoke on 2026-06-14 against `http://127.0.0.1:8090`:
+
+```text
+/isalive:                         HTTP 200, authVersion=1, chatVersion=1
+Fresh UUID auth before set:       HTTP 204
+Set password:                     HTTP 200 (`PUT /auth` body is the new password)
+Correct auth after set:           HTTP 200
+Wrong password auth:              HTTP 401
+PUT /files/<qa-file>:             HTTP 200
+GET /files/<qa-file>:             HTTP 200, content matched
+Wrong-password overwrite:         HTTP 401, original content preserved
+Idle/test memory:                 about 132 MiB
+```
+
+Raw report:
+
+```text
+qa/reports/service-smoke/unciv-file-loop-final-20260614T001555Z.json
+```
+
 ## Offline Checklist
 
 - Build the Docker image before leaving internet.

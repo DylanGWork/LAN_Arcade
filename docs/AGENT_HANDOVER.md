@@ -4,6 +4,63 @@ You are helping Dylan work on LAN Arcade, an offline-friendly browser game arcad
 
 LAN Arcade is meant to be a local kids/family game portal: ad-free, no accounts, no tracking, usable on the home network and potentially useful for holidays/offline situations.
 
+
+## 2026-06-14 Retro And Service Intake Update
+
+Current repo state after the retro/service work:
+
+- Added two legal EmulatorJS playable entries: `tobu-tobu-girl-deluxe` and `skyland-gba`.
+- Catalog now contains 66 games after safe metadata regeneration.
+- `Tobu Tobu Girl Deluxe` uses the official itch.io free `tobudx.gb` download, source MIT, assets CC BY 4.0.
+- `Skyland GBA` uses the official `evanbowman/skyland-gba` 2022.1.7.0 release asset, MPL-2.0.
+- EmulatorJS runtime remains outside Git at `/var/www/html/mirrors/emulatorjs-runtime/4.2.3/`; run `scripts/patch_emulatorjs_runtime.sh` after refreshing the runtime to disable the localhost CDN update check and add the `en-GB` localization alias.
+- Focused QA passed for both retro games with external requests blocked:
+
+```text
+qa/reports/game-regression/tobu-tobu-girl-deluxe-20260614T000539Z-desktop
+qa/reports/game-regression/tobu-tobu-girl-deluxe-20260614T000539Z-mobile
+qa/reports/game-regression/skyland-gba-20260614T000601Z-desktop
+qa/reports/game-regression/skyland-gba-20260614T000601Z-mobile
+```
+
+Agent dogfood report for both retro entries:
+
+```text
+qa/reports/retro-agent-playtest-20260613T234654Z/playtest-report.json
+```
+
+Dogfood result: both pages created a real canvas, screenshots changed after control input, and there were no console errors, page errors, local request failures, or blocked external requests.
+
+Retro Emulator Lab launcher smoke:
+
+```text
+qa/reports/game-regression/retro-emulator-lab-20260614T001628Z-desktop
+```
+
+Mindustry service fix:
+
+- `groundZero` was not a valid v157.4 dedicated-server built-in map name.
+- Default map is now `Ancient_Caldera`; entrypoint uses direct `host Ancient_Caldera survival` instead of deferred `startCommands`.
+- Clean on-demand smoke passed: map loaded, server opened 6567/tcp+udp, no stale `groundZero`/`Already hosting` logs, memory about 138 MiB.
+
+```text
+qa/reports/service-smoke/mindustry-host-final-20260614T001049Z.txt
+```
+
+Unciv service file loop:
+
+- `/isalive` returned HTTP 200 with `authVersion=1` and `chatVersion=1` on `http://127.0.0.1:8090`.
+- Fresh UUID auth path returned 204 before registration, 200 after password set, and 401 for wrong password.
+- Important API detail: `PUT /auth` must send the new password in the request body; Basic auth alone is not enough to register it.
+- Test turn file uploaded and downloaded successfully; wrong-password overwrite was rejected and did not alter the file.
+- Memory about 132 MiB with `UNCIV_JAVA_OPTS="-Xms64m -Xmx256m"`.
+
+```text
+qa/reports/service-smoke/unciv-file-loop-final-20260614T001555Z.json
+```
+
+No Mindustry or Unciv containers should be left running after these smokes. Verify with `docker ps` before starting new service work.
+
 ## VM Access
 
 - VM name: `GannanNet`

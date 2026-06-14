@@ -43,13 +43,13 @@ LAN Arcade is growing from a camping-friendly static arcade into an offline game
 ## Current Library Expansion
 
 - EvoLab: patched toward species-level play with shared breeding reserves, ready-breeder HUD, capped event stat effects, relative Vite assets, and high-speed simulation caps.
-- Mindustry LAN: catalog page added for the cached Docker server path and native-client connection instructions.
-- Unciv LAN: catalog page added for the cached turn-server path and native-client connection instructions.
-- Retro Emulator Lab: catalog page added. EmulatorJS 4.2.3 runtime is cached outside Git at `/mirrors/emulatorjs-runtime/4.2.3/`.
+- Mindustry LAN: catalog page added and service smoke passed after fixing the default map to `Ancient_Caldera` and hosting immediately with `host Ancient_Caldera survival`.
+- Unciv LAN: catalog page added and service smoke passed on port 8090 for `/isalive`, auth registration/check, upload, download, and wrong-password overwrite rejection. Note that `PUT /auth` requires the new password in the request body.
+- Retro Emulator Lab: catalog page added and launcher smoke passed. EmulatorJS 4.2.3 runtime is cached outside Git at `/mirrors/emulatorjs-runtime/4.2.3/`. First legal ROM entries are `tobu-tobu-girl-deluxe` and `skyland-gba`.
 
 ## EmulatorJS Path
 
-EmulatorJS is useful as a runtime, not as permission to redistribute commercial games. The next safe playable target should be a tiny homebrew or public-domain ROM with an explicit license. After that works, add a private import area for Dylan-owned ROMs that is excluded from Git and not mirrored as public project content.
+EmulatorJS is useful as a runtime, not as permission to redistribute commercial games. The first safe playable targets are now in place: Tobu Tobu Girl Deluxe and Skyland GBA. Continue adding only homebrew/public-domain/explicitly licensed ROMs, and add a private import area later for Dylan-owned ROMs that is excluded from Git and not mirrored as public project content.
 
 Runtime cache:
 
@@ -57,7 +57,15 @@ Runtime cache:
 /var/www/html/mirrors/emulatorjs-runtime/4.2.3/
 ```
 
-A future playable emulator entry should set the EmulatorJS data path to the local runtime, for example:
+After refreshing the runtime, run:
+
+```sh
+scripts/patch_emulatorjs_runtime.sh /var/www/html/mirrors/emulatorjs-runtime/4.2.3/data
+```
+
+That patch disables EmulatorJS' localhost CDN update check for offline QA and adds an `en-GB` localization alias when only `en-US` is bundled.
+
+Playable emulator entries should set the EmulatorJS data path to the local runtime, for example:
 
 ```html
 <script>
@@ -94,8 +102,8 @@ Front page sections should prioritize:
 ## Candidate Progression
 
 1. Finish EvoLab stability and UX patches, then keep it as a dogfood benchmark for simulation games.
-2. Add one legal EmulatorJS homebrew ROM as the first real retro playable.
-3. Promote Mindustry by starting the cached server and testing with a real client on the LAN.
-4. Promote Unciv by starting the turn server and completing a phone/desktop client loop.
+2. Add more legal EmulatorJS homebrew ROMs now that Tobu Tobu Girl Deluxe and Skyland GBA have proven the intake path.
+3. Promote Mindustry further by testing with a real native client on the LAN; on-demand server smoke now passes.
+4. Promote Unciv further by completing a phone/desktop client loop; raw HTTP auth/file loop now passes.
 5. Revisit Freeciv-web as a heavier research item only after memory and external-request issues are bounded.
 6. Investigate Veloren, open-source RPG/MMO servers, and OSRS-like projects one at a time with strict license and resource notes.

@@ -1,0 +1,11 @@
+Skyland for Game Boy Advance
+Author: Evan Bowman
+Source: https://github.com/evanbowman/skyland-gba
+Release asset: https://github.com/evanbowman/skyland-gba/releases/download/2022.1.7.0/Skyland.gba
+ROM file: roms/Skyland.gba
+ROM SHA-256: 516f185f206366f9d44ed2df0d8afb2bc0e2f7d3adc2a2ed6e686c6c3eb4ac90
+Downloaded from the official GitHub release on 2026-06-14.
+
+License notes from upstream README:
+- Software and source code: Mozilla Public License 2.0. See LICENSE-MPL-2.0.txt.
+Attribution: Skyland by Evan Bowman.
