@@ -1,0 +1,14 @@
+Unciv LAN Server page attribution
+
+Game/source: https://github.com/yairm210/Unciv
+Official site/docs: https://yairm210.github.io/Unciv/
+Multiplayer docs: https://yairm210.github.io/Unciv/Other/Multiplayer/
+License shown by upstream repository: MPL-2.0
+
+Local screenshots cached from upstream repository:
+- extraImages/Screenshots/WorldScreen.png -> assets/world-screen.png
+- extraImages/Screenshots/CityScreen.png -> assets/city-screen.png
+- extraImages/Screenshots/TechTree.png -> assets/tech-tree.png
+- extraImages/Screenshots/Civilopedia.png -> assets/civilopedia.png
+
+LAN Arcade page text is original summary based on the official project README/site and multiplayer documentation.

@@ -5,45 +5,205 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Mindustry LAN Server - LAN Arcade</title>
   <style>
-    :root { color-scheme: dark; --bg:#0f172a; --panel:#151f34; --line:#334155; --text:#e5eefc; --muted:#a8b3c7; --accent:#38bdf8; --good:#4ade80; --warn:#fbbf24; }
+    :root {
+      color-scheme: dark;
+      --bg: #111110;
+      --panel: #1b1b18;
+      --panel-2: #24231f;
+      --line: #494438;
+      --text: #f7f2e8;
+      --muted: #cfc6b5;
+      --soft: #aa9f8d;
+      --accent: #f2b84b;
+      --accent-2: #6fc3c8;
+      --good: #8fd166;
+      --danger: #ef6f5d;
+      --ink: #130e04;
+    }
     * { box-sizing: border-box; }
-    body { margin:0; font-family: system-ui, -apple-system, Segoe UI, sans-serif; background: radial-gradient(circle at 20% 10%, #1e293b 0, #0f172a 42%, #090e1a 100%); color:var(--text); }
-    main { width:min(1040px, 94vw); margin:0 auto; padding:28px 0 40px; }
-    header { min-height:36vh; display:flex; flex-direction:column; justify-content:center; gap:14px; }
-    .badge { width:max-content; border:1px solid var(--line); background:rgba(15,23,42,.72); color:var(--good); border-radius:999px; padding:7px 11px; font-weight:700; font-size:13px; }
-    h1 { margin:0; font-size:clamp(34px, 6vw, 68px); line-height:1; letter-spacing:0; }
-    .subtitle { margin:0; max-width:760px; color:var(--muted); font-size:clamp(16px, 2vw, 21px); line-height:1.45; }
-    .actions { display:flex; flex-wrap:wrap; gap:10px; margin-top:8px; }
-    .action { color:#06121f; background:var(--accent); text-decoration:none; font-weight:800; border-radius:7px; padding:10px 13px; }
-    .action.secondary { background:#263449; color:var(--text); border:1px solid var(--line); }
-    .grid { display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap:14px; }
-    section { border:1px solid var(--line); background:rgba(21,31,52,.86); border-radius:8px; padding:18px; }
-    h2 { margin:0 0 10px; font-size:19px; color:#bfdbfe; }
-    p { color:var(--muted); line-height:1.55; margin:0 0 10px; }
-    ul { margin:0; padding-left:18px; color:var(--muted); line-height:1.55; }
-    code { color:#fde68a; background:#0b1220; padding:2px 5px; border-radius:4px; }
-    .status { display:inline-flex; align-items:center; gap:8px; color:var(--warn); font-weight:800; }
-    .status.ready { color:var(--good); }
-    footer { margin-top:20px; color:#7d8aa0; font-size:13px; }
-    @media (max-width: 760px) { .grid { grid-template-columns:1fr; } header { min-height:28vh; } }
+    html { scroll-behavior: smooth; }
+    body { margin: 0; font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif; background: var(--bg); color: var(--text); }
+    a { color: inherit; }
+    .hero { min-height: 86vh; position: relative; display: grid; align-items: end; overflow: hidden; border-bottom: 1px solid var(--line); }
+    .hero::before { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(13,12,10,.93) 0%, rgba(13,12,10,.72) 38%, rgba(13,12,10,.18) 100%), url("assets/combat.png") center / cover no-repeat; transform: scale(1.02); }
+    .hero-inner { position: relative; width: min(1180px, 94vw); margin: 0 auto; padding: 34px 0 76px; }
+    .eyebrow { display: inline-flex; gap: 8px; align-items: center; color: var(--accent); font-weight: 850; letter-spacing: .02em; text-transform: uppercase; font-size: 12px; }
+    h1 { margin: 12px 0 12px; font-size: clamp(42px, 8vw, 92px); line-height: .92; letter-spacing: 0; max-width: 850px; }
+    .lede { margin: 0; max-width: 780px; font-size: clamp(18px, 2.2vw, 25px); line-height: 1.42; color: #fff7e8; }
+    .quick { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 22px; }
+    .pill { border: 1px solid rgba(247,242,232,.24); background: rgba(25,22,18,.74); color: var(--text); border-radius: 8px; padding: 9px 11px; font-weight: 850; font-size: 13px; }
+    .nav { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 26px; }
+    .nav a { text-decoration: none; border-radius: 8px; padding: 11px 14px; font-weight: 850; background: var(--accent); color: var(--ink); }
+    .nav a.secondary { background: rgba(247,242,232,.08); color: var(--text); border: 1px solid rgba(247,242,232,.2); }
+    main { background: linear-gradient(180deg, #111110 0, #171612 100%); }
+    .band { border-bottom: 1px solid rgba(255,255,255,.08); }
+    .wrap { width: min(1180px, 94vw); margin: 0 auto; padding: 42px 0; }
+    .section-head { display: flex; justify-content: space-between; gap: 24px; align-items: end; margin-bottom: 18px; }
+    h2 { margin: 0; font-size: clamp(25px, 3vw, 38px); letter-spacing: 0; }
+    .section-head p { margin: 0; max-width: 650px; color: var(--muted); line-height: 1.55; }
+    .grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; min-width: 0; }
+    .two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .panel { min-width: 0; overflow-wrap: anywhere; background: rgba(36,35,31,.88); border: 1px solid var(--line); border-radius: 8px; padding: 18px; }
+    .panel h3 { margin: 0 0 8px; font-size: 18px; color: #ffda83; }
+    .panel p, .panel li { color: var(--muted); line-height: 1.58; }
+    .panel p { margin: 0 0 10px; }
+    .panel ul, .panel ol { margin: 0; padding-left: 21px; }
+    .metric { display: grid; gap: 8px; }
+    .metric strong { display: block; color: var(--text); font-size: 24px; }
+    code { display: inline-block; max-width: 100%; overflow-wrap: anywhere; white-space: normal; color: #ffe08a; background: #0d0b08; border: 1px solid rgba(255,255,255,.09); padding: 3px 6px; border-radius: 5px; }
+    pre { margin: 10px 0 0; padding: 12px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; background: #0d0b08; border: 1px solid rgba(255,255,255,.1); border-radius: 8px; color: #f7e6a0; }
+    .gallery { display: grid; grid-template-columns: 1.1fr .95fr .95fr; gap: 14px; }
+    figure { margin: 0; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: #0d0b08; }
+    figure.feature { grid-row: span 2; }
+    figure img { width: 100%; height: 100%; min-height: 210px; object-fit: cover; display: block; }
+    figcaption { padding: 10px 12px; color: var(--muted); font-size: 13px; border-top: 1px solid rgba(255,255,255,.08); }
+    .manual { display: grid; grid-template-columns: minmax(0, .95fr) minmax(0, 1.05fr); gap: 18px; }
+    .steps { counter-reset: step; display: grid; gap: 10px; }
+    .step { display: grid; grid-template-columns: 38px minmax(0,1fr); gap: 12px; align-items: start; }
+    .step::before { counter-increment: step; content: counter(step); display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; background: var(--accent-2); color: #041112; font-weight: 900; }
+    .step h3 { margin: 2px 0 4px; color: var(--text); font-size: 17px; }
+    .step p { margin: 0; color: var(--muted); line-height: 1.5; }
+    .callout { border-left: 4px solid var(--accent); background: rgba(242,184,75,.09); padding: 14px 16px; border-radius: 0 8px 8px 0; color: var(--muted); line-height: 1.55; }
+    .source { color: var(--soft); font-size: 13px; }
+    footer { width: min(1180px, 94vw); margin: 0 auto; padding: 24px 0 36px; color: var(--soft); font-size: 13px; }
+    @media (max-width: 900px) {
+      .hero { min-height: 78vh; }
+      .section-head { display: block; }
+      .section-head p { margin-top: 10px; }
+      .grid, .two, .gallery, .manual { grid-template-columns: minmax(0, 1fr); }
+      figure.feature { grid-row: auto; }
+      figure img { min-height: 190px; }
+    }
   </style>
 </head>
 <body>
-  <main>
-    <header>
-      <div class="badge">Service candidate - image cached on GannanNet</div>
+  <header class="hero">
+    <div class="hero-inner">
+      <div class="eyebrow">LAN-hosted native game</div>
       <h1>Mindustry LAN Server</h1>
-      <p class="subtitle">A heavier real-time multiplayer candidate: the VM or Pi hosts the dedicated server, while phones and laptops run the official client locally.</p>
-      <div class="actions"><a class="action" href="../games/wiki/">Docs</a><a class="action" href="../games/">Back to Arcade</a></div>
-    </header>
-    <div class="grid">
-      <section><h2>Join Address</h2><p>Default LAN connection target:</p><p><code>192.168.1.106:6567</code></p><p>Mindustry uses both TCP and UDP on port <code>6567</code>.</p></section>
-<section><h2>Activation</h2><p>The Docker image is already cached on this VM. Start it only when you want the service running:</p><p><code>MINDUSTRY_XMX=512m docker compose -f deploy/mindustry.compose.yml up -d</code></p></section>
-<section><h2>Offline Checklist</h2><ul><li>Cache Android/desktop clients before internet goes away.</li><li>Start with the small <code>groundZero</code> map.</li><li>Test one phone and one laptop on LAN only.</li><li>Run one bigger service at a time on Pi-class hardware.</li></ul></section>
-<section><h2>Current Fit</h2><p><span class="status ready">Cached runtime</span></p><p>Previous docs recorded an image around 297 MB and this is the best real-time ?wow? candidate after browser games.</p></section>
-
+      <p class="lede">A factory-building tower-defense RTS: mine resources, route conveyors, power machines, build turrets and units, then survive waves of attackers with other players on the LAN.</p>
+      <div class="quick" aria-label="Game facts">
+        <span class="pill">Real-time factory defense</span>
+        <span class="pill">Co-op multiplayer</span>
+        <span class="pill">Native client required</span>
+        <span class="pill">Join: 192.168.1.106:6567</span>
+      </div>
+      <nav class="nav" aria-label="Page sections">
+        <a href="#join">Join Steps</a>
+        <a class="secondary" href="#manual">Quick Manual</a>
+        <a class="secondary" href="#screenshots">Screenshots</a>
+        <a class="secondary" href="../games/">Back to Arcade</a>
+      </nav>
     </div>
-    <footer>LAN Arcade library entry. Built for offline preparation: cache before the trip, test on real clients, then mark camping-ready.</footer>
+  </header>
+
+  <main>
+    <section class="band" id="overview">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Should You Play?</h2>
+          <p>Choose Mindustry when you want something busier than a board game: conveyor-belt planning, base defense, shared building, and frantic repairs when a wave breaks through.</p>
+        </div>
+        <div class="grid">
+          <article class="panel"><h3>What the game is</h3><p>Part tower defense, part automation game, part RTS. You build a working supply chain and defend a core that enemies are trying to destroy.</p></article>
+          <article class="panel"><h3>What LAN Arcade does</h3><p>The arcade box hosts the dedicated server. Phones and laptops run the official Mindustry client, so rendering and controls stay on each player device.</p></article>
+          <article class="panel"><h3>What you still need</h3><p>Install a matching Mindustry client before going offline. This page is the local server hub, not the game client itself.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="band" id="screenshots">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>What It Looks Like</h2>
+          <p>These official Mindustry website screenshots are cached locally so the page still explains the game without internet.</p>
+        </div>
+        <div class="gallery">
+          <figure class="feature"><img src="assets/combat.png" alt="Mindustry base under attack with turrets firing"><figcaption>Combat: attackers push toward the core while defenses fire across your production lines.</figcaption></figure>
+          <figure><img src="assets/factory.png" alt="Mindustry factory network with conveyors and machines"><figcaption>Factory: belts, routers, power, drills, processors, and production chains make the base work.</figcaption></figure>
+          <figure><img src="assets/multiplayer.png" alt="Mindustry multiplayer base with players building"><figcaption>Multiplayer: players can build and fight together on the same server.</figcaption></figure>
+        </div>
+      </div>
+    </section>
+
+    <section class="band" id="join">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Join On GannanNet</h2>
+          <p>The dedicated server is only meant to run when someone wants to play. Start it, join from clients, then stop it when the session is done.</p>
+        </div>
+        <div class="two grid">
+          <article class="panel">
+            <h3>Player setup</h3>
+            <ol>
+              <li>Install Mindustry on each phone or desktop while internet is still available.</li>
+              <li>Make sure every client is the same major version as the server.</li>
+              <li>Open <code>Play -> Join Game</code>.</li>
+              <li>If it does not appear automatically, use <code>Add Server</code>.</li>
+              <li>Enter <code>192.168.1.106:6567</code>.</li>
+            </ol>
+          </article>
+          <article class="panel">
+            <h3>Server setup</h3>
+            <ol>
+              <li>Start the Docker service from the LAN Arcade repo.</li>
+              <li>The current default is <code>Ancient_Caldera survival</code>.</li>
+              <li>Mindustry uses port <code>6567</code> over both TCP and UDP.</li>
+              <li>Stop the container after the session to keep Pi-class hardware quiet.</li>
+            </ol>
+            <pre>MINDUSTRY_XMX=512m \
+docker compose -f deploy/mindustry.compose.yml up -d</pre>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="band" id="manual">
+      <div class="wrap manual">
+        <div>
+          <h2>Quick Manual</h2>
+          <p class="callout">The first goal is not to build something pretty. The first goal is to keep the core alive while materials keep flowing. If a belt stops, your defenses starve.</p>
+        </div>
+        <div class="steps">
+          <div class="step"><div><h3>Feed the core</h3><p>Place drills on copper, lead, coal, titanium, or other ores and route output with conveyors. The core is your shared storage and loss condition.</p></div></div>
+          <div class="step"><div><h3>Build defense early</h3><p>Put turrets near enemy paths and feed them ammunition. Walls buy time; repair points and menders help later.</p></div></div>
+          <div class="step"><div><h3>Power the factory</h3><p>Some machines need power. Link generators, batteries, and nodes carefully so production does not collapse mid-wave.</p></div></div>
+          <div class="step"><div><h3>Upgrade production</h3><p>Simple belts and drills are not enough forever. Graphite, silicon, and stronger materials unlock better blocks and units.</p></div></div>
+          <div class="step"><div><h3>Share jobs in co-op</h3><p>One player can patch defenses while another expands mining, another manages power, and another builds units.</p></div></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="band" id="server">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Server Notes</h2>
+          <p>This page is tied to a real smoke test, not just a placeholder card.</p>
+        </div>
+        <div class="grid">
+          <article class="panel metric"><h3>Current smoke</h3><strong>Passed</strong><p>Dedicated server loaded <code>Ancient_Caldera survival</code>, opened <code>6567</code>, and had no bad log markers.</p></article>
+          <article class="panel metric"><h3>Memory seen</h3><strong>About 138 MiB</strong><p>Measured with <code>MINDUSTRY_XMX=256m</code> during the VM service smoke.</p></article>
+          <article class="panel"><h3>Important correction</h3><p><code>groundZero</code> is a campaign sector name, not a valid built-in dedicated-server map name for the tested server release. The page now uses <code>Ancient_Caldera</code>.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="band" id="trouble">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Troubleshooting</h2>
+          <p>Most join failures are version mismatch, service stopped, same-LAN discovery failure, or blocked UDP/TCP on port 6567.</p>
+        </div>
+        <div class="grid">
+          <article class="panel"><h3>Server not visible</h3><p>Use direct IP with <code>Add Server</code>. LAN discovery is convenient but not guaranteed on every router or hotspot.</p></article>
+          <article class="panel"><h3>Cannot connect</h3><p>Check that the container is running, all players are on the same network, and clients are compatible with the server version.</p></article>
+          <article class="panel"><h3>Performance gets rough</h3><p>Run one bigger service at a time on Pi-class hardware. Stop idle containers and avoid huge maps until a real LAN playtest passes.</p></article>
+        </div>
+      </div>
+    </section>
   </main>
+  <footer>
+    Local page built for LAN Arcade. Media and source notes are in <a href="ATTRIBUTION.txt">ATTRIBUTION.txt</a>. Last service smoke: qa/reports/service-smoke/mindustry-host-final-20260614T001049Z.txt.
+  </footer>
 </body>
 </html>

@@ -1,0 +1,15 @@
+Mindustry LAN Server page attribution
+
+Game/source: https://github.com/Anuken/Mindustry
+Official website: https://mindustrygame.github.io/
+Official wiki: https://mindustrygame.github.io/wiki/
+Dedicated server docs: https://mindustrygame.github.io/wiki/servers/
+FAQ: https://mindustrygame.github.io/wiki/faq/
+License shown by upstream game repository: GPL-3.0
+
+Local screenshots cached from the official Mindustry website repository:
+- images/1.png -> assets/combat.png
+- images/2.png -> assets/factory.png
+- images/3.png -> assets/multiplayer.png
+
+LAN Arcade page text is original summary based on the official website, FAQ, and server documentation.

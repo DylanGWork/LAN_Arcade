@@ -5,6 +5,38 @@ You are helping Dylan work on LAN Arcade, an offline-friendly browser game arcad
 LAN Arcade is meant to be a local kids/family game portal: ad-free, no accounts, no tracking, usable on the home network and potentially useful for holidays/offline situations.
 
 
+
+## 2026-06-14 Native Service Page Quality Update
+
+Dylan flagged that the Unciv/Mindustry service pages were technically reachable but not good enough as game front pages. The fix was to rebuild them as offline game hubs, not placeholder service cards.
+
+New expectation for native-client/service games:
+
+- Explain what the game actually is in the first viewport.
+- Include local screenshots or equivalent visual evidence, with attribution.
+- Include quick manual/game-loop guidance, not just Docker commands.
+- Include player join steps and operator start/stop notes separately.
+- State whether the entry is a browser game or requires a native client.
+- Include current QA/service-smoke status and resource notes.
+- Check desktop and mobile page layouts for loaded images, no external requests, and no horizontal overflow.
+
+Deployment note: safe metadata regeneration updates the catalog, but it did not refresh already-deployed `LOCAL_DIR` folders for `unciv-lan` and `mindustry-lan` while mirroring was skipped. After editing those local pages, explicitly sync the folder, for example:
+
+```sh
+rsync -a --delete local-games/unciv-lan/ /var/www/html/mirrors/unciv-lan/
+rsync -a --delete local-games/mindustry-lan/ /var/www/html/mirrors/mindustry-lan/
+```
+
+Fresh page QA after the rebuild:
+
+```text
+qa/reports/game-regression/unciv-lan-page-final-20260614T024755Z-desktop
+qa/reports/game-regression/unciv-lan-page-final-20260614T024755Z-mobile
+qa/reports/game-regression/mindustry-lan-page-final-20260614T024755Z-desktop
+qa/reports/game-regression/mindustry-lan-page-final-20260614T024755Z-mobile
+qa/reports/game-regression/service-page-content-20260614T024719Z/service-page-content-report.json
+```
+
 ## 2026-06-14 Retro And Service Intake Update
 
 Current repo state after the retro/service work:
