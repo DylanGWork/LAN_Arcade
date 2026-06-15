@@ -50,6 +50,12 @@
     .panel ul, .panel ol { margin: 0; padding-left: 21px; }
     .metric { display: grid; gap: 8px; }
     .metric strong { display: block; color: var(--text); font-size: 24px; }
+    .button { display: inline-flex; align-items: center; justify-content: center; min-height: 42px; text-decoration: none; border-radius: 8px; padding: 10px 12px; font-weight: 850; background: var(--accent); color: var(--ink); }
+    .button.secondary { background: rgba(243,245,234,.08); color: var(--text); border: 1px solid rgba(243,245,234,.2); }
+    .download-card { display: grid; gap: 10px; align-content: start; }
+    .download-card .button { justify-self: start; }
+    .download-card strong { display: block; color: var(--text); font-size: 15px; }
+    .download-meta { color: var(--soft); font-size: 13px; margin: 0; }
     code { display: inline-block; max-width: 100%; overflow-wrap: anywhere; white-space: normal; color: #ffe08a; background: #0d0b08; border: 1px solid rgba(255,255,255,.09); padding: 3px 6px; border-radius: 5px; }
     pre { margin: 10px 0 0; padding: 12px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; background: #0d0b08; border: 1px solid rgba(255,255,255,.1); border-radius: 8px; color: #f7e6a0; }
     .gallery { display: grid; grid-template-columns: 1.1fr .95fr .95fr; gap: 14px; }
@@ -85,12 +91,12 @@
       <div class="quick" aria-label="Game facts">
         <span class="pill">Real-time factory defense</span>
         <span class="pill">Co-op multiplayer</span>
-        <span class="pill">Native client required</span>
+        <span class="pill">Native client required</span><span class="pill">Desktop client cached locally</span>
         <span class="pill">Join: 192.168.1.106:6567</span>
       </div>
       <nav class="nav" aria-label="Page sections">
-        <a href="#join">Join Steps</a>
-        <a class="secondary" href="#manual">Quick Manual</a>
+        <a href="#downloads">Download Clients</a><a class="secondary" href="#join">Join Steps</a>
+        <a class="secondary" href="#manual">Manual & Docs</a>
         <a class="secondary" href="#screenshots">Screenshots</a>
         <a class="secondary" href="../games/">Back to Arcade</a>
       </nav>
@@ -107,12 +113,12 @@
         <div class="grid">
           <article class="panel"><h3>What the game is</h3><p>Part tower defense, part automation game, part RTS. You build a working supply chain and defend a core that enemies are trying to destroy.</p></article>
           <article class="panel"><h3>What LAN Arcade does</h3><p>The arcade box hosts the dedicated server. Phones and laptops run the official Mindustry client, so rendering and controls stay on each player device.</p></article>
-          <article class="panel"><h3>What you still need</h3><p>Install a matching Mindustry client before going offline. This page is the local server hub, not the game client itself.</p></article>
+          <article class="panel"><h3>What you still need</h3><p>Install the server-compatible desktop client from the local downloads below, then join the LAN Arcade server from Multiplayer.</p></article>
         </div>
       </div>
     </section>
 
-    <section class="band" id="screenshots">
+    <section class="band" id="downloads"><div class="wrap"><div class="section-head"><h2>Download Clients</h2><p>Server-compatible Mindustry v157.4 desktop and server files are cached on GannanNet. These are local LAN downloads.</p></div><div class="grid"><article class="panel download-card"><h3>Desktop client JAR</h3><p>Use this on Windows, Linux, or macOS with Java 17 or newer, then join <code>192.168.1.106:6567</code>.</p><a class="button" href="../games/downloads/native/mindustry/latest/Mindustry.jar">Download Mindustry.jar</a><p class="download-meta">Server-compatible v157.4 desktop client.</p></article><article class="panel download-card"><h3>Server JAR</h3><p>Cached for offline repair or rebuilding of the LAN Arcade dedicated server image.</p><a class="button" href="../games/downloads/native/mindustry/latest/server-release.jar">Download server JAR</a><p class="download-meta">Matches the current service build.</p></article><article class="panel download-card"><h3>All files and hashes</h3><p>Open the local shelf for dependencies, manifest, and SHA256 checksums.</p><a class="button secondary" href="../games/downloads/native/mindustry/">Open download shelf</a><p class="download-meta">Stable Android APK is not provided by this upstream release.</p></article></div></div></section><section class="band" id="screenshots">
       <div class="wrap">
         <div class="section-head">
           <h2>What It Looks Like</h2>
@@ -136,8 +142,8 @@
           <article class="panel">
             <h3>Player setup</h3>
             <ol>
-              <li>Install Mindustry on each phone or desktop while internet is still available.</li>
-              <li>Make sure every client is the same major version as the server.</li>
+              <li>Install Mindustry from the local download section on this page.</li>
+              <li>Use the cached v157.4 desktop client unless the server is deliberately upgraded and re-smoked.</li>
               <li>Open <code>Play -> Join Game</code>.</li>
               <li>If it does not appear automatically, use <code>Add Server</code>.</li>
               <li>Enter <code>192.168.1.106:6567</code>.</li>
@@ -203,7 +209,7 @@ docker compose -f deploy/mindustry.compose.yml up -d</pre>
     </section>
   </main>
   <footer>
-    Local page built for LAN Arcade. Media and source notes are in <a href="ATTRIBUTION.txt">ATTRIBUTION.txt</a>. Last service smoke: qa/reports/service-smoke/mindustry-host-final-20260614T001049Z.txt.
+    Local page built for LAN Arcade. Media and source notes are in <a href="ATTRIBUTION.txt">ATTRIBUTION.txt</a>. Official docs mirror: <a href="../mindustry-docs/">../mindustry-docs/</a>. Last service smoke: qa/reports/service-smoke/mindustry-host-final-20260614T001049Z.txt.
   </footer>
 </body>
 </html>

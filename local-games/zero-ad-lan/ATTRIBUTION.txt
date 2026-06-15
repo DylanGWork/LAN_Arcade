@@ -10,3 +10,5 @@ Local page screenshots copied from the existing GannanNet 0 A.D. mirror:
 - images/news_images/lobby_1.png -> assets/lobby.jpg
 
 LAN Arcade page text is an original summary for offline discovery and QA.
+
+Local native downloads: /var/www/html/mirrors/games/downloads/native/zero-ad/

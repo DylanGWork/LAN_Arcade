@@ -13,3 +13,6 @@ Local screenshots cached from the official Mindustry website repository:
 - images/3.png -> assets/multiplayer.png
 
 LAN Arcade page text is original summary based on the official website, FAQ, and server documentation.
+
+Local native downloads: /var/www/html/mirrors/games/downloads/native/mindustry/
+Local docs mirror: /var/www/html/mirrors/mindustry-docs/

@@ -10,3 +10,5 @@ Local page screenshots copied from the existing GannanNet FreeCol mirror:
 - images/screen-1.0.0-colopedia.jpg -> assets/colopedia.jpg
 
 LAN Arcade page text is an original summary for offline discovery and QA.
+
+Local native downloads: /var/www/html/mirrors/games/downloads/native/freecol/

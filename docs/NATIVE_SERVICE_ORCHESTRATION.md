@@ -59,15 +59,15 @@ Each smoke writes to `qa/reports/service-smoke/` and records memory use, ports, 
 
 ## Current Status
 
-- `mindustry-lan`: startable Docker service; VM smoke passed.
+- `mindustry-lan`: startable Docker service; VM smoke passed; server-compatible desktop/server JAR shelf and docs mirror cached under `/mirrors/games/downloads/native/mindustry/` and `/mirrors/mindustry-docs/`.
 - `unciv-lan`: startable Docker service; auth/file-loop smoke passed.
-- `openttd-lan`: Debian packages installed; dedicated server TCP smoke passed; VM client launch screenshot passed; real client join/play pending.
-- `freeciv-lan`: Debian server/client installed; server TCP smoke passed; VM GTK client launch screenshot passed; real client join/play pending.
-- `wesnoth-lan`: Debian server package installed; server TCP smoke passed; native client install/launch and lobby join pending.
+- `openttd-lan`: Debian packages installed; dedicated server TCP smoke passed; VM client launch screenshot passed; Windows/Linux/macOS clients plus OpenGFX/OpenSFX/OpenMSX cached; real client join/play pending.
+- `freeciv-lan`: Debian server/client installed; server TCP smoke passed; VM GTK client launch screenshot passed; Windows/Linux packages cached; real client join/play pending.
+- `wesnoth-lan`: Debian server package installed; server TCP smoke passed; Windows/macOS installers cached; native client install/launch and lobby join pending.
 - `stendhal-lan`: client ZIP and Android APK found; ZIP integrity smoke passed; local server smoke pending.
-- `freecol-lan`: website/manual mirror found; Java release launch smoke pending.
-- `zero-ad-lan`: mirror found; client installer/LAN smoke pending; Debian data package is heavy, so test later.
-- `veloren-lan`: official Airshipper Linux ZIP cached and checksummed; current binary is blocked on Debian 12 glibc 2.38/2.39; server/full game intake pending.
+- `freecol-lan`: website/manual mirror found; Windows/macOS/Java/ZIP release files cached; Java release launch smoke pending.
+- `zero-ad-lan`: mirror found; Release 28 Windows/Linux/macOS clients cached; client installer/LAN smoke pending; Debian data package is heavy, so test later.
+- `veloren-lan`: Airshipper launchers for Windows/Linux/macOS plus Linux server binary cached; current Linux binary is blocked on Debian 12 glibc 2.38/2.39 and full game profile caching is still pending, so do not call it play-ready.
 
 See `docs/NATIVE_GAME_TESTING.md` for the testing ladder and exact report paths.
 

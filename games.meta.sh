@@ -163,12 +163,12 @@ declare -A GAME_INFO=(
   ["gene-garden"]="Gene Garden|GENE|Artificial Life - Genetics Garden|Original LAN Arcade evolution sandbox where grass, seasons, walls, mutation, and inherited genes shape competing critter family lines.|Evolution,Genetics,Simulation"
   ["mindustry-lan"]="Mindustry LAN Server|MIND|LAN Service - Factory RTS|Host a Mindustry dedicated server on the arcade box while phones and laptops run native clients.|Multiplayer,Factory,Server"
   ["unciv-lan"]="Unciv LAN Server|CIV|LAN Service - Turn Strategy|Host Unciv multiplayer turn files locally for Civilization-style games on phones and desktops.|Strategy,Multiplayer,Server"
-  ["stendhal-lan"]="Stendhal LAN Hub|RPG|Native MORPG - Quest World|Promoted offline hub for the existing Stendhal mirror: client downloads, player guide, world map, quests, and local-server next steps.|RPG,Multiplayer,Native"
-  ["freecol-lan"]="FreeCol LAN Hub|COL|Native Strategy - Colonization|Promoted offline hub for the existing FreeCol mirror: colony management, trade, independence, screenshots, and mirrored user manual.|Strategy,Historical,Native"
-  ["freeciv-lan"]="Freeciv LAN Hub|CIV|Native Strategy - 4X Empire|Server/client-smoked Freeciv hub: Civilization-style empire building, local server notes, VM client screenshot, and real-device join next step.|Strategy,4X,Native"
-  ["openttd-lan"]="OpenTTD LAN Hub|TTD|Native Sim - Transport Tycoon|Promoted offline hub for the existing OpenTTD mirror: rail, road, air, ship networks, cargo economies, screenshots, and LAN server next steps.|Simulation,Tycoon,Native"
-  ["wesnoth-lan"]="Battle for Wesnoth LAN Hub|WES|Native Tactics - Fantasy Strategy|Promoted offline hub for the existing Wesnoth website/wiki mirror: hex tactics, campaigns, villages, terrain, manuals, and client-cache next steps.|Strategy,Tactics,Native"
-  ["zero-ad-lan"]="0 A.D. LAN Hub|0AD|Native RTS - Ancient Warfare|Promoted offline hub for the existing 0 A.D. mirror: Age-of-Empires-style economy, armies, ancient civilizations, manuals, and next client-cache steps.|Strategy,RTS,Native"
+  ["stendhal-lan"]="Stendhal LAN Hub|RPG|Native MORPG - Quest World|Offline Stendhal hub with cached Java/Android clients, server ZIP, player guide, world map, quests, and local-server next steps.|RPG,Multiplayer,Native"
+  ["freecol-lan"]="FreeCol LAN Hub|COL|Native Strategy - Colonization|Offline FreeCol hub with cached platform installers, colony management guide, screenshots, and mirrored user manual.|Strategy,Historical,Native"
+  ["freeciv-lan"]="Freeciv LAN Hub|CIV|Native Strategy - 4X Empire|Server/client-smoked Freeciv hub with cached Windows/Linux clients, local docs, VM client screenshot, and real-device join next step.|Strategy,4X,Native"
+  ["openttd-lan"]="OpenTTD LAN Hub|TTD|Native Sim - Transport Tycoon|Offline OpenTTD hub with cached clients, base graphics/sound/music packs, screenshots, curated manual pages, and LAN server next steps.|Simulation,Tycoon,Native"
+  ["wesnoth-lan"]="Battle for Wesnoth LAN Hub|WES|Native Tactics - Fantasy Strategy|Offline Wesnoth hub with cached Windows/macOS clients, website/wiki mirror, hex tactics, campaigns, villages, terrain, and manuals.|Strategy,Tactics,Native"
+  ["zero-ad-lan"]="0 A.D. LAN Hub|0AD|Native RTS - Ancient Warfare|Offline 0 A.D. hub with cached Windows/Linux/macOS clients, Age-of-Empires-style economy, armies, ancient civilizations, and manuals.|Strategy,RTS,Native"
   ["tobu-tobu-girl-deluxe"]="Tobu Tobu Girl Deluxe|GB|Retro - Game Boy Homebrew|Fast vertical platformer for Game Boy Color, bundled as a legal homebrew ROM and played through the local EmulatorJS runtime.|Retro,Platformer,Homebrew"
   ["skyland-gba"]="Skyland GBA|GBA|Retro - Strategy Homebrew|FTL-inspired Game Boy Advance strategy adventure cached from the official open-source release and played through EmulatorJS.|Retro,Strategy,Homebrew"
   ["gb-2048"]="Game Boy 2048|GB2048|Retro - Game Boy Puzzle|Official Homebrew Hub ROM for 2048gb, a compact Game Boy version of the sliding-number puzzle.|Retro,Puzzle,Homebrew"
@@ -182,7 +182,7 @@ declare -A GAME_INFO=(
   ["domination-gb"]="Domination GB|DOM|Retro - Game Boy Puzzle|Official Homebrew Hub ROM for Domination, a Game Boy puzzle game.|Retro,Puzzle,Homebrew"
   ["retro-emulator-lab"]="Retro Emulator Lab|ROM|Emulator - Homebrew Intake|Offline retro-emulation staging area for legal homebrew/public-domain ROMs using EmulatorJS.|Retro,Emulator,Homebrew"
   ["private-gbc-vault"]="Private GBC Vault|GBC|Private Retro Shelf - VM Local|Private Game Boy and Game Boy Color vault built from Dylan-provided ROM files, including tested Pokemon entries, with a full per-game EmulatorJS smoke/play report. ROMs are VM-local and not committed to GitHub.|Retro,Emulator,Private,Pokemon,Game Boy,GBC"
-  ["veloren-lan"]="Veloren LAN Candidate|VEL|Native RPG - Voxel World|Transparent intake hub for Veloren: official screenshots, cached Airshipper launcher, LAN server notes, and current Debian 12 compatibility blocker.|RPG,Multiplayer,Native"
+  ["veloren-lan"]="Veloren LAN Candidate|VEL|Native RPG - Voxel World|Transparent Veloren intake hub with cached Airshipper launchers, local book mirror, LAN server notes, and current Debian 12/full-profile blocker.|RPG,Multiplayer,Native"
 
 )
 

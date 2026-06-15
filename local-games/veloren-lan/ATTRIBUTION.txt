@@ -11,3 +11,6 @@ Screenshots are selected from the official Veloren website gallery and used as l
 
 Known VM note on 2026-06-14:
 The cached latest Airshipper Linux binary does not execute on Debian 12 because it requires GLIBC_2.38/GLIBC_2.39. Treat this hub as an intake/cache page until the server/client path is proven.
+
+Standard local Airshipper launcher shelf: /var/www/html/mirrors/games/downloads/native/veloren/
+Local Veloren book mirror: /var/www/html/mirrors/veloren-book/

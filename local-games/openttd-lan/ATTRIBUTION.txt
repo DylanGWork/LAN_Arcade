@@ -11,3 +11,6 @@ Local page screenshots copied from the existing GannanNet OpenTTD mirror:
 - screenshots/special-r10000.png -> assets/big-map.jpg
 
 LAN Arcade page text is an original summary for offline discovery and QA.
+
+Local native downloads: /var/www/html/mirrors/games/downloads/native/openttd/
+Curated local wiki/manual mirror: /var/www/html/mirrors/openttd-wiki/

@@ -11,3 +11,5 @@ Local page screenshots copied from the existing GannanNet Wesnoth mirror:
 - start/1.18/images/drakes-engage-fleet.webp -> assets/fleet.jpg
 
 LAN Arcade page text is an original summary for offline discovery and QA.
+
+Local native downloads: /var/www/html/mirrors/games/downloads/native/wesnoth/

@@ -34,13 +34,13 @@ It records under `qa/reports/service-smoke/` and currently supports `openttd-lan
 
 | Game | Current status | Evidence | What it does not prove yet |
 | --- | --- | --- | --- |
-| OpenTTD | Server TCP smoke passed; VM client launch screenshot passed. | `qa/reports/service-smoke/openttd-lan-20260614T053239Z/report.txt`; `qa/reports/native-client-launch/openttd-lan-20260614T054903Z/report.txt`. | A real player joining the server and playing a route. |
-| Freeciv | Server TCP smoke passed; VM GTK client launch screenshot passed. | `qa/reports/service-smoke/freeciv-lan-20260614T053247Z/report.txt`; `qa/reports/native-client-launch/freeciv-lan-20260614T054915Z/report.txt`. | A real multi-client game, tutorial start, or LAN client join. |
-| Battle for Wesnoth | Server TCP smoke passed. | `qa/reports/service-smoke/wesnoth-lan-20260614T053253Z/report.txt`. | Native client install/launch, hotseat, lobby join, or match play. |
-| Stendhal | Cached ZIP integrity passed. | `qa/reports/service-smoke/stendhal-lan-20260614T053259Z/report.txt`. | Local server launch, account creation, or two-client world join. |
-| Veloren | Official Airshipper Linux ZIP cached and checksummed, but VM execution is blocked by glibc. | `qa/reports/service-smoke/veloren-lan-20260614T053300Z/report.txt`; `/var/www/html/mirrors/veloren/downloads/SHA256SUMS.txt`. | Full game assets, local server, or client join. |
-| FreeCol | Hub page exists; Java package is available but not smoke-tested in this pass. | Existing `/mirrors/freecol-lan/` hub and mirror. | Java client launch/play. |
-| 0 A.D. | Hub page exists; Debian package is available but heavy. | Existing `/mirrors/zero-ad-lan/` hub and mirror. | Client install/launch/LAN match. |
+| OpenTTD | Server TCP smoke passed; VM client launch screenshot passed; native downloads and curated manual cache passed desktop/mobile hub smoke. | `qa/reports/service-smoke/openttd-lan-20260614T053239Z/report.txt`; `qa/reports/native-client-launch/openttd-lan-20260614T054903Z/report.txt`; `qa/reports/native-download-hubs/openttd-lan-20260615T105138Z-*`. | A real player joining the server and playing a route. |
+| Freeciv | Server TCP smoke passed; VM GTK client launch screenshot passed; native downloads/docs hub passed desktop/mobile smoke. | `qa/reports/service-smoke/freeciv-lan-20260614T053247Z/report.txt`; `qa/reports/native-client-launch/freeciv-lan-20260614T054915Z/report.txt`; `qa/reports/native-download-hubs/freeciv-lan-20260615T105138Z-*`. | A real multi-client game, tutorial start, or LAN client join. |
+| Battle for Wesnoth | Server TCP smoke passed; Windows/macOS installers cached and hub smoke passed. | `qa/reports/service-smoke/wesnoth-lan-20260614T053253Z/report.txt`; `qa/reports/native-download-hubs/wesnoth-lan-20260615T105138Z-*`. | Native client install/launch, hotseat, lobby join, or match play. |
+| Stendhal | Cached ZIP integrity passed; Java client, Android APK, and server ZIP shelf passed hub smoke. | `qa/reports/service-smoke/stendhal-lan-20260614T053259Z/report.txt`; `qa/reports/native-download-hubs/stendhal-lan-20260615T105138Z-*`. | Local server launch, account creation, or two-client world join. |
+| Veloren | Airshipper launchers/server binary cached and hub smoke passed, but VM execution is blocked by glibc and the full game profile is not yet cached. | `qa/reports/service-smoke/veloren-lan-20260614T053300Z/report.txt`; `qa/reports/native-download-hubs/veloren-lan-20260615T105138Z-*`; `/var/www/html/mirrors/games/downloads/native/veloren/`. | Full game assets, local server, or client join. |
+| FreeCol | Hub page, manual mirror, and native release shelf exist; desktop/mobile hub smoke passed. | `/mirrors/freecol-lan/`; `/mirrors/games/downloads/native/freecol/`; `qa/reports/native-download-hubs/freecol-lan-20260615T105138Z-*`. | Java client launch/play. |
+| 0 A.D. | Hub page exists; Release 28 Windows/Linux/macOS packages cached; desktop/mobile hub smoke passed. | `/mirrors/zero-ad-lan/`; `/mirrors/games/downloads/native/zero-ad/`; `qa/reports/native-download-hubs/zero-ad-lan-20260615T105138Z-*`. | Client install/launch/LAN match. |
 
 ## Next tests
 

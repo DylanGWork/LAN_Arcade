@@ -11,3 +11,5 @@ Local page screenshots copied from the existing GannanNet Stendhal mirror:
 - stendhalgame.org/images/header_background.jpg -> assets/header.jpg
 
 LAN Arcade page text is an original summary for offline discovery and QA.
+
+Standard local native downloads: /var/www/html/mirrors/games/downloads/native/stendhal/

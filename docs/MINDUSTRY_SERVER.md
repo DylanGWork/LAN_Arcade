@@ -18,6 +18,25 @@ deploy/mindustry.compose.yml
 The container downloads `server-release.jar` during image build, then runs without internet.
 The companion app also shows a `Mindustry LAN Server` card with the default connection port.
 
+
+## Cached Offline Assets
+
+Run this from the repo root while internet is available:
+
+```sh
+scripts/cache_native_game_offline_assets.py mindustry
+```
+
+Current cached server-compatible release on GannanNet:
+
+```text
+Version: v157.4
+Downloads: /var/www/html/mirrors/games/downloads/native/mindustry/
+Docs:      /var/www/html/mirrors/mindustry-docs/
+```
+
+The cache includes `Mindustry.jar`, `server-release.jar`, `dependencies.jar`, `manifest.json`, and `SHA256SUMS.txt`. Keep these large binaries outside Git.
+
 ## Build And Run
 
 From the repo root:
@@ -59,7 +78,7 @@ Memory:      about 138 MiB with MINDUSTRY_XMX=256m
 ```
 
 
-On each phone or desktop, install Mindustry before the trip, open Multiplayer, and join:
+On each desktop client, download the server-compatible Mindustry JAR from the local LAN Arcade shelf, open Multiplayer, and join:
 
 ```text
 <pi-ip>:6567
@@ -86,8 +105,10 @@ Raise it only if the server logs show memory pressure.
 - Build the image before leaving internet.
 - Start the container once on the Pi and confirm it hosts a game.
 - Connect at least one Android phone and one laptop while the router has no internet.
-- Keep a copy of the Mindustry APK/installer on the Pi or a USB drive.
-- Do not make Mindustry camping-critical until this exact Pi has survived a multiplayer smoke test.
+- Cache or refresh the server-compatible desktop/server JARs with `scripts/cache_native_game_offline_assets.py mindustry`.
+- Open `/mirrors/mindustry-lan/` and verify the local desktop download shelf works before the trip.
+- Note: the stable upstream GitHub release currently does not ship a matching Android APK, so the current offline pack is desktop/server focused.
+- Do not make Mindustry camping-critical until this exact Pi has survived a multiplayer smoke test with real clients.
 
 ## Sources
 

@@ -15,3 +15,6 @@ VM smoke evidence on 2026-06-14:
 
 Current limitation:
 The VM can start the Freeciv server and launch the GTK client, but a real player/client join smoke from another LAN device is still pending.
+
+Local native downloads: /var/www/html/mirrors/games/downloads/native/freeciv/
+Local docs mirror: /var/www/html/mirrors/freeciv-docs/
