@@ -708,3 +708,7 @@ Result: `/isalive` returned HTTP 200 with `{"authVersion":1,"chatVersion":1}`, m
 
 Removed `airaki-gb` from the public catalog and deployed mirror after manual user QA showed the ROM displays an anti-emulator profanity screen in EmulatorJS instead of playable content. The earlier automated playtest had already marked it `needs-review` because screenshots did not change; treat `needs-review` as non-playable until manually cleared. The Homebrew Hub importer now blocks slug `airaki` so it is not reintroduced by future batch imports.
 
+
+## Unciv Offline Client Cache - 2026-06-15
+
+Dylan flagged that native-client hubs cannot say to install the client before internet loss. Unciv now has official 4.20.13 release files cached outside Git at `/var/www/html/mirrors/games/downloads/native/unciv/`, including Android APK, Windows MSI/ZIP, Linux ZIP, desktop JAR, server JAR, manifest, and SHA256SUMS. The official Unciv docs site is mirrored at `/var/www/html/mirrors/unciv-docs/`. Refresh with `scripts/cache_unciv_offline_assets.py`. The hub page links to the stable local `latest/` download paths and no longer uses the old pre-trip installer wording.

@@ -3,6 +3,7 @@ Unciv LAN Server page attribution
 Game/source: https://github.com/yairm210/Unciv
 Official site/docs: https://yairm210.github.io/Unciv/
 Multiplayer docs: https://yairm210.github.io/Unciv/Other/Multiplayer/
+Release files: https://github.com/yairm210/Unciv/releases/tag/4.20.13
 License shown by upstream repository: MPL-2.0
 
 Local screenshots cached from upstream repository:
@@ -10,5 +11,17 @@ Local screenshots cached from upstream repository:
 - extraImages/Screenshots/CityScreen.png -> assets/city-screen.png
 - extraImages/Screenshots/TechTree.png -> assets/tech-tree.png
 - extraImages/Screenshots/Civilopedia.png -> assets/civilopedia.png
+
+Local release/download cache on GannanNet:
+- /var/www/html/mirrors/games/downloads/native/unciv/4.20.13/Unciv-signed.apk
+- /var/www/html/mirrors/games/downloads/native/unciv/4.20.13/Unciv.msi
+- /var/www/html/mirrors/games/downloads/native/unciv/4.20.13/Unciv-Windows64.zip
+- /var/www/html/mirrors/games/downloads/native/unciv/4.20.13/Unciv-Linux64.zip
+- /var/www/html/mirrors/games/downloads/native/unciv/4.20.13/Unciv.jar
+- /var/www/html/mirrors/games/downloads/native/unciv/4.20.13/UncivServer.jar
+- /var/www/html/mirrors/games/downloads/native/unciv/4.20.13/SHA256SUMS.txt
+
+Local docs mirror on GannanNet:
+- /var/www/html/mirrors/unciv-docs/
 
 LAN Arcade page text is original summary based on the official project README/site and multiplayer documentation.

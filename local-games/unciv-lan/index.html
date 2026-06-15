@@ -33,8 +33,8 @@
     .quick { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 22px; }
     .pill { border: 1px solid rgba(243,245,234,.24); background: rgba(18,24,18,.72); color: var(--text); border-radius: 8px; padding: 9px 11px; font-weight: 800; font-size: 13px; }
     .nav { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 26px; }
-    .nav a { text-decoration: none; border-radius: 8px; padding: 11px 14px; font-weight: 850; background: var(--accent); color: var(--ink); }
-    .nav a.secondary { background: rgba(243,245,234,.08); color: var(--text); border: 1px solid rgba(243,245,234,.2); }
+    .nav a, .button { text-decoration: none; border-radius: 8px; padding: 11px 14px; font-weight: 850; background: var(--accent); color: var(--ink); display: inline-flex; align-items: center; justify-content: center; min-height: 42px; }
+    .nav a.secondary, .button.secondary { background: rgba(243,245,234,.08); color: var(--text); border: 1px solid rgba(243,245,234,.2); }
     main { background: linear-gradient(180deg, #10130f 0, #151811 100%); }
     .band { border-bottom: 1px solid rgba(255,255,255,.08); }
     .wrap { width: min(1180px, 94vw); margin: 0 auto; padding: 42px 0; }
@@ -48,6 +48,10 @@
     .panel p, .panel li { color: var(--muted); line-height: 1.58; }
     .panel p { margin: 0 0 10px; }
     .panel ul, .panel ol { margin: 0; padding-left: 21px; }
+    .download-card { display: grid; gap: 10px; align-content: start; }
+    .download-card .button { justify-self: start; }
+    .download-card strong { display: block; color: var(--text); font-size: 15px; }
+    .download-meta { color: var(--soft); font-size: 13px; margin: 0; }
     .metric { display: grid; gap: 8px; }
     .metric strong { display: block; color: var(--text); font-size: 24px; }
     code { display: inline-block; max-width: 100%; overflow-wrap: anywhere; white-space: normal; color: #ffe08a; background: #0b0f0b; border: 1px solid rgba(255,255,255,.09); padding: 3px 6px; border-radius: 5px; }
@@ -81,16 +85,18 @@
     <div class="hero-inner">
       <div class="eyebrow">LAN-hosted native game</div>
       <h1>Unciv LAN Server</h1>
-      <p class="lede">A fast, open-source 4X strategy game inspired by Civilization V: explore a map, found cities, research technologies, build armies, negotiate, and try to outlast everyone else. LAN Arcade hosts the multiplayer turn server; each player runs Unciv on their own phone or computer.</p>
+      <p class="lede">A fast, open-source 4X strategy game inspired by Civilization V: explore a map, found cities, research technologies, build armies, negotiate, and try to outlast everyone else. LAN Arcade stores the multiplayer turn server and the client installers locally.</p>
       <div class="quick" aria-label="Game facts">
         <span class="pill">Turn-based strategy</span>
         <span class="pill">Best for patient planners</span>
         <span class="pill">Native client required</span>
+        <span class="pill">Installers cached locally</span>
         <span class="pill">Server: 192.168.1.106:8090</span>
       </div>
       <nav class="nav" aria-label="Page sections">
-        <a href="#join">Join Steps</a>
-        <a class="secondary" href="#manual">Quick Manual</a>
+        <a href="#downloads">Download Clients</a>
+        <a class="secondary" href="#join">Join Steps</a>
+        <a class="secondary" href="#manual">Manual & Docs</a>
         <a class="secondary" href="#screenshots">Screenshots</a>
         <a class="secondary" href="../games/">Back to Arcade</a>
       </nav>
@@ -106,8 +112,25 @@
         </div>
         <div class="grid">
           <article class="panel"><h3>What the game is</h3><p>A 4X game: explore, expand, exploit resources, and fight or negotiate with rival civilizations. It is not flashy, but it is deep and runs on modest devices.</p></article>
-          <article class="panel"><h3>What LAN Arcade does</h3><p>The arcade box stores multiplayer turn files locally. That means players on the same LAN can share turns without Dropbox or internet access.</p></article>
-          <article class="panel"><h3>What you still need</h3><p>Install the Unciv client on each phone or desktop before going offline. This page is the local server hub, not the game client itself.</p></article>
+          <article class="panel"><h3>What LAN Arcade does</h3><p>The arcade box stores multiplayer turn files locally and keeps the official client downloads on the LAN, so players can install and connect without internet access.</p></article>
+          <article class="panel"><h3>What you still need</h3><p>Install a native Unciv client from the local downloads below, then point multiplayer settings at <code>http://192.168.1.106:8090</code>.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="band" id="downloads">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Download Clients</h2>
+          <p>Official Unciv 4.20.13 release files are cached on GannanNet. These links are local LAN downloads, not internet links.</p>
+        </div>
+        <div class="grid">
+          <article class="panel download-card"><h3>Android APK</h3><p>For phones and tablets. Android may ask you to allow installing local APK files.</p><a class="button" href="../games/downloads/native/unciv/latest/Unciv-signed.apk">Download APK</a><p class="download-meta">Unciv-signed.apk, 25.3 MB</p></article>
+          <article class="panel download-card"><h3>Windows installer</h3><p>Best default for Windows laptops and desktops.</p><a class="button" href="../games/downloads/native/unciv/latest/Unciv.msi">Download MSI</a><p class="download-meta">Unciv.msi, 83.1 MB</p></article>
+          <article class="panel download-card"><h3>Windows portable</h3><p>Use this if you do not want an installer. Extract the ZIP and run Unciv from the folder.</p><a class="button" href="../games/downloads/native/unciv/latest/Unciv-Windows64.zip">Download ZIP</a><p class="download-meta">Unciv-Windows64.zip, 97.2 MB</p></article>
+          <article class="panel download-card"><h3>Linux desktop</h3><p>For 64-bit Linux desktops. Extract the ZIP and run the bundled desktop build.</p><a class="button" href="../games/downloads/native/unciv/latest/Unciv-Linux64.zip">Download Linux ZIP</a><p class="download-meta">Unciv-Linux64.zip, 100.9 MB</p></article>
+          <article class="panel download-card"><h3>Desktop JAR</h3><p>Cross-platform fallback for devices with a suitable Java runtime already installed.</p><a class="button" href="../games/downloads/native/unciv/latest/Unciv.jar">Download JAR</a><p class="download-meta">Unciv.jar, 52.2 MB</p></article>
+          <article class="panel download-card"><h3>All files and hashes</h3><p>Open the local download shelf for the server JAR, Linux helper files, manifest, and SHA256 checksums.</p><a class="button secondary" href="../games/downloads/native/unciv/">Open download shelf</a><p class="download-meta">Includes SHA256SUMS.txt</p></article>
         </div>
       </div>
     </section>
@@ -137,7 +160,7 @@
           <article class="panel">
             <h3>Player setup</h3>
             <ol>
-              <li>Install Unciv on every device while internet is still available.</li>
+              <li>Install Unciv from the local download section on this page.</li>
               <li>Open <code>Options -> Multiplayer</code>.</li>
               <li>Set the server address to <code>http://192.168.1.106:8090</code>.</li>
               <li>Use <code>Check connection to server</code>. Success means the client can reach LAN Arcade.</li>
@@ -161,15 +184,19 @@
     <section class="band" id="manual">
       <div class="wrap manual">
         <div>
-          <h2>Quick Manual</h2>
-          <p class="callout">Unciv rewards planning more than reflexes. A good first game is small map, low difficulty, no mods, and only a few human players while everyone learns the flow.</p>
+          <h2>Manual & Offline Docs</h2>
+          <p class="callout">Unciv rewards planning more than reflexes. A good first game is small map, low difficulty, no mods, and only a few human players while everyone learns the flow. The in-game Civilopedia is the main offline gameplay reference once the client is installed.</p>
+          <div class="nav" aria-label="Documentation links">
+            <a href="../unciv-docs/">Official docs mirror</a>
+            <a class="secondary" href="../unciv-docs/Other/Multiplayer/">Multiplayer docs</a>
+          </div>
         </div>
         <div class="steps">
           <div class="step"><div><h3>Open the map</h3><p>Move scouts early. Find ruins, city spots, luxury resources, and nearby rivals before committing to wars or wonders.</p></div></div>
           <div class="step"><div><h3>Grow cities deliberately</h3><p>Food grows population, production builds units and buildings, gold pays upkeep, and science unlocks stronger options.</p></div></div>
           <div class="step"><div><h3>Research with a plan</h3><p>Pick technologies that match your terrain and threat level. Economic techs feel slow but often win long games.</p></div></div>
           <div class="step"><div><h3>Do not neglect defense</h3><p>A small army near your borders discourages opportunistic attacks. Roads and ranged units make defense easier.</p></div></div>
-          <div class="step"><div><h3>Use the Civilopedia</h3><p>The built-in Civilopedia is the best offline reference. Use it for buildings, resources, units, terrain, and concepts.</p></div></div>
+          <div class="step"><div><h3>Use the Civilopedia</h3><p>The built-in Civilopedia covers buildings, resources, units, terrain, concepts, tutorials, and rules inside the game client.</p></div></div>
         </div>
       </div>
     </section>
@@ -182,7 +209,7 @@
         </div>
         <div class="grid">
           <article class="panel metric"><h3>Current smoke</h3><strong>Passed</strong><p><code>/isalive</code>, auth registration, upload, download, and wrong-password overwrite rejection all passed on port <code>8090</code>.</p></article>
-          <article class="panel metric"><h3>Memory seen</h3><strong>About 132 MiB</strong><p>Measured with <code>UNCIV_JAVA_OPTS="-Xms64m -Xmx256m"</code> during the file-loop smoke.</p></article>
+          <article class="panel metric"><h3>Memory seen</h3><strong>About 132 MiB</strong><p>Measured with <code>UNCIV_JAVA_OPTS=&quot;-Xms64m -Xmx256m&quot;</code> during the file-loop smoke.</p></article>
           <article class="panel"><h3>Start command</h3><pre>UNCIV_JAVA_OPTS="-Xms64m -Xmx256m" \
 docker compose -f deploy/unciv.compose.yml up -d</pre></article>
         </div>
@@ -198,13 +225,13 @@ docker compose -f deploy/unciv.compose.yml up -d</pre></article>
         <div class="grid">
           <article class="panel"><h3>No success on connection check</h3><p>Confirm the service is running, use <code>http://192.168.1.106:8090</code>, and make sure the client device is on the same network as GannanNet.</p></article>
           <article class="panel"><h3>Players cannot see a game</h3><p>Everyone must use the same multiplayer server address. The host shares a game ID, and other players add that exact game ID.</p></article>
-          <article class="panel"><h3>Offline prep gap</h3><p>Client installers are not yet mirrored here. Install Unciv on devices before leaving internet, then run a full turn-upload test.</p></article>
+          <article class="panel"><h3>Installer does not open</h3><p>Try the alternate package for your device: Windows users can use the MSI or ZIP, Android users may need to allow local APK installs, and Linux users can try the ZIP or JAR.</p></article>
         </div>
       </div>
     </section>
   </main>
   <footer>
-    Local page built for LAN Arcade. Media and source notes are in <a href="ATTRIBUTION.txt">ATTRIBUTION.txt</a>. Last service smoke: qa/reports/service-smoke/unciv-file-loop-final-20260614T001555Z.json.
+    Local page built for LAN Arcade. Media, release, and source notes are in <a href="ATTRIBUTION.txt">ATTRIBUTION.txt</a>. Cached release: Unciv 4.20.13. Last service smoke: qa/reports/service-smoke/unciv-file-loop-final-20260614T001555Z.json.
   </footer>
 </body>
 </html>

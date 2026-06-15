@@ -7,6 +7,8 @@ LAN Arcade is growing from a camping-friendly static arcade into an offline game
 - Do not accept a 200 response as proof that a game works. Every playable entry needs a content/render check and an interaction check.
 - Keep the `/mirrors/` nginx route as the VM deployment target. Do not run the Apache-first installer casually on GannanNet.
 - Prefer games that run fully offline after their assets, containers, or installers are cached.
+- Native-client and server-client hubs must provide local client/server installers, APKs, archives, or package notes. Do not tell players to fetch required clients from the internet later.
+- If an upstream site, wiki, manual, or official docs exist, mirror enough of it locally to explain what the game is, how to play, and how to connect. Patch mirrored docs so they do not depend on external fonts, trackers, source widgets, or search calls.
 - Do not publish commercial ROMs or unlicensed game assets into Git or public mirrors. Emulator runtimes are okay; ROM/game content needs a clear license, public-domain status, or a private user-owned import path.
 - Heavy services should be available to start, not always running. Catalog entries should explain how to start/connect rather than consuming RAM by default.
 

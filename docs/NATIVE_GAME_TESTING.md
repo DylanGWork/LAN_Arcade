@@ -6,8 +6,8 @@ Native and server-backed games must not be marked playable just because their hu
 
 | Gate | Name | What must be proven | Evidence |
 | --- | --- | --- | --- |
-| 0 | Hub QA | The arcade hub page loads, has meaningful local content, has no broken local assets, and does not make runtime internet requests. | `npm run qa:static`, browser smoke screenshots, external-request log. |
-| 1 | Artifact/package QA | Installers, packages, ROMs, launchers, or cached archives exist and match their expected checksums/license notes. | SHA256 files, package names, archive integrity reports. |
+| 0 | Hub QA | The arcade hub page loads, has meaningful player-facing content, local screenshots/manual/wiki/docs links, no broken local assets, and no runtime internet requests. | `npm run qa:static`, browser smoke screenshots, external-request log. |
+| 1 | Artifact/package QA | Required installers, APKs, packages, ROMs, launchers, server jars, or cached archives exist locally and match their expected checksums/license notes. | SHA256 files, package names, archive integrity reports. |
 | 2 | Server smoke | The dedicated server starts, opens only expected ports, accepts a basic TCP/protocol connection, records memory, and stops cleanly. | `scripts/native_service_smoke.sh <service-id>` report. |
 | 3 | Client launch smoke | A native client launches under Xvfb or another controlled display and produces a nonblank screenshot. | Screenshot plus process/memory report. |
 | 4 | Join/play smoke | A real or virtual client joins the local server, enters a map/world/lobby, performs a minimal action, and disconnects. | Logs, screenshots, saved game/lobby state. |
