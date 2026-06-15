@@ -21,6 +21,10 @@ HEADERS = {"User-Agent": "LAN Arcade Homebrew Hub importer"}
 
 CORE_BY_PLATFORM = {"GB": "gb", "GBC": "gb", "GBA": "gba", "NES": "nes"}
 ROM_EXTS = (".gb", ".gbc", ".gba", ".nes")
+BLOCKED_SLUGS = {
+    "airaki": "blocked after manual QA: ROM displays an anti-emulator profanity screen and is not playable in EmulatorJS",
+}
+
 
 
 def fetch_bytes(url: str) -> bytes:
@@ -196,7 +200,11 @@ def main(argv: list[str]) -> int:
         if ":" not in spec:
             raise SystemExit(f"Expected slug:game-id, got {spec}")
         slug, game_id = spec.split(":", 1)
-        imported.append(import_entry(slug.strip(), game_id.strip()))
+        slug = slug.strip()
+        game_id = game_id.strip()
+        if slug in BLOCKED_SLUGS:
+            raise SystemExit(f"Blocked Homebrew Hub slug {slug!r}: {BLOCKED_SLUGS[slug]}")
+        imported.append(import_entry(slug, game_id))
     print(json.dumps({"imported": imported}, indent=2))
     return 0
 

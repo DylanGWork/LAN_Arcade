@@ -703,3 +703,8 @@ qa/reports/service-smoke/unciv-on-demand-20260613T184532Z.json
 ```
 
 Result: `/isalive` returned HTTP 200 with `{"authVersion":1,"chatVersion":1}`, memory was about 129.5 MiB, and the container was stopped with `docker compose -f deploy/unciv.compose.yml down`.
+
+## Retro Homebrew Curation - 2026-06-15
+
+Removed `airaki-gb` from the public catalog and deployed mirror after manual user QA showed the ROM displays an anti-emulator profanity screen in EmulatorJS instead of playable content. The earlier automated playtest had already marked it `needs-review` because screenshots did not change; treat `needs-review` as non-playable until manually cleared. The Homebrew Hub importer now blocks slug `airaki` so it is not reintroduced by future batch imports.
+

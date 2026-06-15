@@ -12,7 +12,6 @@ const defaultIds = [
   'gb-wordyl',
   'apotris-gba',
   'aevilia-gbc',
-  'airaki-gb',
   'crossconnect-gb',
   'grub-glide-gb',
   'plantboy-gb',
@@ -145,7 +144,7 @@ const md = [
   '| --- | --- | --- | --- | --- |',
   ...results.map((r) => `| ${r.verdict} | ${r.id} | ${r.screenshotChanged ?? ''} | ${(r.externalRequests || []).length} | ${(r.pageErrors || []).length + (r.error ? 1 : 0)} |`),
   '',
-  'This is an automated short play smoke: boot, focus emulator, send controls, capture screenshots. It does not prove a full game completion or deep balance quality.',
+  'This is an automated short play smoke: boot, focus emulator, send controls, capture screenshots. It does not prove a full game completion or deep balance quality. Entries with `needs-review` are not considered playable and must not be promoted until manually cleared.',
 ].join('\n');
 await fs.writeFile(path.join(reportDir, 'playtest-report.md'), md + '\n');
 console.log(reportDir);
