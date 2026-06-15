@@ -527,6 +527,51 @@ discover_mirror_dirs() {
   esac
 }
 
+find_mirror_preview() {
+  local target_dir="$1"
+  local rel lower base score size best_score=999 best=""
+
+  [ -d "$target_dir" ] || return 0
+
+  while IFS= read -r rel; do
+    lower="${rel,,}"
+    base="${lower##*/}"
+
+    case "$base" in
+      favicon*|icon*|logo*|apple-touch*|mstile*|transparent*|blank*|loader*|loading*|spinner*)
+        continue
+        ;;
+    esac
+    case "$lower" in
+      _offline_assets/*|*/_offline_assets/*|meta/*|*/meta/*|*/node_modules/*|*/vendor/*|*/emulatorjs-runtime/*|*/font*|*/fonts/*)
+        continue
+        ;;
+    esac
+    size="$(stat -c %s "$target_dir/$rel" 2>/dev/null || printf '0')"
+    if [ "$size" -lt 4096 ]; then
+      continue
+    fi
+
+    score=80
+    [[ "$lower" == *cover* ]] && score=5
+    [[ "$lower" == *hero* ]] && score=8
+    [[ "$lower" == *screenshot* ]] && score=10
+    [[ "$lower" == *screen* ]] && score=12
+    [[ "$lower" == *title* ]] && score=18
+    [[ "$lower" == *gallery* ]] && score=20
+    [[ "$lower" == *demo* ]] && score=24
+    [[ "$lower" == assets/* ]] && score=$(( score - 2 ))
+    [[ "$lower" == img/* ]] && score=$(( score - 1 ))
+
+    if [ "$score" -lt "$best_score" ]; then
+      best_score="$score"
+      best="$rel"
+    fi
+  done < <(find "$target_dir" -maxdepth 4 -type f \( -iname '*.png' -o -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.gif' -o -iname '*.webp' \) -printf '%P\n' 2>/dev/null | LC_ALL=C sort)
+
+  [ -n "$best" ] && printf '%s\n' "$best"
+}
+
 ensure_filters_file() {
   if [ -f "$FILTERS_FILE" ]; then
     chmod 644 "$FILTERS_FILE"
@@ -683,7 +728,7 @@ build_catalog_json() {
   local -a ordered_categories=()
   local -a extra_categories=()
   local dir_name info title icon meta desc tags categories
-  local entry_html rel_entry_dir play_path
+  local entry_html rel_entry_dir play_path preview_rel preview_path
   local tags_json categories_json game_json
   local generated_at tmp_file idx category_id category_label
 
@@ -697,6 +742,11 @@ build_catalog_json() {
     fi
     rel_entry_dir="$(dirname "${entry_html#"$MIRRORS_DIR/"}")"
     play_path="../$rel_entry_dir/"
+    preview_rel="$(find_mirror_preview "$MIRRORS_DIR/$dir_name" || true)"
+    preview_path=""
+    if [ -n "$preview_rel" ]; then
+      preview_path="../$dir_name/$preview_rel"
+    fi
 
     info="${GAME_INFO[$dir_name]:-}"
     if [ -n "$info" ]; then
@@ -722,7 +772,7 @@ build_catalog_json() {
 
     tags_json="$(json_array_from_values "${tags_values[@]}")"
     categories_json="$(json_array_from_values "${category_values[@]}")"
-    game_json="{\"id\":\"$(json_escape "$dir_name")\",\"title\":\"$(json_escape "$title")\",\"icon\":\"$(json_escape "$icon")\",\"meta\":\"$(json_escape "$meta")\",\"description\":\"$(json_escape "$desc")\",\"tags\":[${tags_json}],\"categories\":[${categories_json}],\"path\":\"$(json_escape "$play_path")\"}"
+    game_json="{\"id\":\"$(json_escape "$dir_name")\",\"title\":\"$(json_escape "$title")\",\"icon\":\"$(json_escape "$icon")\",\"meta\":\"$(json_escape "$meta")\",\"description\":\"$(json_escape "$desc")\",\"tags\":[${tags_json}],\"categories\":[${categories_json}],\"path\":\"$(json_escape "$play_path")\",\"preview\":\"$(json_escape "$preview_path")\"}"
     game_json_items+=("$game_json")
   done
 
@@ -794,398 +844,370 @@ write_public_index() {
   <title>${arcade_name_html} LAN Arcade</title>
   <style>
     :root {
-      --bg: #0b1720;
-      --card-bg: #111c28;
-      --accent: #4caf50;
-      --accent-soft: rgba(76, 175, 80, 0.15);
-      --text: #f5f7fa;
-      --muted: #9ca3af;
-      --border: #1f2933;
-      --radius: 14px;
+      color-scheme: dark;
+      --bg: #090b0d;
+      --side: #101514;
+      --panel: #151a1d;
+      --panel-soft: #1b2124;
+      --card: #151b20;
+      --card-strong: #20282d;
+      --text: #f4f7f8;
+      --muted: #a8b2b8;
+      --line: #303a40;
+      --green: #58d68d;
+      --green-soft: rgba(88, 214, 141, 0.16);
+      --amber: #f2c14e;
+      --cyan: #52c7d8;
+      --red: #ef767a;
+      --radius: 8px;
     }
     * { box-sizing: border-box; }
+    html, body { min-height: 100%; }
     body {
       margin: 0;
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: radial-gradient(circle at top, #182a3a 0, #050910 55%, #020509 100%);
+      background: linear-gradient(180deg, #111719 0%, var(--bg) 42%, #050607 100%);
       color: var(--text);
+    }
+    button, input, select { font: inherit; }
+    .app {
       min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: stretch;
+      display: grid;
+      grid-template-columns: 260px minmax(0, 1fr);
     }
-    header {
-      padding: 1.5rem 1.5rem 0.5rem;
-      text-align: center;
+    .sidebar {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow: auto;
+      border-right: 1px solid var(--line);
+      background: linear-gradient(180deg, #121817, #0d1111);
+      padding: 18px 14px;
     }
-    h1 {
+    .brand {
+      display: grid;
+      gap: 4px;
+      padding: 4px 4px 14px;
+      border-bottom: 1px solid var(--line);
+      margin-bottom: 14px;
+    }
+    .brand h1 {
       margin: 0;
-      font-size: 1.8rem;
-      letter-spacing: 0.03em;
+      font-size: 21px;
+      letter-spacing: 0;
+      line-height: 1.1;
     }
-    .subtitle {
-      margin-top: 0.5rem;
-      color: var(--muted);
-      font-size: 0.95rem;
+    .brand span { color: var(--muted); font-size: 13px; line-height: 1.35; }
+    .side-section { margin: 0 0 16px; }
+    .side-title {
+      margin: 0 0 8px;
+      color: #d8e0e4;
+      font-size: 12px;
+      font-weight: 850;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
     }
-    .toolbar {
-      margin-top: 1rem;
-      display: flex;
-      justify-content: center;
-      gap: 0.6rem;
-      flex-wrap: wrap;
-    }
-    .filters {
-      margin-top: 1rem;
-      display: flex;
-      gap: 0.45rem;
-      flex-wrap: wrap;
-      justify-content: center;
-    }
-    .filter-chip {
-      background: rgba(15, 23, 42, 0.7);
-      border: 1px solid var(--border);
-      color: var(--text);
-      border-radius: 999px;
-      padding: 0.35rem 0.8rem;
-      font-size: 0.82rem;
-      cursor: pointer;
-    }
-    .filter-chip:hover {
-      border-color: var(--accent);
-    }
-    .filter-chip.active {
-      border-color: var(--accent);
-      background: var(--accent-soft);
-      color: #bbf7d0;
-    }
-    .toolbar-link {
-      display: inline-block;
-      border: 1px solid var(--border);
-      border-radius: 999px;
-      padding: 0.35rem 0.9rem;
-      color: var(--text);
-      text-decoration: none;
-      font-size: 0.84rem;
-      background: rgba(15, 23, 42, 0.75);
-    }
-    .toolbar-link:hover {
-      border-color: var(--accent);
-    }
-    .download-panel {
-      margin: 0 auto 1rem;
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      background: linear-gradient(135deg, rgba(17, 28, 40, 0.96), rgba(10, 20, 31, 0.96));
-      padding: 0.85rem;
+    .side-list { display: grid; gap: 5px; }
+    .side-button {
+      width: 100%;
+      min-height: 36px;
       display: grid;
       grid-template-columns: minmax(0, 1fr) auto;
-      gap: 0.9rem;
       align-items: center;
-    }
-    .download-panel h2 {
-      margin: 0 0 0.25rem;
-      font-size: 1rem;
-    }
-    .download-panel p {
-      margin: 0;
+      gap: 8px;
+      border: 1px solid transparent;
+      border-radius: var(--radius);
+      background: transparent;
       color: var(--muted);
-      font-size: 0.88rem;
-      line-height: 1.4;
+      padding: 7px 9px;
+      cursor: pointer;
+      text-align: left;
     }
-    .download-actions {
-      display: flex;
-      gap: 0.5rem;
-      flex-wrap: wrap;
-      justify-content: flex-end;
+    .side-button:hover { background: #182023; color: var(--text); }
+    .side-button.active { background: var(--green-soft); border-color: rgba(88,214,141,.42); color: #dfffea; }
+    .side-button span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .count { color: #7f8b91; font-variant-numeric: tabular-nums; font-size: 12px; }
+    .side-button.active .count { color: #bdf7d6; }
+    .genre-search {
+      width: 100%;
+      min-height: 38px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #0b0f10;
+      color: var(--text);
+      padding: 8px 9px;
+      margin-bottom: 8px;
     }
-    .download-link {
-      border: 1px solid rgba(148, 163, 184, 0.35);
-      border-radius: 999px;
+    .side-links { display: grid; gap: 6px; }
+    .side-link {
       color: var(--text);
       text-decoration: none;
-      padding: 0.45rem 0.8rem;
-      font-size: 0.84rem;
-      font-weight: 700;
-      background: rgba(15, 23, 42, 0.76);
-      white-space: nowrap;
-    }
-    .download-link.primary {
-      border-color: rgba(76, 175, 80, 0.55);
-      background: var(--accent-soft);
-      color: #bbf7d0;
-    }
-    .download-link:hover {
-      border-color: var(--accent);
-    }
-    .library-controls {
-      margin: 0 auto 0.8rem;
-      border: 1px solid var(--border);
+      border: 1px solid var(--line);
       border-radius: var(--radius);
-      background: rgba(10, 20, 31, 0.82);
-      padding: 0.75rem;
-      display: grid;
-      grid-template-columns: minmax(240px, 1fr) 180px 170px;
-      gap: 0.65rem;
-      align-items: end;
+      background: #151c20;
+      padding: 9px 10px;
+      font-size: 14px;
     }
-    .library-control {
-      display: grid;
-      gap: 0.25rem;
+    .side-link:hover { border-color: var(--green); }
+    .main {
       min-width: 0;
+      padding: 18px 22px 36px;
     }
-    .library-control span {
+    .topbar {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(280px, 430px) 170px;
+      gap: 12px;
+      align-items: end;
+      margin-bottom: 14px;
+    }
+    .headline h2 { margin: 0 0 4px; font-size: clamp(24px, 3.2vw, 42px); line-height: 1.05; }
+    .headline p { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.4; }
+    .control { display: grid; gap: 5px; min-width: 0; }
+    .control span {
       color: var(--muted);
-      font-size: 0.75rem;
+      font-size: 12px;
+      font-weight: 800;
       text-transform: uppercase;
       letter-spacing: 0.08em;
     }
-    .library-control input,
-    .library-control select {
+    .control input, .control select {
       width: 100%;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      background: rgba(15, 23, 42, 0.92);
-      color: var(--text);
-      padding: 0.55rem 0.65rem;
-      font: inherit;
-      min-height: 42px;
-    }
-    .library-control input:focus,
-    .library-control select:focus {
-      outline: 2px solid rgba(76, 175, 80, 0.38);
-      border-color: var(--accent);
-    }
-    main {
-      padding: 1rem 1.5rem 2rem;
-      max-width: 1100px;
-      width: 100%;
-      margin: 0 auto;
-    }
-    .status {
-      margin-top: 0.4rem;
-      font-size: 0.88rem;
-      color: var(--muted);
-      text-align: center;
-    }
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 1.25rem;
-      margin-top: 1rem;
-    }
-    .game-card {
-      display: flex;
-      flex-direction: column;
-      padding: 1rem 1rem 0.9rem;
+      min-height: 43px;
+      border: 1px solid var(--line);
       border-radius: var(--radius);
-      background: linear-gradient(145deg, #0b1520, #101b28);
-      border: 1px solid var(--border);
-      text-decoration: none;
-      color: inherit;
-      box-shadow: 0 14px 30px rgba(0, 0, 0, 0.4);
+      background: #0f1416;
+      color: var(--text);
+      padding: 9px 11px;
+    }
+    .control input:focus, .control select:focus { outline: 2px solid rgba(88,214,141,.32); border-color: var(--green); }
+    .status-row {
+      min-height: 27px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      align-items: center;
+      margin: 0 0 12px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .stat-pill {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: #111719;
+      padding: 5px 9px;
+      color: var(--muted);
+    }
+    .stat-pill strong { color: var(--text); }
+    .shelf { margin: 0 0 18px; }
+    .shelf-head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 10px;
+      margin: 0 0 9px;
+    }
+    .shelf h3 { margin: 0; font-size: 18px; letter-spacing: 0; }
+    .shelf-note { color: var(--muted); font-size: 13px; }
+    .featured-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+    .featured-card, .game-card {
       position: relative;
       overflow: hidden;
-      transition: transform 0.18s ease-out, border-color 0.18s ease-out;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--card);
+      color: inherit;
+      text-decoration: none;
+      box-shadow: 0 16px 35px rgba(0,0,0,.28);
     }
-    .game-card::before {
-      content: "";
+    .featured-card:hover, .game-card:hover { border-color: var(--green); transform: translateY(-1px); }
+    .media {
+      position: relative;
+      background: #060809;
+      overflow: hidden;
+    }
+    .featured-card .media { aspect-ratio: 16 / 8.4; }
+    .game-card .media { aspect-ratio: 16 / 9; }
+    .media img {
+      width: 100%;
+      height: 100%;
+      display: block;
+      object-fit: cover;
+      filter: saturate(1.05) contrast(1.02);
+    }
+    .fallback-media {
+      width: 100%; height: 100%; display: grid; place-items: center;
+      background: linear-gradient(135deg, #25302b, #11181c 62%, #271f13);
+      color: #eaf6ee;
+      font-size: 42px;
+      font-weight: 900;
+    }
+    .status-badge {
       position: absolute;
-      inset: 0;
-      background: radial-gradient(circle at top left, rgba(76, 175, 80, 0.2), transparent 55%);
-      opacity: 0;
-      transition: opacity 0.18s ease-out;
-      pointer-events: none;
-    }
-    .game-card:hover {
-      transform: translateY(-2px);
-      border-color: var(--accent);
-    }
-    .game-card:hover::before {
-      opacity: 1;
-    }
-    .game-title {
-      font-weight: 600;
-      font-size: 1.05rem;
-      margin-bottom: 0.35rem;
-    }
-    .game-meta {
-      font-size: 0.78rem;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: var(--muted);
-      margin-bottom: 0.4rem;
-    }
-    .game-desc {
-      font-size: 0.9rem;
-      color: var(--muted);
-      margin-bottom: 0.7rem;
-      flex: 1;
-    }
-    .pill-row {
-      display: flex;
-      gap: 0.35rem;
-      flex-wrap: wrap;
-      margin-bottom: 0.7rem;
-    }
-    .pill {
-      font-size: 0.72rem;
-      padding: 0.15rem 0.5rem;
+      top: 8px;
+      left: 8px;
       border-radius: 999px;
-      background: rgba(148, 163, 184, 0.15);
-      color: var(--muted);
+      background: rgba(5,8,9,.78);
+      border: 1px solid rgba(255,255,255,.16);
+      padding: 4px 8px;
+      color: #e9f3ef;
+      font-size: 12px;
+      font-weight: 850;
     }
-    .pill--primary {
-      background: var(--accent-soft);
-      color: #bbf7d0;
-    }
-    .play-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-top: 0.2rem;
-    }
-    .play-btn {
-      padding: 0.4rem 0.8rem;
+    .card-body { padding: 11px 12px 12px; display: grid; gap: 7px; }
+    .card-title { margin: 0; font-size: 17px; line-height: 1.18; }
+    .featured-card .card-title { font-size: 19px; }
+    .meta { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; }
+    .desc { color: #c2ccd1; font-size: 14px; line-height: 1.38; margin: 0; }
+    .tags { display: flex; flex-wrap: wrap; gap: 5px; }
+    .tag {
       border-radius: 999px;
-      border: 1px solid rgba(148, 163, 184, 0.35);
-      font-size: 0.82rem;
-      display: inline-flex;
-      align-items: center;
-      gap: 0.35rem;
-      color: var(--text);
-      background: rgba(15, 23, 42, 0.75);
+      background: #243036;
+      color: #c7d2d8;
+      padding: 3px 7px;
+      font-size: 12px;
+      line-height: 1.2;
     }
-    .hint {
-      font-size: 0.8rem;
-      color: var(--muted);
-      text-align: center;
-      margin-top: 1rem;
-      opacity: 0.85;
+    .tag.primary { background: var(--green-soft); color: #c9f8dc; }
+    .launch-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 2px; }
+    .launch { color: #f6fbf8; font-weight: 850; font-size: 13px; }
+    .path { color: #7f8b91; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .game-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(235px, 1fr));
+      gap: 12px;
     }
     .empty-state {
-      margin-top: 2rem;
+      border: 1px dashed var(--line);
+      border-radius: var(--radius);
+      background: #111719;
+      padding: 24px;
       text-align: center;
       color: var(--muted);
-      font-size: 0.95rem;
     }
-    @media (max-width: 600px) {
-      header { padding: 1.25rem 1rem 0.5rem; }
-      main { padding: 0.5rem 1rem 1.5rem; }
-      .download-panel { grid-template-columns: 1fr; }
-      .download-actions { justify-content: stretch; }
-      .download-link { flex: 1; text-align: center; }
-      .library-controls { grid-template-columns: 1fr; }
+    @media (max-width: 1050px) {
+      .app { grid-template-columns: 1fr; }
+      .main { order: 1; }
+      .sidebar {
+        order: 2;
+        position: relative;
+        height: auto;
+        border-right: 0;
+        border-top: 1px solid var(--line);
+        border-bottom: 0;
+      }
+      .side-section { margin-bottom: 12px; }
+      .side-list { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+      .topbar { grid-template-columns: 1fr; }
+      .featured-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 560px) {
+      .main { padding: 14px 10px 28px; }
+      .sidebar { padding: 12px 10px; }
+      .game-grid { grid-template-columns: 1fr; }
+      .path { display: none; }
     }
   </style>
 </head>
 <body>
-  <header>
-    <h1>${arcade_name_html} LAN Arcade</h1>
-    <div class="subtitle">
-      Offline-friendly games hosted on your home server.<br>
-      Tap a game to launch it in your browser or add to home screen on mobile.
-    </div>
-    <div class="toolbar">
-      <a class="toolbar-link" href="./wiki/">Offline Wiki</a>
-      <a class="toolbar-link" href="./downloads/">Downloads</a>
-      <a class="toolbar-link" href="./admin/">Admin Panel</a>
-    </div>
-  </header>
-  <main>
-    <section class="download-panel" aria-label="Downloads">
-      <div>
-        <h2>Android Companion App</h2>
-        <p>Download the APK on Android devices, install it, then set the app server to <code>http://&lt;server-ip&gt;/arcade-api/</code>. Browser games work without installing anything.</p>
+  <div class="app">
+    <aside class="sidebar" aria-label="Library navigation">
+      <div class="brand">
+        <h1>${arcade_name_html}</h1>
+        <span>Offline LAN game library</span>
       </div>
-      <div class="download-actions">
-        <a class="download-link primary" href="./downloads/lan-arcade-companion-debug.apk">Download APK</a>
-        <a class="download-link" href="./downloads/">Setup Instructions</a>
-      </div>
-    </section>
-    <section class="library-controls" aria-label="Library controls">
-      <label class="library-control">
-        <span>Search</span>
-        <input id="searchInput" type="search" placeholder="Search games, tags, genres, systems..." autocomplete="off">
-      </label>
-      <label class="library-control">
-        <span>Library</span>
-        <select id="profileFilter">
-          <option value="all">GannanNet full</option>
-          <option value="pi">Camping / Pi-friendly</option>
-          <option value="retro">Retro shelf</option>
-          <option value="native">Native / server games</option>
-          <option value="family">Family / phone friendly</option>
-        </select>
-      </label>
-      <label class="library-control">
-        <span>Sort</span>
-        <select id="sortSelect">
-          <option value="title">Title A-Z</option>
-          <option value="category">Category</option>
-          <option value="newer">Newest added</option>
-        </select>
-      </label>
-    </section>
-    <div id="status" class="status">Loading game catalog...</div>
-    <div id="categoryFilters" class="filters" hidden></div>
-    <section id="grid" class="grid" aria-live="polite"></section>
-    <div id="emptyState" class="empty-state" hidden>
-      No games are currently enabled. Check the admin panel filters.
-    </div>
-    <div class="hint">
-      To add more games, update <code>games.meta.sh</code>, then rerun this setup script.
-    </div>
-  </main>
+      <section class="side-section">
+        <h2 class="side-title">Library</h2>
+        <div id="profileList" class="side-list"></div>
+      </section>
+      <section class="side-section">
+        <h2 class="side-title">Genres</h2>
+        <input id="genreSearch" class="genre-search" type="search" placeholder="Find genre..." autocomplete="off">
+        <div id="genreList" class="side-list"></div>
+      </section>
+      <nav class="side-links" aria-label="Arcade links">
+        <a class="side-link" href="./wiki/">Offline Wiki</a>
+        <a class="side-link" href="./downloads/">Downloads</a>
+        <a class="side-link" href="./admin/">Admin Panel</a>
+      </nav>
+    </aside>
+    <main class="main">
+      <header class="topbar">
+        <div class="headline">
+          <h2>Game Library</h2>
+          <p>Browse web games, retro shelves, LAN hubs, and heavier service candidates from one offline catalog.</p>
+        </div>
+        <label class="control">
+          <span>Search</span>
+          <input id="searchInput" type="search" placeholder="Search games, tags, systems, notes..." autocomplete="off">
+        </label>
+        <label class="control">
+          <span>Sort</span>
+          <select id="sortSelect">
+            <option value="recommended">Recommended</option>
+            <option value="title">Title A-Z</option>
+            <option value="category">Genre</option>
+            <option value="newer">Newest added</option>
+          </select>
+        </label>
+      </header>
+      <div id="status" class="status-row" aria-live="polite"></div>
+      <section class="shelf" id="featuredShelf">
+        <div class="shelf-head"><h3>Featured</h3><span class="shelf-note">Ready picks and high-interest shelves</span></div>
+        <div id="featuredGrid" class="featured-grid"></div>
+      </section>
+      <section class="shelf">
+        <div class="shelf-head"><h3 id="libraryHeading">All Games</h3><span id="libraryNote" class="shelf-note"></span></div>
+        <div id="gameGrid" class="game-grid" aria-live="polite"></div>
+        <div id="emptyState" class="empty-state" hidden>No games match the current filters.</div>
+      </section>
+    </main>
+  </div>
   <script>
     (function () {
       "use strict";
 
+      var profiles = [
+        { id: "all", label: "GannanNet full", note: "Everything visible" },
+        { id: "pi", label: "Camping / Pi-friendly", note: "Lightweight picks" },
+        { id: "retro", label: "Retro shelf", note: "Emulator and ROM shelves" },
+        { id: "native", label: "Native / server games", note: "Installers, LAN services, heavy hubs" },
+        { id: "family", label: "Family / phone friendly", note: "Kid-friendly and mobile-leaning" }
+      ];
+      var featuredIds = ["private-gbc-vault", "evolab", "gene-garden", "apotris-gba", "unciv-lan", "mindustry-lan", "zero-ad-lan", "wesnoth-lan", "openttd-lan", "life-engine"];
       var state = {
         catalog: { games: [], categories: [] },
         filters: { disabled_categories: [], disabled_games: [] },
-        activeCategory: "",
-        query: "",
         profile: "all",
-        sort: "title"
+        category: "",
+        query: "",
+        genreQuery: "",
+        sort: "recommended"
       };
 
       function toStringArray(value) {
         if (!Array.isArray(value)) return [];
         return value.map(function (item) { return String(item).trim(); }).filter(function (item) { return item.length > 0; });
       }
-
       function uniqueArray(items) {
-        var seen = Object.create(null);
-        var output = [];
-        items.forEach(function (item) {
-          if (!seen[item]) {
-            seen[item] = true;
-            output.push(item);
-          }
-        });
+        var seen = Object.create(null); var output = [];
+        items.forEach(function (item) { if (!seen[item]) { seen[item] = true; output.push(item); } });
         return output;
       }
-
       function normalizeFilters(raw) {
         var data = raw || {};
-        return {
-          disabled_categories: uniqueArray(toStringArray(data.disabled_categories)),
-          disabled_games: uniqueArray(toStringArray(data.disabled_games))
-        };
+        return { disabled_categories: uniqueArray(toStringArray(data.disabled_categories)), disabled_games: uniqueArray(toStringArray(data.disabled_games)) };
       }
-
       function fetchJson(url, fallbackValue) {
-        return fetch(url, { cache: "no-store" })
-          .then(function (response) {
-            if (!response.ok) throw new Error("HTTP " + response.status);
-            return response.json();
-          })
-          .catch(function () {
-            return fallbackValue;
-          });
+        return fetch(url, { cache: "no-store" }).then(function (response) {
+          if (!response.ok) throw new Error("HTTP " + response.status);
+          return response.json();
+        }).catch(function () { return fallbackValue; });
       }
-
+      function clear(el) { el.textContent = ""; }
       function categoryLabelMap(catalog) {
         var map = Object.create(null);
         (Array.isArray(catalog.categories) ? catalog.categories : []).forEach(function (category) {
@@ -1194,54 +1216,65 @@ write_public_index() {
         });
         return map;
       }
-
-      function gameEnabled(game, filters) {
-        var disabledGames = new Set(filters.disabled_games);
-        var disabledCategories = new Set(filters.disabled_categories);
-        if (disabledGames.has(game.id)) return false;
-        var categories = toStringArray(game.categories);
-        return !categories.some(function (category) { return disabledCategories.has(category); });
+      function gameEnabled(game) {
+        var disabledGames = new Set(state.filters.disabled_games);
+        var disabledCategories = new Set(state.filters.disabled_categories);
+        if (disabledGames.has(String(game.id || ""))) return false;
+        return !toStringArray(game.categories).some(function (category) { return disabledCategories.has(category); });
       }
-
-      function gameHasCategory(game, categoryId) {
-        return toStringArray(game.categories).indexOf(categoryId) >= 0;
-      }
-
-      function gameSearchText(game, labelsByCategory) {
-        var categories = toStringArray(game.categories);
-        var categoryLabels = categories.map(function (categoryId) { return labelsByCategory[categoryId] || categoryId; });
-        return [
-          String(game.id || ""),
-          String(game.title || ""),
-          String(game.meta || ""),
-          String(game.description || ""),
-          toStringArray(game.tags).join(" "),
-          categories.join(" "),
-          categoryLabels.join(" ")
-        ].join(" ").toLowerCase();
-      }
-
       function isNativeOrServerGame(game) {
         var id = String(game.id || "").toLowerCase();
         var categories = toStringArray(game.categories);
         var tags = toStringArray(game.tags).join(" ").toLowerCase();
         return id.slice(-4) === "-lan" || categories.indexOf("multiplayer") >= 0 || tags.indexOf("native") >= 0 || tags.indexOf("server") >= 0;
       }
-
-      function matchesProfile(game) {
+      function isRetro(game) { return toStringArray(game.categories).indexOf("retro") >= 0; }
+      function matchesProfile(game, profile) {
         var categories = toStringArray(game.categories);
-        if (state.profile === "retro") return categories.indexOf("retro") >= 0;
-        if (state.profile === "native") return isNativeOrServerGame(game);
-        if (state.profile === "family") {
-          return categories.indexOf("family") >= 0 || categories.indexOf("mobile-friendly") >= 0 || categories.indexOf("age-5-plus") >= 0;
-        }
-        if (state.profile === "pi") {
+        if (profile === "retro") return isRetro(game);
+        if (profile === "native") return isNativeOrServerGame(game);
+        if (profile === "family") return categories.indexOf("family") >= 0 || categories.indexOf("mobile-friendly") >= 0 || categories.indexOf("age-5-plus") >= 0;
+        if (profile === "pi") {
           if (isNativeOrServerGame(game)) return false;
           return categories.indexOf("mobile-friendly") >= 0 || categories.indexOf("family") >= 0 || categories.indexOf("casual") >= 0 || categories.indexOf("puzzle") >= 0 || categories.indexOf("retro") >= 0 || categories.indexOf("age-5-plus") >= 0;
         }
         return true;
       }
-
+      function statusLabel(game) {
+        var categories = toStringArray(game.categories);
+        if (categories.indexOf("private") >= 0) return "VM-local private";
+        if (isNativeOrServerGame(game)) return "LAN hub";
+        if (isRetro(game)) return "Retro";
+        if (categories.indexOf("mobile-friendly") >= 0) return "Phone friendly";
+        return "Browser ready";
+      }
+      function searchText(game, labelsByCategory) {
+        var categories = toStringArray(game.categories);
+        var labels = categories.map(function (id) { return labelsByCategory[id] || id; });
+        return [String(game.id || ""), String(game.title || ""), String(game.meta || ""), String(game.description || ""), toStringArray(game.tags).join(" "), categories.join(" "), labels.join(" ")].join(" ").toLowerCase();
+      }
+      function filteredBaseGames() {
+        var labels = categoryLabelMap(state.catalog);
+        var query = String(state.query || "").toLowerCase().trim();
+        return (Array.isArray(state.catalog.games) ? state.catalog.games : []).filter(function (game) {
+          if (!gameEnabled(game)) return false;
+          if (!matchesProfile(game, state.profile)) return false;
+          if (state.category && toStringArray(game.categories).indexOf(state.category) < 0) return false;
+          if (query && searchText(game, labels).indexOf(query) < 0) return false;
+          return true;
+        });
+      }
+      function scoreGame(game) {
+        var id = String(game.id || "");
+        var score = 0;
+        var featuredIndex = featuredIds.indexOf(id);
+        if (featuredIndex >= 0) score += 1000 - featuredIndex * 20;
+        if (game.preview) score += 80;
+        if (toStringArray(game.categories).indexOf("mobile-friendly") >= 0) score += 20;
+        if (toStringArray(game.categories).indexOf("private") >= 0) score += 35;
+        if (isNativeOrServerGame(game)) score += 15;
+        return score;
+      }
       function sortGames(games) {
         var sorted = games.slice();
         if (state.sort === "newer") return sorted.reverse();
@@ -1253,147 +1286,112 @@ write_public_index() {
           });
           return sorted;
         }
+        if (state.sort === "title") {
+          sorted.sort(function (a, b) { return String(a.title || a.id).localeCompare(String(b.title || b.id)); });
+          return sorted;
+        }
         sorted.sort(function (a, b) {
-          return String(a.title || a.id).localeCompare(String(b.title || b.id));
+          return scoreGame(b) - scoreGame(a) || String(a.title || a.id).localeCompare(String(b.title || b.id));
         });
         return sorted;
       }
-
-      function buildCard(game) {
-        var card = document.createElement("a");
-        card.className = "game-card";
-        card.href = game.path ? String(game.path) : "../" + encodeURIComponent(game.id) + "/";
-
-        var title = document.createElement("div");
-        title.className = "game-title";
-        title.textContent = game.title || game.id;
-        card.appendChild(title);
-
-        var meta = document.createElement("div");
-        meta.className = "game-meta";
-        meta.textContent = game.meta || "HTML5 / Offline";
-        card.appendChild(meta);
-
-        var desc = document.createElement("div");
-        desc.className = "game-desc";
-        desc.textContent = game.description || "Offline-friendly browser game.";
-        card.appendChild(desc);
-
-        var pills = document.createElement("div");
-        pills.className = "pill-row";
-        toStringArray(game.tags).forEach(function (tag, index) {
-          var pill = document.createElement("div");
-          pill.className = index === 0 ? "pill pill--primary" : "pill";
-          pill.textContent = tag;
-          pills.appendChild(pill);
+      function gameUrl(game) { return game.path ? String(game.path) : "../" + encodeURIComponent(String(game.id || "")) + "/"; }
+      function shortPath(url) { return url.replace(/^\.\.\//, "/mirrors/"); }
+      function makeMedia(game) {
+        var media = document.createElement("div"); media.className = "media";
+        if (game.preview) {
+          var img = document.createElement("img"); img.loading = "lazy"; img.src = String(game.preview); img.alt = String(game.title || game.id || "Game") + " preview"; media.appendChild(img);
+        } else {
+          var fallback = document.createElement("div"); fallback.className = "fallback-media"; fallback.textContent = String(game.icon || "Play").slice(0, 4); media.appendChild(fallback);
+        }
+        var badge = document.createElement("span"); badge.className = "status-badge"; badge.textContent = statusLabel(game); media.appendChild(badge);
+        return media;
+      }
+      function makeTags(game, limit) {
+        var tags = document.createElement("div"); tags.className = "tags";
+        toStringArray(game.tags).slice(0, limit).forEach(function (tag, index) {
+          var pill = document.createElement("span"); pill.className = index === 0 ? "tag primary" : "tag"; pill.textContent = tag; tags.appendChild(pill);
         });
-        card.appendChild(pills);
-
-        var playRow = document.createElement("div");
-        playRow.className = "play-row";
-
-        var playBadge = document.createElement("span");
-        playBadge.className = "play-btn";
-        playBadge.textContent = (game.icon ? game.icon + " " : "") + "Play";
-        playRow.appendChild(playBadge);
-
-        var pathHint = document.createElement("span");
-        pathHint.style.fontSize = "0.75rem";
-        pathHint.style.color = "var(--muted)";
-        pathHint.textContent = card.getAttribute("href").replace(/^\.\.\//, "/mirrors/");
-        playRow.appendChild(pathHint);
-
-        card.appendChild(playRow);
+        return tags;
+      }
+      function makeCard(game, featured) {
+        var card = document.createElement("a"); card.className = featured ? "featured-card" : "game-card"; card.href = gameUrl(game);
+        card.appendChild(makeMedia(game));
+        var body = document.createElement("div"); body.className = "card-body";
+        var title = document.createElement("h4"); title.className = "card-title"; title.textContent = String(game.title || game.id || "Unknown"); body.appendChild(title);
+        var meta = document.createElement("div"); meta.className = "meta"; meta.textContent = String(game.meta || "Offline game"); body.appendChild(meta);
+        var desc = document.createElement("p"); desc.className = "desc"; desc.textContent = String(game.description || "Offline-friendly game mirrored on this LAN."); body.appendChild(desc);
+        body.appendChild(makeTags(game, featured ? 4 : 3));
+        var launchRow = document.createElement("div"); launchRow.className = "launch-row";
+        var launch = document.createElement("span"); launch.className = "launch"; launch.textContent = isNativeOrServerGame(game) ? "Open hub" : "Play"; launchRow.appendChild(launch);
+        var path = document.createElement("span"); path.className = "path"; path.textContent = shortPath(gameUrl(game)); launchRow.appendChild(path);
+        body.appendChild(launchRow);
+        card.appendChild(body);
         return card;
       }
-
-      function buildCategoryFilters(catalog, adminVisibleGames) {
-        var wrapper = document.getElementById("categoryFilters");
-        var categories = Array.isArray(catalog.categories) ? catalog.categories : [];
-        var counts = Object.create(null);
-        var available = new Set();
-
-        adminVisibleGames.forEach(function (game) {
-          toStringArray(game.categories).forEach(function (categoryId) {
-            counts[categoryId] = (counts[categoryId] || 0) + 1;
-            available.add(categoryId);
-          });
+      function renderProfiles() {
+        var list = document.getElementById("profileList"); clear(list);
+        profiles.forEach(function (profile) {
+          var count = (Array.isArray(state.catalog.games) ? state.catalog.games : []).filter(function (game) { return gameEnabled(game) && matchesProfile(game, profile.id); }).length;
+          var button = document.createElement("button"); button.type = "button"; button.className = "side-button" + (state.profile === profile.id ? " active" : "");
+          var label = document.createElement("span"); label.textContent = profile.label; button.appendChild(label);
+          var countEl = document.createElement("span"); countEl.className = "count"; countEl.textContent = count; button.appendChild(countEl);
+          button.addEventListener("click", function () { state.profile = profile.id; state.category = ""; render(); });
+          list.appendChild(button);
         });
-
-        if (state.activeCategory && !available.has(state.activeCategory)) {
-          state.activeCategory = "";
-        }
-
-        wrapper.textContent = "";
-
-        function addChip(categoryId, label, count) {
-          var chip = document.createElement("button");
-          chip.type = "button";
-          chip.className = "filter-chip" + (state.activeCategory === categoryId ? " active" : "");
-          chip.textContent = label + " (" + count + ")";
-          chip.addEventListener("click", function () {
-            if (state.activeCategory === categoryId) return;
-            state.activeCategory = categoryId;
-            render(state.catalog, state.filters);
-          });
-          wrapper.appendChild(chip);
-        }
-
-        addChip("", "All", adminVisibleGames.length);
-
-        categories.forEach(function (category) {
-          var id = String(category && category.id ? category.id : "");
-          if (!id || !available.has(id)) return;
-          addChip(id, category.label ? String(category.label) : id, counts[id] || 0);
-        });
-
-        wrapper.hidden = wrapper.children.length <= 1;
       }
-
-      function render(catalog, filters) {
-        var status = document.getElementById("status");
-        var grid = document.getElementById("grid");
-        var emptyState = document.getElementById("emptyState");
-        var labelsByCategory = categoryLabelMap(catalog);
-        var games = Array.isArray(catalog.games) ? catalog.games : [];
-        var adminVisibleGames = games.filter(function (game) { return gameEnabled(game, filters); });
-        var query = String(state.query || "").toLowerCase().trim();
-        var profileVisibleGames = adminVisibleGames.filter(function (game) {
-          if (!matchesProfile(game)) return false;
-          if (!query) return true;
-          return gameSearchText(game, labelsByCategory).indexOf(query) >= 0;
+      function renderGenres(baseGamesForProfile) {
+        var list = document.getElementById("genreList"); var labels = categoryLabelMap(state.catalog); var counts = Object.create(null); clear(list);
+        baseGamesForProfile.forEach(function (game) { toStringArray(game.categories).forEach(function (category) { counts[category] = (counts[category] || 0) + 1; }); });
+        var genreQuery = String(state.genreQuery || "").toLowerCase().trim();
+        var rows = Object.keys(counts).map(function (id) { return { id: id, label: labels[id] || id, count: counts[id] }; }).filter(function (row) { return !genreQuery || row.label.toLowerCase().indexOf(genreQuery) >= 0 || row.id.indexOf(genreQuery) >= 0; });
+        rows.sort(function (a, b) { return b.count - a.count || a.label.localeCompare(b.label); });
+        var all = document.createElement("button"); all.type = "button"; all.className = "side-button" + (state.category === "" ? " active" : "");
+        all.innerHTML = "<span>All genres</span><span class=\"count\">" + baseGamesForProfile.length + "</span>";
+        all.addEventListener("click", function () { state.category = ""; render(); }); list.appendChild(all);
+        rows.slice(0, 28).forEach(function (row) {
+          var button = document.createElement("button"); button.type = "button"; button.className = "side-button" + (state.category === row.id ? " active" : "");
+          var label = document.createElement("span"); label.textContent = row.label; button.appendChild(label);
+          var count = document.createElement("span"); count.className = "count"; count.textContent = row.count; button.appendChild(count);
+          button.addEventListener("click", function () { state.category = row.id; render(); }); list.appendChild(button);
         });
-        var visibleGames = profileVisibleGames;
-        var activeCategoryLabel = "";
-
-        buildCategoryFilters(catalog, profileVisibleGames);
-
-        if (state.activeCategory) {
-          visibleGames = profileVisibleGames.filter(function (game) {
-            return gameHasCategory(game, state.activeCategory);
-          });
-          activeCategoryLabel = labelsByCategory[state.activeCategory] || state.activeCategory;
-        }
-
-        visibleGames = sortGames(visibleGames);
-        grid.textContent = "";
-        visibleGames.forEach(function (game) { grid.appendChild(buildCard(game)); });
-        emptyState.hidden = visibleGames.length !== 0;
-        emptyState.textContent = query || state.activeCategory || state.profile !== "all" ? "No games match the current library filters." : "No games are currently enabled. Check the admin panel filters.";
-
-        var summary = "Showing " + visibleGames.length + " of " + games.length + " games.";
-        if (query) summary += ' Search: "' + query + '".';
-        if (state.profile !== "all") {
-          var profileSelect = document.getElementById("profileFilter");
-          summary += " Library: " + profileSelect.options[profileSelect.selectedIndex].text + ".";
-        }
-        if (activeCategoryLabel) {
-          summary += " Category: " + activeCategoryLabel + ".";
-        }
-        if (filters.disabled_categories.length > 0 || filters.disabled_games.length > 0) {
-          summary += " Hidden by admin filters: " + filters.disabled_categories.length + " categories, " + filters.disabled_games.length + " games.";
-        }
-        status.textContent = summary;
+      }
+      function renderStatus(visible, profilePool, allEnabled) {
+        var status = document.getElementById("status"); clear(status);
+        var chips = [
+          [visible.length, "shown"],
+          [profilePool.length, "in profile"],
+          [allEnabled.length, "enabled"]
+        ];
+        if (state.query) chips.push(["search", state.query]);
+        if (state.category) chips.push(["genre", (categoryLabelMap(state.catalog)[state.category] || state.category)]);
+        if (state.filters.disabled_categories.length || state.filters.disabled_games.length) chips.push([state.filters.disabled_games.length, "admin-hidden games"]);
+        chips.forEach(function (parts) {
+          var chip = document.createElement("span"); chip.className = "stat-pill";
+          chip.innerHTML = "<strong>" + String(parts[0]) + "</strong> " + String(parts[1]);
+          status.appendChild(chip);
+        });
+      }
+      function render() {
+        var allGames = Array.isArray(state.catalog.games) ? state.catalog.games : [];
+        var allEnabled = allGames.filter(gameEnabled);
+        var profilePool = allEnabled.filter(function (game) { return matchesProfile(game, state.profile); });
+        var visible = sortGames(filteredBaseGames());
+        renderProfiles();
+        renderGenres(profilePool);
+        renderStatus(visible, profilePool, allEnabled);
+        var featuredGrid = document.getElementById("featuredGrid"); clear(featuredGrid);
+        var searchingOrDrilledIn = String(state.query || "").trim() || state.category;
+        var featured = searchingOrDrilledIn ? [] : sortGames(profilePool).filter(function (game) { return featuredIds.indexOf(String(game.id || "")) >= 0 || game.preview; }).slice(0, 3);
+        if (!featured.length && !searchingOrDrilledIn) featured = visible.slice(0, 3);
+        featured.forEach(function (game) { featuredGrid.appendChild(makeCard(game, true)); });
+        document.getElementById("featuredShelf").hidden = featured.length === 0;
+        var heading = profiles.filter(function (profile) { return profile.id === state.profile; })[0];
+        document.getElementById("libraryHeading").textContent = state.category ? (categoryLabelMap(state.catalog)[state.category] || state.category) : (heading ? heading.label : "All Games");
+        document.getElementById("libraryNote").textContent = heading ? heading.note : "";
+        var grid = document.getElementById("gameGrid"); clear(grid);
+        visible.forEach(function (game) { grid.appendChild(makeCard(game, false)); });
+        document.getElementById("emptyState").hidden = visible.length !== 0;
       }
 
       Promise.all([
@@ -1402,25 +1400,11 @@ write_public_index() {
       ]).then(function (results) {
         state.catalog = results[0] || { games: [], categories: [] };
         state.filters = normalizeFilters(results[1]);
-        state.activeCategory = "";
-        render(state.catalog, state.filters);
+        render();
       });
-
-      document.getElementById("searchInput").addEventListener("input", function (event) {
-        state.query = String(event.target.value || "").toLowerCase().trim();
-        render(state.catalog, state.filters);
-      });
-
-      document.getElementById("profileFilter").addEventListener("change", function (event) {
-        state.profile = String(event.target.value || "all");
-        state.activeCategory = "";
-        render(state.catalog, state.filters);
-      });
-
-      document.getElementById("sortSelect").addEventListener("change", function (event) {
-        state.sort = String(event.target.value || "title");
-        render(state.catalog, state.filters);
-      });
+      document.getElementById("searchInput").addEventListener("input", function (event) { state.query = String(event.target.value || ""); render(); });
+      document.getElementById("genreSearch").addEventListener("input", function (event) { state.genreQuery = String(event.target.value || ""); render(); });
+      document.getElementById("sortSelect").addEventListener("change", function (event) { state.sort = String(event.target.value || "recommended"); render(); });
     })();
   </script>
 </body>
