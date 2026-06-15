@@ -183,7 +183,7 @@ declare -A GAME_INFO=(
   ["max-pirate-gb"]="Max Pirate|PIR|Retro - Game Boy Action|Official Homebrew Hub ROM for Max Pirate, a pirate-themed Game Boy action game.|Retro,Action,Homebrew"
   ["domination-gb"]="Domination GB|DOM|Retro - Game Boy Puzzle|Official Homebrew Hub ROM for Domination, a Game Boy puzzle game.|Retro,Puzzle,Homebrew"
   ["retro-emulator-lab"]="Retro Emulator Lab|ROM|Emulator - Homebrew Intake|Offline retro-emulation staging area for legal homebrew/public-domain ROMs using EmulatorJS.|Retro,Emulator,Homebrew"
-  ["private-gbc-vault"]="Private GBC Vault|GBC|Private Retro Shelf - VM Local|Private Game Boy and Game Boy Color vault built from Dylan-provided ROM files, with a full per-game EmulatorJS smoke/play report. ROMs are VM-local and not committed to GitHub.|Retro,Emulator,Private"
+  ["private-gbc-vault"]="Private GBC Vault|GBC|Private Retro Shelf - VM Local|Private Game Boy and Game Boy Color vault built from Dylan-provided ROM files, including tested Pokemon entries, with a full per-game EmulatorJS smoke/play report. ROMs are VM-local and not committed to GitHub.|Retro,Emulator,Private,Pokemon,Game Boy,GBC"
   ["veloren-lan"]="Veloren LAN Candidate|VEL|Native RPG - Voxel World|Transparent intake hub for Veloren: official screenshots, cached Airshipper launcher, LAN server notes, and current Debian 12 compatibility blocker.|RPG,Multiplayer,Native"
 
 )

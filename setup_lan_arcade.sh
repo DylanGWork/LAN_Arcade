@@ -918,6 +918,44 @@ write_public_index() {
     .download-link:hover {
       border-color: var(--accent);
     }
+    .library-controls {
+      margin: 0 auto 0.8rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: rgba(10, 20, 31, 0.82);
+      padding: 0.75rem;
+      display: grid;
+      grid-template-columns: minmax(240px, 1fr) 180px 170px;
+      gap: 0.65rem;
+      align-items: end;
+    }
+    .library-control {
+      display: grid;
+      gap: 0.25rem;
+      min-width: 0;
+    }
+    .library-control span {
+      color: var(--muted);
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .library-control input,
+    .library-control select {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: rgba(15, 23, 42, 0.92);
+      color: var(--text);
+      padding: 0.55rem 0.65rem;
+      font: inherit;
+      min-height: 42px;
+    }
+    .library-control input:focus,
+    .library-control select:focus {
+      outline: 2px solid rgba(76, 175, 80, 0.38);
+      border-color: var(--accent);
+    }
     main {
       padding: 1rem 1.5rem 2rem;
       max-width: 1100px;
@@ -1037,6 +1075,7 @@ write_public_index() {
       .download-panel { grid-template-columns: 1fr; }
       .download-actions { justify-content: stretch; }
       .download-link { flex: 1; text-align: center; }
+      .library-controls { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -1064,6 +1103,30 @@ write_public_index() {
         <a class="download-link" href="./downloads/">Setup Instructions</a>
       </div>
     </section>
+    <section class="library-controls" aria-label="Library controls">
+      <label class="library-control">
+        <span>Search</span>
+        <input id="searchInput" type="search" placeholder="Search games, tags, genres, systems..." autocomplete="off">
+      </label>
+      <label class="library-control">
+        <span>Library</span>
+        <select id="profileFilter">
+          <option value="all">GannanNet full</option>
+          <option value="pi">Camping / Pi-friendly</option>
+          <option value="retro">Retro shelf</option>
+          <option value="native">Native / server games</option>
+          <option value="family">Family / phone friendly</option>
+        </select>
+      </label>
+      <label class="library-control">
+        <span>Sort</span>
+        <select id="sortSelect">
+          <option value="title">Title A-Z</option>
+          <option value="category">Category</option>
+          <option value="newer">Newest added</option>
+        </select>
+      </label>
+    </section>
     <div id="status" class="status">Loading game catalog...</div>
     <div id="categoryFilters" class="filters" hidden></div>
     <section id="grid" class="grid" aria-live="polite"></section>
@@ -1081,7 +1144,10 @@ write_public_index() {
       var state = {
         catalog: { games: [], categories: [] },
         filters: { disabled_categories: [], disabled_games: [] },
-        activeCategory: ""
+        activeCategory: "",
+        query: "",
+        profile: "all",
+        sort: "title"
       };
 
       function toStringArray(value) {
@@ -1139,6 +1205,58 @@ write_public_index() {
 
       function gameHasCategory(game, categoryId) {
         return toStringArray(game.categories).indexOf(categoryId) >= 0;
+      }
+
+      function gameSearchText(game, labelsByCategory) {
+        var categories = toStringArray(game.categories);
+        var categoryLabels = categories.map(function (categoryId) { return labelsByCategory[categoryId] || categoryId; });
+        return [
+          String(game.id || ""),
+          String(game.title || ""),
+          String(game.meta || ""),
+          String(game.description || ""),
+          toStringArray(game.tags).join(" "),
+          categories.join(" "),
+          categoryLabels.join(" ")
+        ].join(" ").toLowerCase();
+      }
+
+      function isNativeOrServerGame(game) {
+        var id = String(game.id || "").toLowerCase();
+        var categories = toStringArray(game.categories);
+        var tags = toStringArray(game.tags).join(" ").toLowerCase();
+        return id.slice(-4) === "-lan" || categories.indexOf("multiplayer") >= 0 || tags.indexOf("native") >= 0 || tags.indexOf("server") >= 0;
+      }
+
+      function matchesProfile(game) {
+        var categories = toStringArray(game.categories);
+        if (state.profile === "retro") return categories.indexOf("retro") >= 0;
+        if (state.profile === "native") return isNativeOrServerGame(game);
+        if (state.profile === "family") {
+          return categories.indexOf("family") >= 0 || categories.indexOf("mobile-friendly") >= 0 || categories.indexOf("age-5-plus") >= 0;
+        }
+        if (state.profile === "pi") {
+          if (isNativeOrServerGame(game)) return false;
+          return categories.indexOf("mobile-friendly") >= 0 || categories.indexOf("family") >= 0 || categories.indexOf("casual") >= 0 || categories.indexOf("puzzle") >= 0 || categories.indexOf("retro") >= 0 || categories.indexOf("age-5-plus") >= 0;
+        }
+        return true;
+      }
+
+      function sortGames(games) {
+        var sorted = games.slice();
+        if (state.sort === "newer") return sorted.reverse();
+        if (state.sort === "category") {
+          sorted.sort(function (a, b) {
+            var aCat = toStringArray(a.categories)[0] || "";
+            var bCat = toStringArray(b.categories)[0] || "";
+            return aCat.localeCompare(bCat) || String(a.title || a.id).localeCompare(String(b.title || b.id));
+          });
+          return sorted;
+        }
+        sorted.sort(function (a, b) {
+          return String(a.title || a.id).localeCompare(String(b.title || b.id));
+        });
+        return sorted;
       }
 
       function buildCard(game) {
@@ -1239,25 +1357,38 @@ write_public_index() {
         var labelsByCategory = categoryLabelMap(catalog);
         var games = Array.isArray(catalog.games) ? catalog.games : [];
         var adminVisibleGames = games.filter(function (game) { return gameEnabled(game, filters); });
-        var visibleGames = adminVisibleGames;
+        var query = String(state.query || "").toLowerCase().trim();
+        var profileVisibleGames = adminVisibleGames.filter(function (game) {
+          if (!matchesProfile(game)) return false;
+          if (!query) return true;
+          return gameSearchText(game, labelsByCategory).indexOf(query) >= 0;
+        });
+        var visibleGames = profileVisibleGames;
         var activeCategoryLabel = "";
 
-        buildCategoryFilters(catalog, adminVisibleGames);
+        buildCategoryFilters(catalog, profileVisibleGames);
 
         if (state.activeCategory) {
-          visibleGames = adminVisibleGames.filter(function (game) {
+          visibleGames = profileVisibleGames.filter(function (game) {
             return gameHasCategory(game, state.activeCategory);
           });
           activeCategoryLabel = labelsByCategory[state.activeCategory] || state.activeCategory;
         }
 
+        visibleGames = sortGames(visibleGames);
         grid.textContent = "";
         visibleGames.forEach(function (game) { grid.appendChild(buildCard(game)); });
         emptyState.hidden = visibleGames.length !== 0;
+        emptyState.textContent = query || state.activeCategory || state.profile !== "all" ? "No games match the current library filters." : "No games are currently enabled. Check the admin panel filters.";
 
         var summary = "Showing " + visibleGames.length + " of " + games.length + " games.";
+        if (query) summary += ' Search: "' + query + '".';
+        if (state.profile !== "all") {
+          var profileSelect = document.getElementById("profileFilter");
+          summary += " Library: " + profileSelect.options[profileSelect.selectedIndex].text + ".";
+        }
         if (activeCategoryLabel) {
-          summary += " Category filter: " + activeCategoryLabel + ".";
+          summary += " Category: " + activeCategoryLabel + ".";
         }
         if (filters.disabled_categories.length > 0 || filters.disabled_games.length > 0) {
           summary += " Hidden by admin filters: " + filters.disabled_categories.length + " categories, " + filters.disabled_games.length + " games.";
@@ -1272,6 +1403,22 @@ write_public_index() {
         state.catalog = results[0] || { games: [], categories: [] };
         state.filters = normalizeFilters(results[1]);
         state.activeCategory = "";
+        render(state.catalog, state.filters);
+      });
+
+      document.getElementById("searchInput").addEventListener("input", function (event) {
+        state.query = String(event.target.value || "").toLowerCase().trim();
+        render(state.catalog, state.filters);
+      });
+
+      document.getElementById("profileFilter").addEventListener("change", function (event) {
+        state.profile = String(event.target.value || "all");
+        state.activeCategory = "";
+        render(state.catalog, state.filters);
+      });
+
+      document.getElementById("sortSelect").addEventListener("change", function (event) {
+        state.sort = String(event.target.value || "title");
         render(state.catalog, state.filters);
       });
     })();
