@@ -1,0 +1,10 @@
+Hedgewars LAN Hub
+
+Source:
+https://www.hedgewars.org/download.html
+
+License/source note:
+Open-source Hedgewars project; Debian package and upstream source archives are cached for inspection.
+
+LAN Arcade note:
+This hub links to cached release files under /mirrors/games/downloads/native/hedgewars/ and uses the VM launch-smoke screenshot in assets/client-launch.png.

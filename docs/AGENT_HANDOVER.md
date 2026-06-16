@@ -1,3 +1,15 @@
+# Latest Native Game Testing Update - 2026-06-16
+
+Added five diverse native-game intake hubs with offline release shelves, local docs where practical, VM service/client evidence, and desktop/mobile hub smoke:
+
+- `teeworlds-ddnet-lan`: cached DDNet 19.8.2 and Teeworlds 0.7.5 clients/source; DDNet UDP 8303 server smoke passed; DDNet client launch passed.
+- `hedgewars-lan`: cached official Windows/macOS/source/server-source packages; Hedgewars client launch passed; LAN/hotseat match still pending.
+- `widelands-lan`: cached official Widelands 1.3.1 release assets; client launch passed; upstream website/wiki was anti-bot blocked, so docs are curated in the hub for now.
+- `warzone2100-lan`: cached official Warzone 2100 4.6.3 common platform packages/source; client launch passed; autohost/LAN join still pending.
+- `luanti-lan`: cached Luanti 5.16.1 desktop/macOS/Android packages; Minetest/Luanti UDP 30000 server smoke passed; client launch passed.
+
+Report: `docs/NATIVE_NEXT_FIVE_2026-06-16.md`. QA: `npm run qa:static` scanned 88/88 OK with 0 external entrypoint refs; desktop/mobile hub smoke for all five passed under `qa/reports/native-next-five/*-20260616T000637Z-*`.
+
 # Latest Native Game Testing Update - 2026-06-14
 
 Added real native-game test gates and first server/client evidence. Do not describe larger native games as playable from HTTP 200 alone. Use `docs/NATIVE_GAME_TESTING.md` and `scripts/native_service_smoke.sh`.

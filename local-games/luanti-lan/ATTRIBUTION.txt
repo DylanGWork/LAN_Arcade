@@ -1,0 +1,10 @@
+Luanti LAN Hub
+
+Source:
+https://www.luanti.org/en/downloads/ and https://github.com/luanti-org/luanti
+
+License/source note:
+Open-source Luanti project; official release assets are cached locally.
+
+LAN Arcade note:
+This hub links to cached release files under /mirrors/games/downloads/native/luanti/ and uses the VM launch-smoke screenshot in assets/client-launch.png.

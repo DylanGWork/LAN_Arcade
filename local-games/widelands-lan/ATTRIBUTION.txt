@@ -1,0 +1,10 @@
+Widelands LAN Hub
+
+Source:
+https://github.com/widelands/widelands/releases/tag/v1.3.1
+
+License/source note:
+Open-source Widelands project; official release assets and checksums are cached locally.
+
+LAN Arcade note:
+This hub links to cached release files under /mirrors/games/downloads/native/widelands/ and uses the VM launch-smoke screenshot in assets/client-launch.png.

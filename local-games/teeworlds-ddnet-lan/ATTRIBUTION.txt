@@ -1,0 +1,10 @@
+Teeworlds / DDNet LAN Hub
+
+Source:
+https://ddnet.org/downloads/ and https://github.com/teeworlds/teeworlds
+
+License/source note:
+DDNet and Teeworlds are open-source Teeworlds-family projects; see upstream repositories for exact license files.
+
+LAN Arcade note:
+This hub links to cached release files under /mirrors/games/downloads/native/teeworlds-ddnet/ and uses the VM launch-smoke screenshot in assets/client-launch.png.

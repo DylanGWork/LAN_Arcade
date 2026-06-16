@@ -1,0 +1,10 @@
+Warzone 2100 LAN Hub
+
+Source:
+https://wz2100.net/ and https://github.com/Warzone2100/warzone2100/releases/tag/4.6.3
+
+License/source note:
+Open-source Warzone 2100 project; official release assets are cached locally.
+
+LAN Arcade note:
+This hub links to cached release files under /mirrors/games/downloads/native/warzone2100/ and uses the VM launch-smoke screenshot in assets/client-launch.png.

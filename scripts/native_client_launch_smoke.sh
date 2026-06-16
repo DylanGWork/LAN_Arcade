@@ -12,8 +12,13 @@ usage() {
 Usage: scripts/native_client_launch_smoke.sh <service-id>
 
 Supported service ids:
-  openttd-lan    Launch OpenTTD under Xvfb and capture a nonblank screenshot.
-  freeciv-lan    Launch Freeciv GTK under Xvfb and capture a nonblank screenshot.
+  openttd-lan            Launch OpenTTD under Xvfb and capture a nonblank screenshot.
+  freeciv-lan            Launch Freeciv GTK under Xvfb and capture a nonblank screenshot.
+  teeworlds-ddnet-lan    Launch DDNet under Xvfb and capture a nonblank screenshot.
+  hedgewars-lan          Launch Hedgewars under Xvfb and capture a nonblank screenshot.
+  widelands-lan          Launch Widelands under Xvfb and capture a nonblank screenshot.
+  warzone2100-lan        Launch Warzone 2100 under Xvfb and capture a nonblank screenshot.
+  luanti-lan             Launch Luanti/Minetest under Xvfb and capture a nonblank screenshot.
 
 This proves the client starts on the VM. It does not prove a player joined a server
 or completed gameplay.
@@ -42,6 +47,21 @@ case "$SERVICE_ID" in
   freeciv-lan)
     CMD=(/usr/games/freeciv-gtk3.22)
     ;;
+  teeworlds-ddnet-lan)
+    CMD=(/usr/games/DDNet)
+    ;;
+  hedgewars-lan)
+    CMD=(/usr/games/hedgewars)
+    ;;
+  widelands-lan)
+    CMD=(/usr/games/widelands --nosound --xres=1280 --yres=720)
+    ;;
+  warzone2100-lan)
+    CMD=(/usr/games/warzone2100 --window --resolution=1280x720 --nosound --gfxbackend=opengl)
+    ;;
+  luanti-lan)
+    CMD=(/usr/games/minetest)
+    ;;
   *)
     usage >&2
     exit 2
@@ -68,7 +88,12 @@ xvfb-run -a -s "-screen 0 1280x720x24" bash -c '
   set -u
   dir="$1"; shift
   export HOME="$dir/home"
-  mkdir -p "$HOME"
+  export LIBGL_ALWAYS_SOFTWARE=1
+  export SDL_AUDIODRIVER=dummy
+  export QT_QPA_PLATFORM=xcb
+  export XDG_RUNTIME_DIR="$dir/runtime"
+  mkdir -p "$HOME" "$HOME/.local/share" "$HOME/.config" "$XDG_RUNTIME_DIR"
+  chmod 700 "$XDG_RUNTIME_DIR"
   "$@" > "$dir/stdout.log" 2> "$dir/stderr.log" &
   pid=$!
   echo "$pid" > "$dir/pid"

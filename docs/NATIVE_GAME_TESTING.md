@@ -28,7 +28,7 @@ The current reusable script is:
 scripts/native_service_smoke.sh <service-id>
 ```
 
-It records under `qa/reports/service-smoke/` and currently supports `openttd-lan`, `freeciv-lan`, `wesnoth-lan`, `stendhal-lan`, and `veloren-lan`.
+It records under `qa/reports/service-smoke/` and currently supports `openttd-lan`, `freeciv-lan`, `wesnoth-lan`, `teeworlds-ddnet-lan`, `luanti-lan`, `hedgewars-lan`, `widelands-lan`, `warzone2100-lan`, `stendhal-lan`, and `veloren-lan`.
 
 ## Current evidence, 2026-06-14
 
@@ -50,3 +50,13 @@ It records under `qa/reports/service-smoke/` and currently supports `openttd-lan
 4. Install the Wesnoth client package after checking size, then run a client launch screenshot and a local server lobby join.
 5. Inspect Stendhal server packaging; the cached ZIP appears client-focused.
 6. For Veloren, avoid claiming Debian 12 support from the latest Airshipper ZIP. Find a Docker/server path, older compatible release, or build-from-source path before the next smoke.
+
+## Next native intake, 2026-06-16
+
+| Game | Current status | Evidence | What it does not prove yet |
+| --- | --- | --- | --- |
+| Teeworlds / DDNet | Downloads/docs hub cached; DDNet UDP server smoke passed; VM client launch passed; desktop/mobile hub smoke passed. | `qa/reports/service-smoke/teeworlds-ddnet-lan-20260615T235745Z/report.txt`; `qa/reports/native-client-launch/teeworlds-ddnet-lan-20260615T235831Z/report.txt`; `qa/reports/native-next-five/teeworlds-ddnet-lan-20260616T000637Z-*`. | A two-client LAN join/play loop. |
+| Hedgewars | Downloads/docs cached; VM client launch passed; desktop/mobile hub smoke passed. | `qa/reports/service-smoke/hedgewars-lan-20260615T235758Z/report.txt`; `qa/reports/native-client-launch/hedgewars-lan-20260615T235847Z/report.txt`; `qa/reports/native-next-five/hedgewars-lan-20260616T000637Z-*`. | Hotseat or LAN match play. |
+| Widelands | Official 1.3.1 downloads cached; VM client launch passed after launch-smoke temp-home fix; desktop/mobile hub smoke passed. | `qa/reports/service-smoke/widelands-lan-20260615T235758Z/report.txt`; `qa/reports/native-client-launch/widelands-lan-20260616T000117Z/report.txt`; `qa/reports/native-next-five/widelands-lan-20260616T000637Z-*`. | Two-client economy start; full docs mirror, because upstream site was anti-bot blocked. |
+| Warzone 2100 | Official 4.6.3 downloads/site pages cached; VM client launch passed; desktop/mobile hub smoke passed. | `qa/reports/service-smoke/warzone2100-lan-20260615T235758Z/report.txt`; `qa/reports/native-client-launch/warzone2100-lan-20260615T235910Z/report.txt`; `qa/reports/native-next-five/warzone2100-lan-20260616T000637Z-*`. | Headless/autohost saved settings and a LAN join/play proof. |
+| Luanti | Official 5.16.1 clients/APKs and docs cached; UDP server smoke passed; VM client launch passed; desktop/mobile hub smoke passed. | `qa/reports/service-smoke/luanti-lan-20260615T235751Z/report.txt`; `qa/reports/native-client-launch/luanti-lan-20260615T235922Z/report.txt`; `qa/reports/native-next-five/luanti-lan-20260616T000637Z-*`. | Real laptop/phone join into a local world. |
