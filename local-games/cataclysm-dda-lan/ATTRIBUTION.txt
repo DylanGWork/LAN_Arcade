@@ -1,0 +1,7 @@
+Cataclysm DDA LAN Hub
+
+Source:
+https://cataclysmdda.org/ and CleverRaven releases
+
+LAN Arcade note:
+This hub links to cached release files under /mirrors/games/downloads/native/cataclysm-dda/ and the mirrored official site/manual at ../cataclysm-dda-site/ where available. Native gameplay is promoted only after separate smoke/play evidence.

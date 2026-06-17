@@ -1,0 +1,7 @@
+Endless Sky LAN Hub
+
+Source:
+https://endless-sky.github.io/ and GitHub releases
+
+LAN Arcade note:
+This hub links to cached release files under /mirrors/games/downloads/native/endless-sky/ and the mirrored official site/manual at ../endless-sky-site/ where available. Native gameplay is promoted only after separate smoke/play evidence.

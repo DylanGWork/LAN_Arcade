@@ -1,0 +1,7 @@
+SuperTuxKart LAN Hub
+
+Source:
+https://supertuxkart.net/ and https://github.com/supertuxkart/stk-code
+
+LAN Arcade note:
+This hub links to cached release files under /mirrors/games/downloads/native/supertuxkart/ and the mirrored official site/manual at ../supertuxkart-site/ where available. Native gameplay is promoted only after separate smoke/play evidence.

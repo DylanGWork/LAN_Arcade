@@ -1,0 +1,7 @@
+BZFlag LAN Hub
+
+Source:
+https://www.bzflag.org/
+
+LAN Arcade note:
+This hub links to cached release files under /mirrors/games/downloads/native/bzflag/ and the mirrored official site/manual at ../bzflag-site/ where available. Native gameplay is promoted only after separate smoke/play evidence.

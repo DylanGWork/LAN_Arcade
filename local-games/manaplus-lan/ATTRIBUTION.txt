@@ -1,0 +1,7 @@
+ManaPlus / The Mana World Hub
+
+Source:
+https://manaplus.org/ and https://www.themanaworld.org/
+
+LAN Arcade note:
+This hub links to cached release files under /mirrors/games/downloads/native/manaplus/ and the mirrored official site/manual at ../manaplus-site/ where available. Native gameplay is promoted only after separate smoke/play evidence.

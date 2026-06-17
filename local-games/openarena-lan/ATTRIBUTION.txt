@@ -1,0 +1,7 @@
+OpenArena LAN Hub
+
+Source:
+https://openarena.ws/ and SourceForge oarena
+
+LAN Arcade note:
+This hub links to cached release files under /mirrors/games/downloads/native/openarena/ and the mirrored official site/manual at ../openarena-site/ where available. Native gameplay is promoted only after separate smoke/play evidence.

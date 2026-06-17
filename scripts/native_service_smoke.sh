@@ -17,6 +17,8 @@ Supported service ids:
   wesnoth-lan            Start a Wesnoth server, verify TCP, record memory, stop.
   teeworlds-ddnet-lan    Start a DDNet server, verify UDP listen, record memory, stop.
   luanti-lan             Start a Luanti/Minetest server, verify UDP listen, record memory, stop.
+  openarena-lan          Start an OpenArena dedicated server, verify UDP listen, record memory, stop.
+  bzflag-lan             Start a BZFlag server, verify UDP listen, record memory, stop.
   hedgewars-lan          Record client-hosted/server-source status.
   widelands-lan          Record client-hosted multiplayer status.
   warzone2100-lan        Record headless/autohost research status.
@@ -172,6 +174,36 @@ EOF
     PID=$!
     echo "$PID" > "$REPORT_DIR/pid"
     sleep 6
+    record_process "$PID"
+    ss -lunp | grep ":$PORT" > "$REPORT_DIR/ports.txt" || true
+    check_udp_listen "$PORT"
+    stop_pid "$PID"
+    log "STOPPED=yes"
+    ;;
+  openarena-lan)
+    need_cmd /usr/games/openarena; need_cmd ss
+    PORT="${LAN_ARCADE_OPENARENA_PORT:-27960}"
+    log "COMMAND=/usr/games/openarena +set dedicated 2 +set net_port $PORT +set sv_master1 '' +map oa_dm1"
+    HOME_DIR="$REPORT_DIR/home"
+    mkdir -p "$HOME_DIR"
+    HOME="$HOME_DIR" /usr/games/openarena +set dedicated 2 +set net_port "$PORT" +set sv_master1 "" +set sv_master2 "" +set sv_master3 "" +set sv_master4 "" +set sv_master5 "" +map oa_dm1 > "$REPORT_DIR/server.log" 2>&1 &
+    PID=$!
+    echo "$PID" > "$REPORT_DIR/pid"
+    sleep 6
+    record_process "$PID"
+    ss -lunp | grep ":$PORT" > "$REPORT_DIR/ports.txt" || true
+    check_udp_listen "$PORT"
+    stop_pid "$PID"
+    log "STOPPED=yes"
+    ;;
+  bzflag-lan)
+    need_cmd /usr/games/bzfs; need_cmd ss
+    PORT="${LAN_ARCADE_BZFLAG_PORT:-5154}"
+    log "COMMAND=/usr/games/bzfs -p $PORT -advertise NONE -publictitle LAN Arcade BZFlag Smoke -mp 1,1,1,1,0,5 -worldsize 400"
+    /usr/games/bzfs -p "$PORT" -advertise NONE -publictitle "LAN Arcade BZFlag Smoke" -mp 1,1,1,1,0,5 -worldsize 400 > "$REPORT_DIR/server.log" 2>&1 &
+    PID=$!
+    echo "$PID" > "$REPORT_DIR/pid"
+    sleep 5
     record_process "$PID"
     ss -lunp | grep ":$PORT" > "$REPORT_DIR/ports.txt" || true
     check_udp_listen "$PORT"

@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang='en'>
+<head>
+  <meta charset='utf-8'>
+  <meta name='viewport' content='width=device-width, initial-scale=1'>
+  <title>Red Eclipse LAN Hub - LAN Arcade</title>
+  <style>
+:root { color-scheme: dark; --bg:#0c1114; --panel:#151d22; --line:#2d3b43; --text:#f2f7f8; --muted:#c0ccd1; --soft:#95a4aa; --accent:#69d9a0; --accent2:#77b7ff; --warn:#f0bf5a; --ink:#07110d; }
+* { box-sizing:border-box; }
+html { scroll-behavior:smooth; }
+body { margin:0; font-family:Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif; background:var(--bg); color:var(--text); }
+a { color:inherit; }
+.hero { min-height:76vh; position:relative; display:grid; align-items:end; overflow:hidden; border-bottom:1px solid var(--line); background:linear-gradient(135deg,#0a0e11,#14221d 55%,#181b24); }
+.hero.has-shot::before { content:""; position:absolute; inset:0; background:linear-gradient(90deg, rgba(8,10,12,.96) 0%, rgba(8,10,12,.76) 46%, rgba(8,10,12,.28) 100%), var(--hero) center/cover no-repeat; transform:scale(1.02); }
+.hero:not(.has-shot)::before { content:""; position:absolute; inset:0; background:linear-gradient(90deg, rgba(8,10,12,.95), rgba(20,34,29,.75)), repeating-linear-gradient(90deg, rgba(255,255,255,.035) 0 1px, transparent 1px 54px), repeating-linear-gradient(0deg, rgba(255,255,255,.028) 0 1px, transparent 1px 54px); }
+.hero-inner { position:relative; width:min(1180px,94vw); margin:0 auto; padding:34px 0 64px; }
+.eyebrow { color:var(--accent); font-size:12px; font-weight:850; text-transform:uppercase; letter-spacing:.08em; }
+h1 { margin:12px 0; max-width:980px; font-size:clamp(38px,7vw,80px); line-height:.95; letter-spacing:0; }
+.lede { max-width:850px; margin:0; color:#f7fbfc; font-size:clamp(18px,2.2vw,23px); line-height:1.43; }
+.quick,.nav { display:flex; flex-wrap:wrap; gap:10px; }
+.quick { margin-top:22px; }
+.pill { border:1px solid rgba(255,255,255,.24); background:rgba(0,0,0,.44); border-radius:8px; padding:9px 11px; font-size:13px; font-weight:850; }
+.nav { margin-top:26px; }
+.nav a,.button { display:inline-flex; align-items:center; justify-content:center; min-height:42px; border-radius:8px; padding:10px 13px; font-weight:850; text-decoration:none; background:var(--accent); color:var(--ink); }
+.nav a.secondary,.button.secondary { background:rgba(255,255,255,.08); color:var(--text); border:1px solid rgba(255,255,255,.2); }
+.nav a.warn,.button.warn { background:rgba(240,191,90,.16); color:#ffe4a6; border:1px solid rgba(240,191,90,.42); }
+main { background:linear-gradient(180deg,var(--bg),#11171b); }
+.band { border-bottom:1px solid rgba(255,255,255,.08); }
+.wrap { width:min(1180px,94vw); margin:0 auto; padding:42px 0; }
+.section-head { display:flex; justify-content:space-between; gap:24px; align-items:end; margin-bottom:18px; }
+h2 { margin:0; font-size:clamp(25px,3vw,38px); letter-spacing:0; }
+.section-head p { margin:0; max-width:700px; color:var(--muted); line-height:1.55; }
+.grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; min-width:0; }
+.two { grid-template-columns:repeat(2,minmax(0,1fr)); }
+.panel { min-width:0; overflow-wrap:anywhere; background:rgba(255,255,255,.055); border:1px solid var(--line); border-radius:8px; padding:18px; }
+.panel h3 { margin:0 0 8px; color:var(--accent); font-size:18px; }
+.panel p,.panel li { color:var(--muted); line-height:1.58; }
+.panel p { margin:0 0 10px; }
+.panel ul,.panel ol { margin:0; padding-left:21px; }
+.downloads { display:grid; grid-template-columns:repeat(auto-fit,minmax(238px,1fr)); gap:14px; }
+.download-card { display:grid; gap:8px; align-content:start; }
+.download-card .button { justify-self:start; }
+.manual { display:grid; grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr); gap:18px; }
+.steps { counter-reset:step; display:grid; gap:10px; }
+.step { display:grid; grid-template-columns:38px minmax(0,1fr); gap:12px; }
+.step::before { counter-increment:step; content:counter(step); width:32px; height:32px; border-radius:50%; display:grid; place-items:center; background:var(--accent2); color:#061019; font-weight:900; }
+.step h3 { margin:2px 0 4px; color:var(--text); font-size:17px; }
+.step p { margin:0; color:var(--muted); line-height:1.5; }
+figure { margin:0; border:1px solid var(--line); border-radius:8px; overflow:hidden; background:#080c0e; }
+figure img { display:block; width:100%; min-height:260px; object-fit:cover; }
+.placeholder { min-height:260px; display:grid; place-items:center; color:var(--muted); background:linear-gradient(135deg,#10171c,#17231e); padding:24px; text-align:center; }
+figcaption { border-top:1px solid rgba(255,255,255,.08); padding:10px 12px; color:var(--muted); font-size:13px; }
+.status strong { display:block; color:var(--text); font-size:20px; }
+code { display:inline-block; max-width:100%; overflow-wrap:anywhere; white-space:normal; color:#ffe08a; background:#090d10; border:1px solid rgba(255,255,255,.1); padding:3px 6px; border-radius:5px; }
+footer { width:min(1180px,94vw); margin:0 auto; padding:24px 0 36px; color:var(--soft); font-size:13px; }
+@media (max-width:900px) { .hero { min-height:70vh; } .section-head { display:block; } .section-head p { margin-top:10px; } .grid,.two,.manual { grid-template-columns:minmax(0,1fr); } figure img,.placeholder { min-height:190px; } }
+</style>
+</head>
+<body>
+  <header class='hero has-shot' style="--hero:url('assets/client-launch.png')"><div class='hero-inner'>
+    <div class='eyebrow'>Movement FPS intake</div>
+    <h1>Red Eclipse LAN Hub</h1>
+    <p class='lede'>A movement-heavy arena shooter built around agility, mutators, parkour-ish combat, and LAN-friendly FPS sessions.</p>
+    <div class='quick'><span class='pill'>Arena FPS</span><span class='pill'>Parkour movement</span><span class='pill'>Official 2.0.0 cached</span><span class='pill'>VM package 1.6</span></div>
+    <nav class='nav' aria-label='Page sections'><a href='../redeclipse-site/'>Official Mirror</a><a class='secondary' href='#downloads'>Download Clients</a><a class='secondary' href='#manual'>Quick Manual</a><a class='secondary' href='#qa'>QA Status</a><a class='secondary' href='../games/'>Back to Arcade</a></nav>
+  </div></header>
+  <main>
+    <section class='band'><div class='wrap'><div class='section-head'><h2>Official Offline Site</h2><p>Where an upstream site, wiki, or manual exists, this hub links to the local mirrored copy first. If mirroring failed, the mirror folder records the blocker instead of hiding it.</p></div><div class='grid two'><article class='panel'><h3>Open the mirror</h3><p>The source website/manual is cached under <code>/mirrors/</code> for offline browsing where wget could fetch it cleanly.</p><a class='button' href='../redeclipse-site/'>Open official mirror</a></article><article class='panel'><h3>Source and licensing</h3><p>https://www.redeclipse.net/ and https://github.com/redeclipse/base</p><p>Use the upstream license files and cached source/download manifests for exact attribution.</p></article></div></div></section>
+    <section class='band'><div class='wrap'><div class='section-head'><h2>Should You Play?</h2><p>Plain-language notes for someone deciding what to install or launch from the LAN Arcade.</p></div><div class='grid'><article class='panel'><h3>Why play</h3><p>It gives the arcade another FPS flavour: more acrobatic and modern-feeling than OpenArena, less huge than some commercial shooters.</p></article><article class='panel'><h3>Offline plan</h3><p>Cache official 2.0.0 archives and use Debian 1.6 for launch proof on this VM.</p></article><article class='panel'><h3>Test caution</h3><p>The version mismatch is deliberate and visible: launch smoke proves the engine family, not the exact cached 2.0.0 binary.</p></article></div></div></section>
+    <section class='band' id='downloads'><div class='wrap'><div class='section-head'><h2>Download Clients</h2><p>Installers and archives are served locally from GannanNet. The shelf includes manifests and SHA256 sums.</p></div><div class='downloads'><article class='panel download-card'><h3>Combined release archive</h3><p>Cross-platform archive</p><p>Large combined upstream archive for offline repair/use.</p><a class='button' href='../games/downloads/native/redeclipse/2.0.0/redeclipse_2.0.0_combined.tar.bz2'>Download</a><p>914.7 MB</p></article><article class='panel download-card'><h3>Windows installer</h3><p>Windows</p><p>Windows installer from the official release.</p><a class='button' href='../games/downloads/native/redeclipse/2.0.0/redeclipse_2.0.0_win.exe'>Download</a><p>882.9 MB</p></article><article class='panel download-card'><h3>Linux archive</h3><p>Linux</p><p>Linux package from the official release.</p><a class='button' href='../games/downloads/native/redeclipse/2.0.0/redeclipse_2.0.0_nix.tar.bz2'>Download</a><p>904.8 MB</p></article><article class='panel download-card'><h3>All files and hashes</h3><p>Open the full shelf with manifests and SHA256 sums.</p><a class='button secondary' href='../games/downloads/native/redeclipse/'>Open shelf</a></article></div></div></section>
+    <section class='band'><div class='wrap two grid'><figure><img src='assets/client-launch.png' alt='VM launch screenshot'><figcaption>VM launch smoke screenshot. It proves a native window rendered under Xvfb; full gameplay/join proof is a separate gate.</figcaption></figure><article class='panel'><h3>Local links</h3><ul><li><a href='../redeclipse-site/'>Official site/manual mirror</a></li><li><a href='../games/downloads/native/redeclipse/'>Offline download shelf</a></li><li><a href='../games/'>Back to Arcade</a></li></ul></article></div></section>
+    <section class='band' id='manual'><div class='wrap manual'><div><h2>Quick Manual</h2><p class='panel'>Short orientation only. Use the mirrored official site/manual for deeper instructions when available.</p></div><div class='steps'><div class='step'><div><h3>Use offline practice</h3><p>Start a local match and learn movement before hosting a LAN game.</p></div></div><div class='step'><div><h3>Mutators matter</h3><p>Red Eclipse has many game options; pick simple deathmatch first.</p></div></div><div class='step'><div><h3>LAN server</h3><p>Next gate is dedicated server smoke plus one client join.</p></div></div><div class='step'><div><h3>Compare FPS options</h3><p>Keep this alongside Xonotic/OpenArena, then let playtests decide which stays prominent.</p></div></div></div></div></section>
+    <section class='band' id='qa'><div class='wrap'><div class='section-head'><h2>Arcade QA Status</h2><p>Native entries move through cache, page smoke, VM launch, service/join, and real-device proof. HTTP 200 alone is not gameplay proof.</p></div><div class='grid'><article class='panel status'><h3>Downloads</h3><strong>2.0.0 cached</strong></article><article class='panel status'><h3>Client launch</h3><strong>Debian 1.6 smoke target</strong></article><article class='panel status'><h3>Server</h3><strong>Pending</strong></article><article class='panel status'><h3>Next gate</h3><strong>LAN deathmatch proof</strong></article></div></div></section>
+  </main>
+  <footer>LAN Arcade native intake page. See <a href='ATTRIBUTION.txt'>ATTRIBUTION.txt</a> for source and license notes.</footer>
+</body>
+</html>

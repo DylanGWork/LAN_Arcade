@@ -1,0 +1,7 @@
+Xonotic LAN Hub
+
+Source:
+https://xonotic.org/
+
+LAN Arcade note:
+This hub links to cached release files under /mirrors/games/downloads/native/xonotic/ and the mirrored official site/manual at ../xonotic-site/ where available. Native gameplay is promoted only after separate smoke/play evidence.

@@ -740,3 +740,24 @@ Dylan flagged that native-client hubs cannot say to install the client before in
 Dylan tightened the rule: public native/server-client arcade entries must not require pre-internet preparation. Added `scripts/cache_native_game_offline_assets.py` and cached large release files outside Git under `/var/www/html/mirrors/games/downloads/native/` for Mindustry, OpenTTD, Freeciv, FreeCol, Stendhal, Wesnoth, 0 A.D., and Veloren/Airshipper. Also mirrored docs/manual material for Mindustry (`/mirrors/mindustry-docs/`), curated OpenTTD manual pages (`/mirrors/openttd-wiki/`), Freeciv site/download docs (`/mirrors/freeciv-docs/`), and the Veloren book (`/mirrors/veloren-book/`). Safe-regenerated catalog metadata and manually synced the `LOCAL_DIR` hub folders to deployed mirrors. Browser smoke report batch: `qa/reports/native-download-hubs/*-20260615T105138Z-*`.
 
 Caveat: Veloren still must not be marked play-ready. Airshipper launchers/server binary are cached, but the full game profile is not cached and the Linux binary remains blocked on Debian 12 glibc. Mindustry stable GitHub release does not provide a matching Android APK; current cached pack is desktop/server focused.
+
+
+## Native Next Ten Intake - 2026-06-17
+
+Added SuperTuxKart, Xonotic, Red Eclipse, OpenArena, Freedoom, BZFlag, FreeOrion, Endless Sky, Cataclysm DDA, and ManaPlus/The Mana World as native LAN Arcade hubs. Download shelves are cached on the NFS native-downloads mount under `/var/www/html/mirrors/games/downloads/native/`; generated hubs are in `local-games/*-lan/` and deployed under `/var/www/html/mirrors/`.
+
+Official site/wiki mirroring now uses bounded recursive wget and creates readable blocker pages when a mirror fails. Successful mirrors this batch: BZFlag and Freedoom. Blocked/timeout mirror pages exist for Cataclysm DDA, Endless Sky, FreeOrion, ManaPlus, OpenArena, Red Eclipse, SuperTuxKart, and Xonotic.
+
+QA evidence:
+
+```text
+npm run qa:static
+qa/reports/next-ten-page-smoke-final-20260617T111405Z/
+qa/reports/native-client-next-ten-20260617T105841Z/
+qa/reports/native-client-next-ten-rerun-20260617T110348Z/
+qa/reports/native-client-next-ten-endless-rerun2/endless-sky-lan-20260617T110847Z/
+qa/reports/service-smoke/bzflag-lan-20260617T105739Z/
+qa/reports/service-smoke/openarena-lan-20260617T105745Z/
+```
+
+Final status: all ten hub pages pass desktop/mobile smoke; all ten native clients have a passing launch screenshot; BZFlag and OpenArena service smokes pass and stop cleanly. Details are in `docs/NATIVE_NEXT_TEN_2026-06-17.md`.

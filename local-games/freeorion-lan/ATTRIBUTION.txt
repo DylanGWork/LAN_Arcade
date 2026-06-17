@@ -1,0 +1,7 @@
+FreeOrion LAN Hub
+
+Source:
+https://freeorion.org/ and GitHub releases
+
+LAN Arcade note:
+This hub links to cached release files under /mirrors/games/downloads/native/freeorion/ and the mirrored official site/manual at ../freeorion-site/ where available. Native gameplay is promoted only after separate smoke/play evidence.

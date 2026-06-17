@@ -1,0 +1,7 @@
+Red Eclipse LAN Hub
+
+Source:
+https://www.redeclipse.net/ and https://github.com/redeclipse/base
+
+LAN Arcade note:
+This hub links to cached release files under /mirrors/games/downloads/native/redeclipse/ and the mirrored official site/manual at ../redeclipse-site/ where available. Native gameplay is promoted only after separate smoke/play evidence.

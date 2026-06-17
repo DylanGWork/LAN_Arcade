@@ -19,6 +19,16 @@ Supported service ids:
   widelands-lan          Launch Widelands under Xvfb and capture a nonblank screenshot.
   warzone2100-lan        Launch Warzone 2100 under Xvfb and capture a nonblank screenshot.
   luanti-lan             Launch Luanti/Minetest under Xvfb and capture a nonblank screenshot.
+  supertuxkart-lan       Launch a SuperTuxKart race under Xvfb and capture a nonblank screenshot.
+  xonotic-lan            Extract cached Xonotic ZIP, launch client under Xvfb, capture screenshot.
+  redeclipse-lan         Launch Red Eclipse under Xvfb and capture a nonblank screenshot.
+  openarena-lan          Launch OpenArena into a map under Xvfb and capture a nonblank screenshot.
+  freedoom-lan           Launch DSDA-Doom with Freedoom IWAD under Xvfb and capture screenshot.
+  bzflag-lan             Launch BZFlag solo practice under Xvfb and capture a screenshot.
+  freeorion-lan          Launch FreeOrion under Xvfb and capture a nonblank screenshot.
+  endless-sky-lan        Launch Endless Sky under Xvfb and capture a nonblank screenshot.
+  cataclysm-dda-lan      Launch Cataclysm DDA tiles under Xvfb and capture a screenshot.
+  manaplus-lan           Launch ManaPlus safe mode under Xvfb and capture a screenshot.
 
 This proves the client starts on the VM. It does not prove a player joined a server
 or completed gameplay.
@@ -36,6 +46,9 @@ if ! mkdir "$LOCK_DIR" 2>/dev/null; then
 fi
 trap 'rm -rf "$LOCK_DIR"' EXIT
 
+if command -v realpath >/dev/null 2>&1; then
+  REPORT_ROOT="$(realpath -m "$REPORT_ROOT")"
+fi
 REPORT_DIR="$REPORT_ROOT/${SERVICE_ID}-${STAMP}"
 mkdir -p "$REPORT_DIR"
 REPORT="$REPORT_DIR/report.txt"
@@ -62,11 +75,63 @@ case "$SERVICE_ID" in
   luanti-lan)
     CMD=(/usr/games/minetest)
     ;;
+  supertuxkart-lan)
+    CMD=(/usr/games/supertuxkart --windowed --screensize=1280x720 --no-start-screen --track=abyss --numkarts=4 --laps=1 --difficulty=0)
+    CAPTURE_DELAY=14
+    ;;
+  xonotic-lan)
+    XONOTIC_ZIP="/var/www/html/mirrors/games/downloads/native/xonotic/0.8.6/xonotic-0.8.6.zip"
+    [ -f "$XONOTIC_ZIP" ] || { echo "missing Xonotic ZIP: $XONOTIC_ZIP" >&2; exit 2; }
+    command -v unzip >/dev/null 2>&1 || { echo "missing unzip" >&2; exit 2; }
+    XONOTIC_DIR="$REPORT_DIR/xonotic-extract"
+    mkdir -p "$XONOTIC_DIR"
+    unzip -q "$XONOTIC_ZIP" -d "$XONOTIC_DIR"
+    XONOTIC_BIN="$(find "$XONOTIC_DIR" -type f \( -name 'xonotic-linux64-sdl' -o -name 'xonotic-linux-sdl' -o -name 'xonotic-linux64-glx' \) | head -1)"
+    [ -n "$XONOTIC_BIN" ] || { echo "missing Linux Xonotic binary after extract" >&2; exit 2; }
+    chmod +x "$XONOTIC_BIN"
+    XONOTIC_BIN_DIR="$(dirname "$XONOTIC_BIN")"
+    XONOTIC_BIN_NAME="$(basename "$XONOTIC_BIN")"
+    CMD=(bash -lc "cd '$XONOTIC_BIN_DIR' && './$XONOTIC_BIN_NAME' +vid_fullscreen 0 +vid_width 1280 +vid_height 720 +cl_startcount 1")
+    CAPTURE_DELAY=16
+    ;;
+  redeclipse-lan)
+    CMD=(/usr/games/redeclipse -df0 -dw1280 -dh720 -gstdout)
+    CAPTURE_DELAY=14
+    ;;
+  openarena-lan)
+    CMD=(/usr/games/openarena +set r_mode -1 +set r_customwidth 1280 +set r_customheight 720 +set s_initsound 0 +set cl_motd 0 +set com_introplayed 1 +set name LANArcadeSmoke +map oa_dm1)
+    CAPTURE_DELAY=14
+    ;;
+  freedoom-lan)
+    CMD=(/usr/games/dsda-doom -iwad /usr/share/games/doom/freedoom2.wad -warp 1 -skill 1 -nomusic -nosound)
+    ;;
+  bzflag-lan)
+    CMD=(/usr/games/bzflag -window 1280x720 -nolist -nomotd -solo 3 -team red)
+    ;;
+  freeorion-lan)
+    CMD=(/usr/games/freeorion)
+    CAPTURE_DELAY=22
+    ;;
+  endless-sky-lan)
+    CMD=(/usr/games/endless-sky)
+    CAPTURE_DELAY=22
+    ;;
+  cataclysm-dda-lan)
+    CMD=(/usr/games/cataclysm-tiles --userdir "$REPORT_DIR/cdda-user")
+    CAPTURE_DELAY=25
+    ;;
+  manaplus-lan)
+    CMD=(/usr/games/manaplus --safemode --no-opengl --skip-update -C "$REPORT_DIR/manaplus-config" -L "$REPORT_DIR/manaplus-localdata")
+    CAPTURE_DELAY=14
+    ;;
   *)
     usage >&2
     exit 2
     ;;
 esac
+
+CAPTURE_DELAY="${CAPTURE_DELAY:-${LAN_ARCADE_CLIENT_CAPTURE_DELAY:-8}}"
+export CAPTURE_DELAY
 
 if ! command -v xvfb-run >/dev/null 2>&1 || ! command -v scrot >/dev/null 2>&1; then
   echo "xvfb-run and scrot are required" >&2
@@ -97,7 +162,7 @@ xvfb-run -a -s "-screen 0 1280x720x24" bash -c '
   "$@" > "$dir/stdout.log" 2> "$dir/stderr.log" &
   pid=$!
   echo "$pid" > "$dir/pid"
-  sleep 8
+  sleep "${CAPTURE_DELAY:-8}"
   if ps -p "$pid" >/dev/null 2>&1; then echo alive > "$dir/alive.txt"; else echo exited > "$dir/alive.txt"; fi
   scrot "$dir/screenshot.png" 2> "$dir/scrot.err" || true
   ps -o pid,ppid,rss,vsz,comm -p "$pid" > "$dir/process.txt" 2>/dev/null || true

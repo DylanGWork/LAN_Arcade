@@ -1,0 +1,7 @@
+Freedoom LAN Hub
+
+Source:
+https://freedoom.github.io/ and Chocolate Doom/PrBoom+ releases
+
+LAN Arcade note:
+This hub links to cached release files under /mirrors/games/downloads/native/freedoom/ and the mirrored official site/manual at ../freedoom-site/ where available. Native gameplay is promoted only after separate smoke/play evidence.
