@@ -1,3 +1,8 @@
+# Native Downloads NFS Migration - 2026-06-17
+
+Moved `/var/www/html/mirrors/games/downloads/native/` onto the dedicated NFS export `192.168.1.33:/mnt/tank/LAN_Arcade/native-downloads`, mounted at `/srv/lan-arcade/native-downloads` and bind-mounted back to the web path. The old local shelf remains at `/var/www/html/mirrors/games/downloads/native.local-backup` and should not be deleted until the NFS setup has survived reboot/further intake. Because nginx runs in the Docker `webserver` container with `/var/www/html/mirrors` mounted as `/mirrors:ro`, restarting only `webserver` was required after the new submount so the container could see native files.
+
+Verification: NFS/web mounts active, 149 files copied vs 149 in backup, sample native HTTP checks returned 200, Luanti APK ranged read returned 206, and `npm run qa:static` passed with 88/88 OK and 0 external entrypoint refs. Details are in `docs/NATIVE_DOWNLOADS_NFS_2026-06-17.md`.
 # Native Next Ten Queue - 2026-06-17
 
 Prepared the next 10-game native intake queue and storage recommendation in `docs/NATIVE_NEXT_TEN_QUEUE_2026-06-17.md`. Current native shelves are about 17 GB and the VM still has about 148 GB free, so one more batch can fit locally, but the long-term plan should move `/var/www/html/mirrors/games/downloads/native/` to a dedicated read-write NFS export. Existing NFS mount `192.168.1.33:/mnt/tank/ZIM` is read-only and KiWix-specific, so request/use a separate LAN Arcade export.
