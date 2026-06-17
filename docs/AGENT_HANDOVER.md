@@ -1,3 +1,9 @@
+# Native Next Ten Queue - 2026-06-17
+
+Prepared the next 10-game native intake queue and storage recommendation in `docs/NATIVE_NEXT_TEN_QUEUE_2026-06-17.md`. Current native shelves are about 17 GB and the VM still has about 148 GB free, so one more batch can fit locally, but the long-term plan should move `/var/www/html/mirrors/games/downloads/native/` to a dedicated read-write NFS export. Existing NFS mount `192.168.1.33:/mnt/tank/ZIM` is read-only and KiWix-specific, so request/use a separate LAN Arcade export.
+
+Proposed next 10: SuperTuxKart, Xonotic, Red Eclipse, OpenArena, Freedoom + Chocolate Doom/PrBoom+, BZFlag, FreeOrion, Endless Sky, Cataclysm DDA, and The Mana World / ManaPlus.
+
 # Latest Native Game Testing Update - 2026-06-16
 
 Added five diverse native-game intake hubs with offline release shelves, local docs where practical, VM service/client evidence, and desktop/mobile hub smoke:
