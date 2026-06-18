@@ -1,0 +1,7 @@
+OpenClonk LAN Hub
+
+Source: https://www.openclonk.org/
+
+Debian package seed: openclonk, openclonk-data
+
+LAN Arcade status: native batch three Linux/Debian-first cache and hub page. Not play-ready until client/gameplay smoke is recorded.

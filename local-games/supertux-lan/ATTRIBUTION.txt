@@ -1,0 +1,7 @@
+SuperTux LAN Hub
+
+Source: https://www.supertux.org/
+
+Debian package seed: supertux, supertux-data
+
+LAN Arcade status: native batch three Linux/Debian-first cache and hub page. Not play-ready until client/gameplay smoke is recorded.

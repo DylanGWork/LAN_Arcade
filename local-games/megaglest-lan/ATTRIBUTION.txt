@@ -1,0 +1,7 @@
+MegaGlest LAN Hub
+
+Source: https://megaglest.org/
+
+Debian package seed: megaglest, megaglest-data
+
+LAN Arcade status: native batch three Linux/Debian-first cache and hub page. Not play-ready until client/gameplay smoke is recorded.

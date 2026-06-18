@@ -1,0 +1,7 @@
+Flare LAN Hub
+
+Source: https://flarerpg.org/
+
+Debian package seed: flare-game, flare-engine
+
+LAN Arcade status: native batch three Linux/Debian-first cache and hub page. Not play-ready until client/gameplay smoke is recorded.

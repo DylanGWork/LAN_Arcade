@@ -1,0 +1,7 @@
+Dungeon Crawl Stone Soup LAN Hub
+
+Source: https://crawl.develz.org/
+
+Debian package seed: crawl-tiles, crawl-common, crawl-tiles-data
+
+LAN Arcade status: native batch three Linux/Debian-first cache and hub page. Not play-ready until client/gameplay smoke is recorded.

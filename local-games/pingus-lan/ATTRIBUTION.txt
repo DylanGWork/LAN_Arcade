@@ -1,0 +1,7 @@
+Pingus LAN Hub
+
+Source: https://pingus.seul.org/
+
+Debian package seed: pingus, pingus-data
+
+LAN Arcade status: native batch three Linux/Debian-first cache and hub page. Not play-ready until client/gameplay smoke is recorded.

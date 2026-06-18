@@ -1,3 +1,13 @@
+# Native Batch Three Intake - 2026-06-19
+
+Added 10 more native/offline hub entries: Armagetron Advanced, MegaGlest, Unknown Horizons, Pioneers, Flare, OpenClonk, SuperTux, Pingus, LinCity-NG, and Dungeon Crawl Stone Soup Tiles. Hubs are generated from `scripts/native_batch_three_data.py`, `scripts/generate_native_batch_three_hubs.py`, and cached by `scripts/cache_native_batch_three_assets.py`.
+
+Download/package shelves are on NFS under `/srv/lan-arcade/native-downloads/<slug>/`, served via `/mirrors/games/downloads/native/<slug>/`. Batch added about 1.8 GB; current resource check was root `/dev/vda2` 295G total / 152G used / 131G free and native-downloads NFS 11T total / 29G used / 11T free.
+
+QA completed: safe metadata regeneration, `npm run qa:static` scanned 110/110 OK with 0 external entrypoint refs, and `bash scripts/qa_game_regression.sh <game-id>` passed desktop/mobile hub smoke for all 10. Evidence lives under `qa/reports/game-regression/<game-id>-20260618T15*.Z-{desktop,mobile}/`.
+
+Important limitation: this is Gate 0/Gate 1 evidence only. It proves hub pages, local assets, blocked external requests, and package manifests. It does not prove native client launch or real gameplay yet. Several official-site/manual mirror endpoints are blocker pages after wget errors/timeouts; do not claim those are complete manual mirrors. See `docs/NATIVE_BATCH_THREE_2026-06-19.md`.
+
 # Native Downloads NFS Migration - 2026-06-17
 
 Moved `/var/www/html/mirrors/games/downloads/native/` onto the dedicated NFS export `192.168.1.33:/mnt/tank/LAN_Arcade/native-downloads`, mounted at `/srv/lan-arcade/native-downloads` and bind-mounted back to the web path. The old local shelf remains at `/var/www/html/mirrors/games/downloads/native.local-backup` and should not be deleted until the NFS setup has survived reboot/further intake. Because nginx runs in the Docker `webserver` container with `/var/www/html/mirrors` mounted as `/mirrors:ro`, restarting only `webserver` was required after the new submount so the container could see native files.

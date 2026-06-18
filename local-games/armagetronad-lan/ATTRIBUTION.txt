@@ -1,0 +1,7 @@
+Armagetron Advanced LAN Hub
+
+Source: https://armagetronad.org/
+
+Debian package seed: armagetronad, armagetronad-common
+
+LAN Arcade status: native batch three Linux/Debian-first cache and hub page. Not play-ready until client/gameplay smoke is recorded.

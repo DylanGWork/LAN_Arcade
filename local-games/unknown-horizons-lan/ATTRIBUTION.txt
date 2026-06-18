@@ -1,0 +1,7 @@
+Unknown Horizons LAN Hub
+
+Source: https://unknown-horizons.org/
+
+Debian package seed: unknown-horizons
+
+LAN Arcade status: native batch three Linux/Debian-first cache and hub page. Not play-ready until client/gameplay smoke is recorded.

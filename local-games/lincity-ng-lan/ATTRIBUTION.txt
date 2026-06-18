@@ -1,0 +1,7 @@
+LinCity-NG LAN Hub
+
+Source: https://github.com/lincity-ng/lincity-ng/
+
+Debian package seed: lincity-ng, lincity-ng-data
+
+LAN Arcade status: native batch three Linux/Debian-first cache and hub page. Not play-ready until client/gameplay smoke is recorded.
