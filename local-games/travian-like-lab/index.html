@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Travian-like Strategy Lab - LAN Arcade</title>
+  <style>
+    :root { color-scheme: dark; --bg:#111513; --panel:#19211d; --line:#33443a; --text:#f4f7ef; --muted:#c4cebf; --accent:#83d77c; --warn:#e7c167; --ink:#081108; }
+    * { box-sizing:border-box; }
+    body { margin:0; font-family:Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif; background:var(--bg); color:var(--text); }
+    a { color:inherit; }
+    .hero { min-height:68vh; display:grid; align-items:end; position:relative; overflow:hidden; border-bottom:1px solid var(--line); }
+    .hero::before { content:""; position:absolute; inset:0; background:linear-gradient(90deg, rgba(7,10,8,.96), rgba(7,10,8,.72) 46%, rgba(7,10,8,.22)), url("../pillage-first/landing/image-2-light-202603240613.jpg") center/cover no-repeat; transform:scale(1.02); }
+    .inner,.wrap,footer { position:relative; width:min(1180px,94vw); margin:0 auto; }
+    .inner { padding:34px 0 62px; }
+    .eyebrow { color:var(--accent); text-transform:uppercase; font-weight:900; font-size:12px; letter-spacing:.02em; }
+    h1 { margin:12px 0; font-size:clamp(38px,7vw,82px); line-height:.95; }
+    .lede { max-width:840px; margin:0; font-size:clamp(18px,2vw,23px); line-height:1.45; color:#f5faee; }
+    .nav,.quick { display:flex; flex-wrap:wrap; gap:10px; margin-top:24px; }
+    .nav a { min-height:42px; display:inline-flex; align-items:center; text-decoration:none; border-radius:8px; padding:11px 14px; font-weight:900; background:var(--accent); color:var(--ink); }
+    .nav a.secondary { background:rgba(255,255,255,.08); color:var(--text); border:1px solid rgba(255,255,255,.2); }
+    .pill { border:1px solid rgba(255,255,255,.22); border-radius:8px; padding:9px 11px; background:rgba(0,0,0,.4); font-weight:850; font-size:13px; }
+    .pill.warn { background:var(--warn); color:#151008; border-color:var(--warn); }
+    main { background:linear-gradient(180deg,#111513,#121812); }
+    .band { border-bottom:1px solid rgba(255,255,255,.08); }
+    .wrap { padding:42px 0; }
+    .section-head { display:flex; gap:24px; justify-content:space-between; align-items:end; margin-bottom:18px; }
+    h2 { margin:0; font-size:clamp(25px,3vw,38px); }
+    .section-head p,.card p,.card li { color:var(--muted); line-height:1.58; }
+    .section-head p { max-width:690px; margin:0; }
+    .grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; }
+    .card { border:1px solid var(--line); background:rgba(25,33,29,.92); border-radius:8px; padding:18px; min-width:0; overflow-wrap:anywhere; }
+    .card h3 { margin:0 0 8px; color:var(--accent); font-size:19px; }
+    .status { display:inline-flex; border-radius:8px; padding:5px 8px; font-weight:850; font-size:12px; background:rgba(255,255,255,.1); color:var(--text); }
+    .status.live { background:var(--accent); color:var(--ink); }
+    .status.hold { background:var(--warn); color:#151008; }
+    code { color:#ffe28a; background:#090d09; border:1px solid rgba(255,255,255,.1); border-radius:5px; padding:2px 5px; }
+    footer { padding:24px 0 36px; color:var(--muted); font-size:13px; }
+    @media (max-width:900px) { .hero { min-height:64vh; } .section-head { display:block; } .section-head p { margin-top:10px; } .grid { grid-template-columns:minmax(0,1fr); } }
+  </style>
+</head>
+<body>
+  <header class="hero"><div class="inner">
+    <div class="eyebrow">Travian-like intake shelf</div>
+    <h1>Strategy Lab</h1>
+    <p class="lede">A staged batch for village builders, browser strategy, and settlement games. Pillage First is live; the heavier server/client candidates are cached and documented for later one-at-a-time testing.</p>
+    <div class="quick"><span class="pill warn">Only Pillage First live</span><span class="pill">Sources cached</span><span class="pill">No background services</span></div>
+    <nav class="nav"><a href="../pillage-first-lan/">Open Pillage First Hub</a><a class="secondary" href="../games/downloads/native/travian-like/">Open Source Shelf</a><a class="secondary" href="../games/">Back to Arcade</a></nav>
+  </div></header>
+  <main>
+    <section class="band"><div class="wrap"><div class="section-head"><h2>Current Batch</h2><p>These are intentionally not all running. The rule for this class is to start, smoke, and stop heavy services one at a time.</p></div><div class="grid">
+      <article class="card"><span class="status live">Live</span><h3>Pillage First!</h3><p>Single-player offline-first Travian-inspired browser game. Static mirror is live at <code>/mirrors/pillage-first/</code>.</p><ul><li><a href="../pillage-first/">Launch game</a></li><li><a href="../games/downloads/native/travian-like/pillage-first/">Cached source</a></li></ul></article>
+      <article class="card"><span class="status hold">Candidate</span><h3>Vallorium</h3><p>Persistent browser multiplayer strategy inspired by Travian. Upstream says the backend is still in development, so this stays as source-only research until a service smoke exists.</p><ul><li><a href="../games/downloads/native/travian-like/vallorium/">Cached source</a></li></ul></article>
+      <article class="card"><span class="status hold">Candidate</span><h3>TravianZ</h3><p>PHP/MariaDB Travian-like multiplayer stack. Strong fit mechanically, but it needs isolated Docker testing, install flow capture, branding/legal review, and admin controls before being live.</p><ul><li><a href="../games/downloads/native/travian-like/travianz/">Cached source</a></li></ul></article>
+      <article class="card"><span class="status hold">Related</span><h3>Freeciv-web</h3><p>Browser/server 4X strategy candidate. Not a Travian clone, but useful for the larger Steam-like arcade plan. Native Freeciv already has its own hub.</p><ul><li><a href="../games/downloads/native/travian-like/freeciv-web/">Cached source</a></li><li><a href="../freeciv-lan/">Existing Freeciv hub</a></li></ul></article>
+      <article class="card"><span class="status hold">Related</span><h3>Unknown Horizons</h3><p>Open-source settlement and economy game. It belongs in the broader city/economy queue rather than the live browser game list for now.</p><ul><li><a href="../games/downloads/native/travian-like/unknown-horizons/">Cached source</a></li></ul></article>
+      <article class="card"><span class="status hold">Rule</span><h3>Next Safe Action</h3><p>Playtest Pillage First first. For each heavier candidate, create an allowlisted service plan, start exactly one stack, smoke the join/game path, record CPU/RAM/ports, then stop it.</p></article>
+    </div></div></section>
+  </main>
+  <footer>LAN Arcade candidate page. This is deliberately a source and planning shelf, not a claim that every candidate is playable yet.</footer>
+</body>
+</html>

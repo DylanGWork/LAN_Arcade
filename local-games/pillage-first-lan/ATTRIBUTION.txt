@@ -1,0 +1,5 @@
+Pillage First! LAN Arcade hub
+Playable mirror: /mirrors/pillage-first/
+Upstream source: https://github.com/jurerotar/Pillage-First-Ask-Questions-Later
+License: AGPL-3.0-or-later
+Local build script: scripts/build_pillage_first_mirror.sh

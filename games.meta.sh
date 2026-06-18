@@ -107,6 +107,8 @@ declare -A GAMES=(
   ["retro-emulator-lab"]="LOCAL_DIR::local-games/retro-emulator-lab"
   ["private-gbc-vault"]="LOCAL_DIR::local-games/private-gbc-vault"
   ["veloren-lan"]="LOCAL_DIR::local-games/veloren-lan"
+  ["pillage-first-lan"]="LOCAL_DIR::local-games/pillage-first-lan"
+  ["travian-like-lab"]="LOCAL_DIR::local-games/travian-like-lab"
 
 )
 
@@ -213,6 +215,8 @@ declare -A GAME_INFO=(
   ["retro-emulator-lab"]="Retro Emulator Lab|ROM|Emulator - Homebrew Intake|Offline retro-emulation staging area for legal homebrew/public-domain ROMs using EmulatorJS.|Retro,Emulator,Homebrew"
   ["private-gbc-vault"]="Private GBC Vault|GBC|Private Retro Shelf - VM Local|Private Game Boy and Game Boy Color vault built from Dylan-provided ROM files, including tested Pokemon entries, with a full per-game EmulatorJS smoke/play report. ROMs are VM-local and not committed to GitHub.|Retro,Emulator,Private,Pokemon,Game Boy,GBC"
   ["veloren-lan"]="Veloren LAN Candidate|VEL|Native RPG - Voxel World|Transparent Veloren intake hub with cached Airshipper launchers, local book mirror, LAN server notes, and current Debian 12/full-profile blocker.|RPG,Multiplayer,Native"
+  ["pillage-first-lan"]="Pillage First!|PILLAGE|Browser Strategy - Travian-like|Live offline-first single-player Travian-inspired strategy: build villages, manage resources, train troops, send adventures, raid targets, and keep persistent local worlds.|Strategy,Simulation,Offline-first"
+  ["travian-like-lab"]="Travian-like Strategy Lab|LAB|Research Shelf - Village Strategy|Cached source shelf for Pillage First, Vallorium, TravianZ, Freeciv-web, and Unknown Horizons. Only Pillage First is live; the rest are queued for one-at-a-time service tests.|Strategy,Research,Native"
 
 )
 
@@ -323,4 +327,6 @@ declare -A GAME_CATEGORIES=(
   ["retro-emulator-lab"]="retro,arcade,age-10-plus"
   ["private-gbc-vault"]="retro,arcade,private,age-10-plus"
   ["veloren-lan"]="multiplayer,rpg,adventure,simulation,age-13-plus"
+  ["pillage-first-lan"]="strategy,simulation,management,mobile-friendly,age-10-plus"
+  ["travian-like-lab"]="strategy,simulation,management,age-13-plus"
 )
