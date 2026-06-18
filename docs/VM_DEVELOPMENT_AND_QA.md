@@ -112,6 +112,29 @@ npm run qa:smoke -- --catalog --offset 20 --limit 20 --report-dir qa/reports/cat
 npm run qa:smoke -- --allow-external
 ```
 
+### LAN-Origin Regression Rule
+
+Do not certify a new or repaired game from HTTP status alone. For browser games
+or launcher pages, at minimum run the smoke test against the real LAN origin and
+repeat with the mobile profile:
+
+```sh
+node qa/arcade-smoke.mjs --catalog --base-url https://192.168.1.106/mirrors/games/ --game <game-id> --screenshot-all --report-dir qa/reports/<name>-desktop
+node qa/arcade-smoke.mjs --catalog --base-url https://192.168.1.106/mirrors/games/ --game <game-id> --mobile --screenshot-all --report-dir qa/reports/<name>-mobile
+```
+
+Localhost-only browser tests are useful for quick iteration but are not a
+promotion gate. Browsers treat `localhost` as a secure context, so APIs such as
+OPFS storage, `crypto.randomUUID`, service workers, clipboard, fullscreen, and
+some worker/storage paths can behave differently on `http://192.168.1.106`.
+If the game has a first-run flow, the focused smoke must click through the first
+meaningful action: create a world, start a match, open the emulator canvas, join
+the local server, or reach the playable screen. Record that report path in the
+handover or intake document.
+
+Pillage First is the current example: `qa/pillage-first-live-smoke.mjs` tests
+both localhost and the HTTPS LAN origin and creates a world before passing.
+
 By default the smoke runner blocks outbound HTTP/HTTPS requests that do not target the arcade host. This is intentional: the camping build must work without internet.
 The smoke runner writes reports after each game, so a long catalog pass still leaves a partial report if the browser process is killed.
 

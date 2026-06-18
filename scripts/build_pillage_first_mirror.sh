@@ -90,6 +90,8 @@ for path in list(root.rglob('*.html')) + [root / 'manifest.webmanifest']:
     for old, new in replacements.items():
         s = s.replace(old, new)
     path.write_text(s)
+random_uuid_polyfill = '''(()=>{const g=globalThis;let c=g.crypto;if(!c){try{Object.defineProperty(g,"crypto",{value:{},configurable:true});c=g.crypto;}catch{c={};g.crypto=c;}}const make=()=>{const b=new Uint8Array(16);if(c&&typeof c.getRandomValues==="function")c.getRandomValues(b);else for(let i=0;i<16;i+=1)b[i]=Math.floor(Math.random()*256);b[6]=b[6]&15|64;b[8]=b[8]&63|128;const h=Array.from(b,v=>v.toString(16).padStart(2,"0"));return `${h.slice(0,4).join("")}-${h.slice(4,6).join("")}-${h.slice(6,8).join("")}-${h.slice(8,10).join("")}-${h.slice(10).join("")}`;};if(c&&typeof c.randomUUID!=="function"){try{Object.defineProperty(c,"randomUUID",{value:make,configurable:true});}catch{try{c.randomUUID=make;}catch{}}}})();
+'''
 for path in root.rglob('*.js'):
     s = path.read_text(errors='ignore')
     ns = s.replace('`/landing/${', '`/mirrors/pillage-first/landing/${')
@@ -102,6 +104,8 @@ for path in root.rglob('*.js'):
     ns = ns.replace("'/pillage-first-logo-horizontal.svg'", "'/mirrors/pillage-first/pillage-first-logo-horizontal.svg'")
     ns = ns.replace('queryFn:async()=>await(await fetch(`/api/discord-members?code=Ep7NKVXUZA`)).json(),', 'queryFn:async()=>({memberCount:217}),')
     ns = ns.replace('fetch(`/api/discord-members?code=Ep7NKVXUZA`)', 'Promise.resolve({json:async()=>({memberCount:217})})')
+    if not ns.startswith('(()=>{const g=globalThis;let c=g.crypto;'):
+        ns = random_uuid_polyfill + ns
     if ns != s:
         path.write_text(ns)
 for path in root.rglob('*.map'):
