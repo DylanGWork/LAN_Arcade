@@ -1,0 +1,7 @@
+TEG LAN Table
+
+Source: https://github.com/wfx/teg
+
+Debian package seed: teg
+
+LAN Arcade QA: PASS: bwrap no-internet namespace, tegserver with metaserver disabled, five tegrobots, GUI client joined and selected a colour; bot/player status and chat captured.

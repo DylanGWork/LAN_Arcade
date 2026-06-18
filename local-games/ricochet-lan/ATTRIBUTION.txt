@@ -1,0 +1,7 @@
+Ricochet Robots LAN
+
+Source: http://rr.nickle.org
+
+Debian package seed: ricochet
+
+LAN Arcade QA: PASS: bwrap no-internet namespace, rrserve ran locally and the Ricochet client joined a named game and reached an active puzzle board.

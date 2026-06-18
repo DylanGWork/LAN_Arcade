@@ -1,0 +1,7 @@
+Atlantik / monopd Table
+
+Source: http://gtkatlantic.gradator.net/
+
+Debian package seed: gtkatlantic, monopd
+
+LAN Arcade QA: PARTIAL: bwrap no-internet namespace, socket-activated monopd on 127.0.0.1:1234, GTK client connected and created a game lobby; board start requires at least two players.

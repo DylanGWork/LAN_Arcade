@@ -1,0 +1,7 @@
+TripleA Offline Candidate
+
+Source: https://triplea-game.org/
+
+Debian package seed: triplea
+
+LAN Arcade QA: BLOCKED: bwrap no-internet namespace showed TripleA attempting GitHub/raw.githubusercontent.com update/map checks; local map cache was not enough to reach a playable Start Local Game state.

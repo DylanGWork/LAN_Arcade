@@ -57,6 +57,7 @@ declare -a CATEGORY_ORDER=(
   idle
   clicker
   strategy
+  board-game
   tactical
   roguelite
   tower-defense
@@ -93,6 +94,7 @@ declare -A CATEGORY_LABELS=(
   ["idle"]="Idle"
   ["clicker"]="Clicker"
   ["strategy"]="Strategy"
+  ["board-game"]="Board Game"
   ["tactical"]="Tactical"
   ["roguelite"]="Roguelite"
   ["tower-defense"]="Tower Defense"

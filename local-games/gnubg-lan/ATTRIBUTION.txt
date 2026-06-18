@@ -1,0 +1,7 @@
+GNU Backgammon
+
+Source: https://www.gnu.org/software/gnubg/
+
+Debian package seed: gnubg, gnubg-data
+
+LAN Arcade QA: PASS: bwrap no-internet namespace, GNU Backgammon GUI launched with board, players, score, and match state visible.

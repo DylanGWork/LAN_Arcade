@@ -1,0 +1,7 @@
+KsirK Local Risk Table
+
+Source: https://apps.kde.org/ksirk/
+
+Debian package seed: ksirk
+
+LAN Arcade QA: PASS: bwrap no-internet namespace, KsirK launched through the local-game wizard and reached an actual board with armies to place.

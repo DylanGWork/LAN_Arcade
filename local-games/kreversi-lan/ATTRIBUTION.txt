@@ -1,0 +1,7 @@
+KReversi
+
+Source: https://apps.kde.org/kreversi/
+
+Debian package seed: kreversi
+
+LAN Arcade QA: PASS: bwrap no-internet namespace, game started and the screenshot shows active discs, score, and turn text.

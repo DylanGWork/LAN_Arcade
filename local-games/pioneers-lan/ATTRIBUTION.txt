@@ -1,7 +1,7 @@
-Pioneers LAN Hub
+Pioneers LAN Table
 
 Source: https://pio.sourceforge.net/
 
 Debian package seed: pioneers, pioneers-console, pioneers-data
 
-LAN Arcade status: native batch three Linux/Debian-first cache and hub page. Not play-ready until client/gameplay smoke is recorded.
+LAN Arcade QA: PASS: bwrap no-internet namespace, local pioneers-server-console, three AI players, one GUI client named LANSmoke, board state and AI building activity captured.

@@ -450,3 +450,74 @@ Before a camping trip build:
 - high scores survive service restart
 - no game requires login, CDN, analytics, remote fonts, or remote scripts
 - latest smoke report is saved for reference
+
+## Native Board-Game Smoke Gates
+
+Native board games need a separate gameplay gate because a hub page can be
+offline-clean while the real native client is still only partial or blocked.
+
+Run the current board-game smoke suites one game at a time or as a batch:
+
+```sh
+scripts/native_board_game_play_smoke.sh
+scripts/native_board_game_expanded_smoke.sh
+scripts/native_board_game_play_smoke.sh pioneers-lan
+scripts/native_board_game_expanded_smoke.sh kigo-lan
+```
+
+The scripts run the native game in a `bwrap --unshare-net` no-internet namespace
+where practical and write one report directory per game. They intentionally
+record `PASS`, `PARTIAL`, or `BLOCKED` instead of treating a window launch as a
+successful game test.
+
+Promotion meanings:
+
+- `PASS`: the game reached a meaningful board/gameplay state under no-internet
+  conditions and has screenshot/log evidence.
+- `PARTIAL`: a local launch/server path works, but another client, battle turn,
+  or gameplay step still needs proof.
+- `BLOCKED`: the game fails before playability or attempts external network
+  paths that violate offline use.
+
+Document the report path in the relevant intake document. Current board-game
+intake details live in:
+
+```text
+docs/BOARD_GAME_INTAKE_2026-06-19.md
+```
+
+## Native Downloads And NFS Shelf
+
+Large client installers, Debian package closures, and mirrored manuals belong on
+the NFS-backed native shelf, not in Git:
+
+```text
+/srv/lan-arcade/native-downloads
+/var/www/html/mirrors/games/downloads/native
+```
+
+Use per-game or per-batch cache scripts to populate the shelf, then link hubs to
+the local shelf. A public arcade game must not require the player to have known
+about the game before the internet went down.
+
+## Windows SSH And Rsync Guardrails
+
+Most agent work happens on the Debian VM, but Codex may connect from a Windows
+host. Be careful with PowerShell interpolation and CRLF when sending remote shell
+scripts.
+
+Rules:
+
+- Prefer LF-only temp scripts sent with `plink -m` or a single-quoted SSH command
+  for complex remote work.
+- Do not use double-quoted PowerShell remote loops containing variables such as
+  `$s`; PowerShell expands them locally before SSH sees the command.
+- Do not run `rsync --delete` against `/var/www/html/mirrors/` as a root target
+  unless the whole mirror tree is intentionally being rebuilt from a verified
+  source.
+- Prefer per-game deploys such as
+  `rsync -a --delete local-games/<id>/ /var/www/html/mirrors/<id>/`.
+- Use `rsync --dry-run` first for anything broad or computed.
+- If a mirror tree looks suspiciously empty, repair with the safe VM regeneration
+  flags and omit only `LAN_ARCADE_SKIP_MIRROR=1` when the mirror content itself
+  needs to be restored.

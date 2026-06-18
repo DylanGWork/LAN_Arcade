@@ -1,0 +1,7 @@
+KNavalBattle
+
+Source: https://apps.kde.org/knavalbattle/
+
+Debian package seed: knavalbattle
+
+LAN Arcade QA: PARTIAL: bwrap no-internet namespace, KNavalBattle entered single-player setup and placed a ship; a full battle/firing turn still needs proof.

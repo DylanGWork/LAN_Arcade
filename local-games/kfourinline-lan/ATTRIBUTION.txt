@@ -1,0 +1,7 @@
+KFourInLine
+
+Source: https://apps.kde.org/kfourinline/
+
+Debian package seed: kfourinline
+
+LAN Arcade QA: PASS: bwrap no-internet namespace, Easy Game was clicked and the screenshot shows a running game with a dropped piece.

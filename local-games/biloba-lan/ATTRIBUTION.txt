@@ -1,0 +1,7 @@
+Biloba Local Table
+
+Source: https://biloba.sourceforge.net/
+
+Debian package seed: biloba, biloba-data
+
+LAN Arcade QA: PASS: bwrap no-internet namespace, Biloba launched, Play was clicked, and the screenshot shows an actual board with pieces and player-turn text.

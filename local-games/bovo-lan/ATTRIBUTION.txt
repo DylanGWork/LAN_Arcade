@@ -1,0 +1,7 @@
+Bovo Gomoku
+
+Source: https://apps.kde.org/bovo/
+
+Debian package seed: bovo
+
+LAN Arcade QA: PASS: bwrap no-internet namespace, Bovo launched and the screenshot shows multiple X/O stones after input.

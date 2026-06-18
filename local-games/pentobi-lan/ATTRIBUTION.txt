@@ -1,0 +1,7 @@
+Pentobi
+
+Source: https://pentobi.sourceforge.io
+
+Debian package seed: pentobi
+
+LAN Arcade QA: PASS: bwrap no-internet namespace, Pentobi launched and the screenshot shows an active board with placed pieces.

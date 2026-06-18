@@ -1,0 +1,7 @@
+Kigo + GNU Go
+
+Source: https://apps.kde.org/kigo/
+
+Debian package seed: kigo, gnugo
+
+LAN Arcade QA: PASS: bwrap no-internet namespace, Kigo started a 9x9 game, GNU Go replied, and the move list shows real moves.

@@ -1,0 +1,7 @@
+XFrisk Risk Table
+
+Source: https://www.tuxick.net/xfrisk/
+
+Debian package seed: xfrisk
+
+LAN Arcade QA: PARTIAL: bwrap no-internet namespace, risk helper started friskserver, AIs, and xfrisk client; the screenshot shows map/setup and registered clients, but no actual turn yet.
