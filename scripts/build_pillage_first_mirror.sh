@@ -54,7 +54,7 @@ docker run --rm \
   -v "$PWD:/work" \
   -w /work \
   node:24-bookworm \
-  bash -lc 'npx -y npm@11.16.0 ci --ignore-scripts && npx -y npm@11.16.0 run -w @pillage-first/web build'
+  bash -lc 'npx -y npm@11.16.0 ci --ignore-scripts && npx -y npm@11.16.0 run inject-graphics && npx -y npm@11.16.0 run -w @pillage-first/web build'
 
 python3 - <<'PY'
 from pathlib import Path
@@ -92,6 +92,10 @@ for path in list(root.rglob('*.html')) + [root / 'manifest.webmanifest']:
     path.write_text(s)
 random_uuid_polyfill = '''(()=>{const g=globalThis;let c=g.crypto;if(!c){try{Object.defineProperty(g,"crypto",{value:{},configurable:true});c=g.crypto;}catch{c={};g.crypto=c;}}const make=()=>{const b=new Uint8Array(16);if(c&&typeof c.getRandomValues==="function")c.getRandomValues(b);else for(let i=0;i<16;i+=1)b[i]=Math.floor(Math.random()*256);b[6]=b[6]&15|64;b[8]=b[8]&63|128;const h=Array.from(b,v=>v.toString(16).padStart(2,"0"));return `${h.slice(0,4).join("")}-${h.slice(4,6).join("")}-${h.slice(6,8).join("")}-${h.slice(8,10).join("")}-${h.slice(10).join("")}`;};if(c&&typeof c.randomUUID!=="function"){try{Object.defineProperty(c,"randomUUID",{value:make,configurable:true});}catch{try{c.randomUUID=make;}catch{}}}})();
 '''
+def prefix_graphics_pack_urls(text):
+    text = text.replace('/graphic-packs/', f'{prefix}/graphic-packs/')
+    text = text.replace(f'{prefix}{prefix}/graphic-packs/', f'{prefix}/graphic-packs/')
+    return text
 for path in root.rglob('*.js'):
     s = path.read_text(errors='ignore')
     ns = s.replace('`/landing/${', '`/mirrors/pillage-first/landing/${')
@@ -106,6 +110,12 @@ for path in root.rglob('*.js'):
     ns = ns.replace('fetch(`/api/discord-members?code=Ep7NKVXUZA`)', 'Promise.resolve({json:async()=>({memberCount:217})})')
     if not ns.startswith('(()=>{const g=globalThis;let c=g.crypto;'):
         ns = random_uuid_polyfill + ns
+    ns = prefix_graphics_pack_urls(ns)
+    if ns != s:
+        path.write_text(ns)
+for path in root.rglob('*.css'):
+    s = path.read_text(errors='ignore')
+    ns = prefix_graphics_pack_urls(s)
     if ns != s:
         path.write_text(ns)
 for path in root.rglob('*.map'):

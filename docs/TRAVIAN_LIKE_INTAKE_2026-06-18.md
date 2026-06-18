@@ -8,7 +8,7 @@ Live now:
 - The arcade catalog entry is `pillage-first-lan`, a hub page that links to the live mirror so safe metadata regeneration will not overwrite the built upstream app.
 - Build/rebuild script: `scripts/build_pillage_first_mirror.sh`.
 - Upstream: `https://github.com/jurerotar/Pillage-First-Ask-Questions-Later`, commit `54451093040b3934382fa585be2b61f26a653bfb`, license `AGPL-3.0-or-later`.
-- LAN build patch: Vite/manifest paths use `/mirrors/pillage-first/`; prerendered HTML is patched for subpath hosting; landing screenshots are copied from upstream `.github/assets`; automatic PeerJS advertiser is removed from `root.tsx` so the app does not attempt background cloud discovery on page load; generated JS gets a `crypto.randomUUID` fallback for non-localhost origins.
+- LAN build patch: Vite/manifest paths use `/mirrors/pillage-first/`; prerendered HTML is patched for subpath hosting; the official `@pillage-first/graphics` pack is injected and rewritten under `/mirrors/pillage-first/graphic-packs/`; landing screenshots are copied from upstream `.github/assets`; automatic PeerJS advertiser is removed from `root.tsx` so the app does not attempt background cloud discovery on page load; generated JS gets a `crypto.randomUUID` fallback for non-localhost origins.
 
 Cached candidates, not live:
 
@@ -36,6 +36,7 @@ Regression review on 2026-06-18:
   - `qa/reports/pillage-first-live-smoke-20260618T083937Z`
   - `qa/reports/pillage-first-live-smoke-20260618T084057Z`
 - Recent arcade-entry sweep against the real LAN HTTPS catalog passed for 36 newly added entries in both desktop and mobile profiles: `qa/reports/recent-lan-review-20260618T0843Z`.
+- Graphics review found the official `@pillage-first/graphics` AVIF pack was not being copied by the LAN build; rebuilds now deploy it and rewrite `/graphic-packs/` URLs for subpath hosting.
 
 Known client note:
 
