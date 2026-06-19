@@ -1,0 +1,4 @@
+LBreakoutHD
+Source: https://packages.debian.org/bookworm/lbreakouthd
+Packages: lbreakouthd, lbreakouthd-data
+QA: partial - Reached LBreakoutHD menu/level with nonblank screenshot.

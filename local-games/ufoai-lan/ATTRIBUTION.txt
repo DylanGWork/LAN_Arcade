@@ -1,0 +1,4 @@
+UFO: Alien Invasion
+Source: https://packages.debian.org/bookworm/ufoai
+Packages: ufoai, ufoai-common, ufoai-data, ufoai-maps, ufoai-misc, ufoai-sound, ufoai-textures, ufoai-music
+QA: partial - Reached UFO:AI campaign/menu screen with nonblank screenshot.

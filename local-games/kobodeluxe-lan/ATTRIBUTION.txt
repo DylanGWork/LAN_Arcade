@@ -1,0 +1,4 @@
+Kobo Deluxe
+Source: https://packages.debian.org/bookworm/kobodeluxe
+Packages: kobodeluxe, kobodeluxe-data
+QA: partial - Reached Kobo Deluxe menu/level with nonblank screenshot.

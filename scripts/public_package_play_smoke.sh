@@ -123,3 +123,14 @@ run_game enigma-lan "/usr/games/enigma" "xdotool key Return; sleep 1; xdotool ke
 run_game pushover-lan "/usr/games/pushover" "xdotool key Return; sleep 1; xdotool key Return" 8 "Pushover menu/level" PARTIAL
 run_game micropolis-lan "/usr/games/micropolis" "xdotool key Return; sleep 1; xdotool mousemove 450 360 click 1" 8 "Micropolis city window" PARTIAL
 run_game simutrans-lan "/usr/games/simutrans -nosound" "xdotool key Return; sleep 1; xdotool key Return" 10 "Simutrans menu/map" PARTIAL
+
+run_game ri-li-lan "/usr/games/ri-li" "xdotool key Return; sleep 1; xdotool key Right; sleep .4; xdotool key Return" 8 "Ri-li menu/level" PARTIAL
+run_game chromium-bsu-lan "/usr/games/chromium-bsu" "xdotool key Return; sleep 1; xdotool key space; sleep .5; xdotool key Left Right space" 8 "Chromium B.S.U. menu/action screen" PARTIAL
+run_game lbreakouthd-lan "/usr/games/lbreakouthd" "xdotool key Return; sleep 1; xdotool key space; sleep .5; xdotool key Left Right" 8 "LBreakoutHD menu/level" PARTIAL
+run_game kobodeluxe-lan "/usr/games/kobodl" "xdotool key Return; sleep 1; xdotool key space; sleep .5; xdotool key Left Right space" 8 "Kobo Deluxe menu/level" PARTIAL
+run_game scorched3d-lan "/usr/games/scorched3d" "xdotool key Return; sleep 1; xdotool key Return" 14 "Scorched3D local-match/menu screen" PARTIAL
+run_game warmux-lan "/usr/games/warmux" "xdotool key Return; sleep 1; xdotool key Return" 10 "WarMUX local-match/menu screen" PARTIAL
+run_game spacezero-lan "/usr/games/spacezero" "xdotool key Return; sleep 1; xdotool key Return" 8 "SpaceZero local game/menu screen" PARTIAL
+run_game nethack-x11-lan "/usr/games/xnethack" "xdotool type Codex; sleep .2; xdotool key Return; sleep .5; xdotool key y" 8 "NetHack character/dungeon screen" PARTIAL
+run_game opencity-lan "/usr/games/opencity" "xdotool key Return; sleep 1; xdotool mousemove 500 420 click 1" 10 "OpenCity city/map screen" PARTIAL
+run_game ufoai-lan "/usr/games/ufoai +set snd_volume 0" "xdotool key Return; sleep 1; xdotool key Return" 16 "UFO:AI campaign/menu screen" PARTIAL

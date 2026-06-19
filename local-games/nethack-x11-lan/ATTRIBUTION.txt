@@ -1,0 +1,4 @@
+NetHack X11
+Source: https://packages.debian.org/bookworm/nethack-x11
+Packages: nethack-x11, nethack-common
+QA: partial - Screenshot captured but nonblank check was weak.

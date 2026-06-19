@@ -1,0 +1,4 @@
+Scorched3D
+Source: https://packages.debian.org/bookworm/scorched3d
+Packages: scorched3d, scorched3d-data
+QA: partial - Reached Scorched3D local-match/menu screen with nonblank screenshot.

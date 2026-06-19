@@ -1,0 +1,4 @@
+Ri-li
+Source: https://packages.debian.org/bookworm/ri-li
+Packages: ri-li, ri-li-data
+QA: partial - Reached Ri-li menu/level with nonblank screenshot.

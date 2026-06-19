@@ -1,0 +1,4 @@
+OpenCity
+Source: https://packages.debian.org/bookworm/opencity
+Packages: opencity, opencity-data
+QA: partial - Reached OpenCity city/map screen with nonblank screenshot.

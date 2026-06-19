@@ -1,0 +1,4 @@
+WarMUX
+Source: https://packages.debian.org/bookworm/warmux
+Packages: warmux, warmux-data
+QA: partial - Reached WarMUX local-match/menu screen with nonblank screenshot.

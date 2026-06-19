@@ -1,0 +1,4 @@
+Chromium B.S.U.
+Source: https://packages.debian.org/bookworm/chromium-bsu
+Packages: chromium-bsu, chromium-bsu-data
+QA: partial - Reached Chromium B.S.U. menu/action screen with nonblank screenshot.

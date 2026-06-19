@@ -1,0 +1,4 @@
+SpaceZero
+Source: https://packages.debian.org/bookworm/spacezero
+Packages: spacezero
+QA: partial - Screenshot captured but nonblank check was weak.
