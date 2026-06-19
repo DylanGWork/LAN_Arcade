@@ -27,6 +27,8 @@
     "qa:game": "bash scripts/qa_game_regression.sh",
     "qa:tank": "node qa/tank-arena-smoke.mjs",
     "qa:repair-assets": "node scripts/repair_missing_assets_from_report.mjs",
+    "rom:vault:build": "python3 scripts/build_private_rom_vault.py",
+    "rom:vault:smoke": "node scripts/playtest_private_rom_vault.mjs",
     "qa": "npm run qa:static && npm run qa:smoke"
   },
   "devDependencies": {

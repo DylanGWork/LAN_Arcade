@@ -1,7 +1,8 @@
 {
-  "name": "Private GBC Vault",
+  "name": "Private Emulator Vault",
   "kind": "vm-local-private-rom-wrapper",
   "containsRoms": false,
   "vaultUrl": "../private-rom-vault/",
-  "qaReportUrl": "../private-rom-vault/reports/run-full-20260614T120904Z/report.html"
+  "qaReportUrl": "../private-rom-vault/reports/latest.html",
+  "qaSummaryUrl": "../private-rom-vault/reports/qa-summary.html"
 }
