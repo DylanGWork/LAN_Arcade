@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Private DOS Classics - LAN Arcade</title>
+  <style>
+    :root{color-scheme:dark;--bg:#090d12;--panel:#121922;--line:#314357;--text:#eef6ff;--muted:#a8b8cc;--green:#35d07f;--amber:#ffca55;--blue:#5dc8ff}
+    *{box-sizing:border-box}body{margin:0;background:#090d12;color:var(--text);font-family:system-ui,-apple-system,Segoe UI,sans-serif;min-height:100vh}main{width:min(1080px,94vw);margin:0 auto;padding:28px 0 44px}.top{display:flex;justify-content:space-between;gap:14px;align-items:center;margin-bottom:18px}h1{margin:0;font-size:clamp(28px,4vw,48px);letter-spacing:0}p{color:var(--muted);line-height:1.5}.back,.button{border:1px solid var(--line);border-radius:7px;background:#182230;color:var(--text);text-decoration:none;font-weight:850;padding:10px 12px;white-space:nowrap}.hero{border:1px solid var(--line);border-radius:8px;background:#121922;padding:20px;display:grid;gap:12px}.actions{display:flex;gap:10px;flex-wrap:wrap}.button.primary{background:#1d7d4e;border-color:#2ba462}.button.report{background:#193047;border-color:#2f607f}.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:14px}.stat{border:1px solid var(--line);border-radius:8px;background:#0e151f;padding:12px}.stat strong{display:block;color:#fff;font-size:26px}.notice{border-left:4px solid var(--amber);background:#18150b;border-radius:7px;padding:11px 12px;color:#f2ddb7;margin-top:14px}.list{border:1px solid var(--line);border-radius:8px;background:#101821;margin-top:14px;padding:14px}.list h2{font-size:18px;margin:0 0 8px}.list ul{margin:0;padding-left:20px;color:var(--muted);line-height:1.55}@media(max-width:760px){.top{display:block}.back{display:block;text-align:center;margin-top:12px}.grid{grid-template-columns:1fr 1fr}.actions{display:grid}.button{text-align:center}}@media(max-width:460px){.grid{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <main>
+    <div class="top">
+      <div>
+        <h1>Private DOS Classics</h1>
+        <p>VM-local DOS shelf built from Dylan's private tycoon intake.</p>
+      </div>
+      <a class="back" href="../games/">Back to Arcade</a>
+    </div>
+    <section class="hero">
+      <p>This catalog card is safe to keep in GitHub because it contains no DOS game archives. Playable packages are generated on the GannanNet VM when the private DOS source cache exists. The current deployed shelf has metadata and screenshots, but packages are held until the private source cache is restored.</p>
+      <div class="actions">
+        <a class="button primary" href="../private-dos-vault/">Open DOS Shelf</a>
+        <a class="button report" href="../private-dos-vault/manifest.json">Manifest</a>
+      </div>
+      <div class="grid">
+        <div class="stat"><strong>1</strong><span>historical smoke pass</span></div>
+        <div class="stat"><strong>0</strong><span>packages live</span></div>
+        <div class="stat"><strong>2</strong><span>blocked/held titles</span></div>
+        <div class="stat"><strong>NFS</strong><span>source restore needed</span></div>
+      </div>
+    </section>
+    <div class="notice">The shelf labels partial and blocked games clearly. SimCity Classic has historical gameplay proof, but browser play is paused until the private DOS source cache is restored and the vault can be rebuilt.</div>
+    <section class="list">
+      <h2>How To Play</h2>
+      <ul>
+        <li>Open the DOS shelf to review status, screenshots, and source notes. Browser Play buttons return after the private package source cache is restored.</li>
+        <li>Click inside the emulator before using the keyboard or mouse.</li>
+        <li>After packages are restored, if the browser blocks the threaded DOSBox core, use the package download on the same page with a local DOSBox install.</li>
+        <li>Native EXE downloads are not the first path for these DOS games; the intended path is a VM-generated local browser package.</li>
+      </ul>
+    </section>
+  </main>
+</body>
+</html>

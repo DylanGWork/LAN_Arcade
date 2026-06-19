@@ -1,0 +1,10 @@
+{
+  "name": "Private DOS Classics",
+  "kind": "vm-local-private-dos-wrapper",
+  "containsGameArchives": false,
+  "vaultUrl": "../private-dos-vault/",
+  "manifestUrl": "../private-dos-vault/manifest.json",
+  "builder": "npm run dos:vault:build",
+  "currentStatus": "source-cache-missing",
+  "sourceCache": "/srv/lan-arcade/native-downloads/intake/private-tycoon"
+}

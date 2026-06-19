@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Private Emulator Vault - LAN Arcade</title>
+  <title>Private Game Boy Vault - LAN Arcade</title>
   <style>
     :root{color-scheme:dark;--bg:#090d12;--panel:#121922;--line:#314357;--text:#eef6ff;--muted:#a8b8cc;--green:#35d07f;--amber:#ffca55;--blue:#5dc8ff}
     *{box-sizing:border-box}body{margin:0;background:linear-gradient(180deg,#101820,#090d12);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,sans-serif;min-height:100vh}main{width:min(1080px,94vw);margin:0 auto;padding:28px 0 44px}.top{display:flex;justify-content:space-between;gap:14px;align-items:center;margin-bottom:18px}h1{margin:0;font-size:clamp(28px,4vw,48px);letter-spacing:0}p{color:var(--muted);line-height:1.5}.back,.button{border:1px solid var(--line);border-radius:7px;background:#182230;color:var(--text);text-decoration:none;font-weight:850;padding:10px 12px;white-space:nowrap}.hero{border:1px solid var(--line);border-radius:8px;background:#121922;padding:20px;display:grid;gap:12px}.actions{display:flex;gap:10px;flex-wrap:wrap}.button.primary{background:#1d7d4e;border-color:#2ba462}.button.report{background:#193047;border-color:#2f607f}.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:14px}.stat{border:1px solid var(--line);border-radius:8px;background:#0e151f;padding:12px}.stat strong{display:block;color:#fff;font-size:26px}.notice{border-left:4px solid var(--amber);background:#18150b;border-radius:7px;padding:11px 12px;color:#f2ddb7;margin-top:14px}.list{border:1px solid var(--line);border-radius:8px;background:#101821;margin-top:14px;padding:14px}.list h2{font-size:18px;margin:0 0 8px}.list ul{margin:0;padding-left:20px;color:var(--muted);line-height:1.55}@media(max-width:760px){.top{display:block}.back{display:block;text-align:center;margin-top:12px}.grid{grid-template-columns:1fr 1fr}.actions{display:grid}.button{text-align:center}}@media(max-width:460px){.grid{grid-template-columns:1fr}}
@@ -11,7 +11,7 @@
 </head>
 <body>
   <main>
-    <div class="top"><div><h1>Private Emulator Vault</h1><p>VM-local Game Boy and Game Boy Color shelf built from Dylan's private archive.</p></div><a class="back" href="../games/">Back to Arcade</a></div>
+    <div class="top"><div><h1>Private Game Boy Vault</h1><p>VM-local Game Boy and Game Boy Color shelf built from Dylan's private archive.</p></div><a class="back" href="../games/">Back to Arcade</a></div>
     <section class="hero">
       <p>This catalog card is safe to keep in GitHub because it contains no ROM files. The playable vault, ROMs, and generated QA screenshots are stored only on the GannanNet VM under <code>/var/www/html/mirrors/private-rom-vault</code>.</p>
       <div class="actions">
@@ -26,7 +26,7 @@
         <div class="stat"><strong>0</strong><span>sample failures</span></div>
       </div>
     </section>
-    <div class="notice">The private ROM vault should not be pushed to GitHub. Use the no-token smoke runner to curate a recommended shelf before presenting this as a polished public-facing library.</div>
+    <div class="notice">The private ROM vault should not be pushed to GitHub. Open the vault for title-level search across the selected shelf instead of flooding the main arcade grid.</div>
     <section class="list">
       <h2>Current QA Notes</h2>
       <ul>

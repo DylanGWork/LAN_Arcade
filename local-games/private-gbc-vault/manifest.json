@@ -1,5 +1,5 @@
 {
-  "name": "Private Emulator Vault",
+  "name": "Private Game Boy Vault",
   "kind": "vm-local-private-rom-wrapper",
   "containsRoms": false,
   "vaultUrl": "../private-rom-vault/",

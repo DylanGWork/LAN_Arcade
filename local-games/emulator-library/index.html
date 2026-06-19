@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Emulator Library - LAN Arcade</title>
+  <style>
+    :root{color-scheme:dark;--bg:#090d12;--panel:#121922;--line:#314357;--text:#eef6ff;--muted:#a8b8cc;--green:#35d07f;--amber:#ffca55;--blue:#5dc8ff}
+    *{box-sizing:border-box}body{margin:0;background:#090d12;color:var(--text);font-family:system-ui,-apple-system,Segoe UI,sans-serif;min-height:100vh}main{width:min(1180px,94vw);margin:0 auto;padding:28px 0 44px}.top{display:flex;justify-content:space-between;gap:14px;align-items:flex-start;margin-bottom:18px}h1{margin:0;font-size:clamp(30px,5vw,56px);letter-spacing:0}p{color:var(--muted);line-height:1.5}.back,.button{border:1px solid var(--line);border-radius:7px;background:#182230;color:var(--text);text-decoration:none;font-weight:850;padding:10px 12px;white-space:nowrap;display:inline-flex;align-items:center;justify-content:center}.hero{border:1px solid var(--line);border-radius:8px;background:#121922;padding:20px;margin-bottom:16px}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.shelf{border:1px solid var(--line);border-radius:8px;background:#101821;overflow:hidden}.media{aspect-ratio:16/7;background:#07121d;display:grid;place-items:center;border-bottom:1px solid var(--line);position:relative}.media strong{font-size:clamp(34px,8vw,76px);color:#293d52;letter-spacing:.02em}.badge{position:absolute;top:12px;left:12px;border-radius:999px;background:#14341f;color:#b9ffd2;border:1px solid #2da35d;font-weight:900;padding:6px 10px}.body{padding:16px}h2{font-size:24px;margin:0 0 6px}.meta{color:#bdd2e8;text-transform:uppercase;font-size:12px;letter-spacing:.08em}.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:12px 0}.stat{border:1px solid var(--line);border-radius:8px;background:#0d151f;padding:10px}.stat strong{display:block;font-size:24px}.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.primary{background:#1d7d4e;border-color:#35d07f}.notice{border-left:4px solid var(--amber);background:#18150b;border-radius:7px;padding:11px 12px;color:#f2ddb7;margin-top:14px}@media(max-width:800px){.top{display:block}.back{width:100%;margin-top:10px}.grid{grid-template-columns:1fr}.stats{grid-template-columns:1fr 1fr}.actions{display:grid}.button{width:100%}}@media(max-width:480px){.stats{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <main>
+    <div class="top">
+      <div>
+        <h1>Emulator Library</h1>
+        <p>Nested shelves for large retro libraries, kept separate from the main game grid so the arcade stays searchable.</p>
+      </div>
+      <a class="back" href="../games/">Back to Arcade</a>
+    </div>
+    <section class="hero">
+      <p>This is the front door for emulator-sized collections. Main library search now points here for broad terms, while each shelf has its own deeper search for hundreds of titles.</p>
+    </section>
+    <section class="grid">
+      <article class="shelf">
+        <div class="media"><strong>GB</strong><span class="badge">Searchable</span></div>
+        <div class="body">
+          <h2>Game Boy Vault</h2>
+          <p class="meta">GB / GBC private shelf</p>
+          <p>Large VM-local retro shelf generated from Dylan's private archive. Use the vault search for individual titles instead of flooding the main arcade page.</p>
+          <div class="stats">
+            <div class="stat"><strong>743</strong><span>selected titles</span></div>
+            <div class="stat"><strong>2,184</strong><span>raw archive ROMs</span></div>
+            <div class="stat"><strong>3</strong><span>latest sample pass</span></div>
+          </div>
+          <div class="actions">
+            <a class="button primary" href="../private-rom-vault/">Open Vault</a>
+            <a class="button" href="../private-gbc-vault/">Shelf Notes</a>
+          </div>
+        </div>
+      </article>
+      <article class="shelf">
+        <div class="media"><strong>DOS</strong><span class="badge">Restore Needed</span></div>
+        <div class="body">
+          <h2>DOS Classics</h2>
+          <p class="meta">SimCity / SimFarm / Railroad Tycoon</p>
+          <p>Private DOS classics shelf with historical smoke notes and screenshots. Browser packages are held until the private DOS source cache is restored or reacquired.</p>
+          <div class="stats">
+            <div class="stat"><strong>6</strong><span>tracked titles</span></div>
+            <div class="stat"><strong>1</strong><span>historical smoke pass</span></div>
+            <div class="stat"><strong>0</strong><span>packages live</span></div>
+          </div>
+          <div class="actions">
+            <a class="button primary" href="../private-dos-vault/">Open DOS Shelf</a>
+            <a class="button" href="../private-dos-classics/">Shelf Notes</a>
+          </div>
+        </div>
+      </article>
+    </section>
+    <div class="notice">Generated ROMs, DOS packages, and screenshots live on the VM under <code>/var/www/html/mirrors</code>. Git keeps only wrappers/tooling and intake notes; DOS packages need the private source cache restored before rebuild.</div>
+  </main>
+</body>
+</html>

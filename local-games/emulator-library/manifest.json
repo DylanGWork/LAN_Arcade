@@ -1,0 +1,9 @@
+{
+  "name": "Emulator Library",
+  "kind": "vm-local-emulator-hub",
+  "containsGameArchives": false,
+  "shelves": [
+    {"name": "Game Boy Vault", "url": "../private-rom-vault/", "count": 743},
+    {"name": "DOS Classics", "url": "../private-dos-vault/", "count": 6}
+  ]
+}

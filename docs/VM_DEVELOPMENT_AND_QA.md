@@ -521,3 +521,37 @@ Rules:
 - If a mirror tree looks suspiciously empty, repair with the safe VM regeneration
   flags and omit only `LAN_ARCADE_SKIP_MIRROR=1` when the mirror content itself
   needs to be restored.
+
+## Emulator Shelves And DOSBox Pure
+
+Large emulator collections should be exposed as nested shelves instead of as
+hundreds of top-level catalog cards. The current VM-local shelves are:
+
+```text
+/var/www/html/mirrors/private-rom-vault   # generated Game Boy/GBC shelf
+/var/www/html/mirrors/private-dos-vault   # generated DOSBox Pure shelf
+```
+
+Keep ROMs, DOS packages, screenshots, and generated manifests out of Git unless
+Dylan explicitly changes the storage policy. Git should contain only wrappers,
+builder scripts, and intake notes.
+
+The DOSBox Pure EmulatorJS core requires threaded WebAssembly, so the DOS vault
+must be served over HTTPS with cross-origin isolation headers. On GannanNet the
+active host-side nginx config is:
+
+```text
+/home/dylan/wordpress/nginx-conf/nginx.conf
+```
+
+The scoped `/mirrors/private-dos-vault/` block should include:
+
+```nginx
+add_header Cross-Origin-Opener-Policy same-origin always;
+add_header Cross-Origin-Embedder-Policy require-corp always;
+add_header Cross-Origin-Resource-Policy same-origin always;
+```
+
+The `/mirrors/emulatorjs-runtime/` block should at least provide
+`Cross-Origin-Resource-Policy: same-origin`. Without these headers, the browser
+will show an EmulatorJS error and will not request the DOS package.
