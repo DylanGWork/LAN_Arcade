@@ -555,3 +555,52 @@ add_header Cross-Origin-Resource-Policy same-origin always;
 The `/mirrors/emulatorjs-runtime/` block should at least provide
 `Cross-Origin-Resource-Policy: same-origin`. Without these headers, the browser
 will show an EmulatorJS error and will not request the DOS package.
+
+## Pillage First SPA Fallback And Deploy Safety
+
+Pillage First is a static SPA under:
+
+```text
+/var/www/html/mirrors/pillage-first
+```
+
+Deep routes such as `/mirrors/pillage-first/game/<world>/<village>/resources`
+must serve `/mirrors/pillage-first/index.html`. If `index.html` is missing, nginx
+can return `500 Internal Server Error` with this log message:
+
+```text
+rewrite or internal redirection cycle while internally redirecting to "/mirrors/pillage-first/index.html"
+```
+
+On GannanNet, the active nginx config is:
+
+```text
+/home/dylan/wordpress/nginx-conf/nginx.conf
+```
+
+The Pillage First block should use `root /`, not an `alias` fallback, so the SPA
+fallback resolves against the container's `/mirrors` bind mount:
+
+```nginx
+location ^~ /mirrors/pillage-first/ {
+    if ($scheme = http) {
+        return 302 https://$host$request_uri;
+    }
+    root /;
+    index index.html;
+    try_files $uri $uri/ /mirrors/pillage-first/index.html;
+}
+```
+
+Use `scripts/build_pillage_first_mirror.sh` for rebuilds. It stages the complete
+client tree, verifies `index.html` and JS assets exist, then swaps the staged tree
+into place. Do not manually repair only `landing/`; that creates a broken app
+that still passes shallow screenshot-asset checks.
+
+Required checks after Pillage First repair or nginx edits:
+
+```bash
+curl -skI https://127.0.0.1/mirrors/pillage-first/game/s-test/v-1/resources
+PILLAGE_FIRST_BASE_URLS="https://127.0.0.1/mirrors/pillage-first/,https://192.168.1.106/mirrors/pillage-first/" node qa/pillage-first-live-smoke.mjs
+npm run qa:static
+```

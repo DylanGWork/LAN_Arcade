@@ -122,14 +122,20 @@ for path in root.rglob('*.map'):
     path.unlink()
 PY
 
-mkdir -p "$DEST"
-rsync -a --delete apps/web/build/client/ "$DEST/"
-mkdir -p "$DEST/landing"
-rsync -a .github/assets/image-[1-5]-*-202603240613.* "$DEST/landing/"
+STAGE="$(mktemp -d "${DEST}.stage.XXXXXX")"
+BACKUP=""
+cleanup() {
+  if [ -n "${STAGE:-}" ] && [ -d "$STAGE" ]; then
+    rm -rf "$STAGE"
+  fi
+}
+trap cleanup EXIT
 
-python3 - <<'PY'
-from pathlib import Path
-Path('/var/www/html/mirrors/pillage-first/ATTRIBUTION.txt').write_text('''Pillage First! (Ask Questions Later)
+rsync -a apps/web/build/client/ "$STAGE/"
+mkdir -p "$STAGE/landing"
+rsync -a .github/assets/image-[1-5]-*-202603240613.* "$STAGE/landing/"
+cat > "$STAGE/ATTRIBUTION.txt" <<'EOF'
+Pillage First! (Ask Questions Later)
 Upstream: https://github.com/jurerotar/Pillage-First-Ask-Questions-Later
 Upstream commit mirrored for this LAN build: 54451093040b3934382fa585be2b61f26a653bfb
 License: GNU Affero General Public License v3.0 or later (AGPL-3.0-or-later)
@@ -141,7 +147,26 @@ LAN Arcade build notes:
 - Upstream community/source links remain informational; the playable path does not require an account or internet.
 
 Source cache: /mirrors/games/downloads/native/travian-like/pillage-first/
-''')
-PY
+EOF
+touch "$STAGE/.lan-arcade-ready"
+test -s "$STAGE/index.html"
+test -d "$STAGE/assets"
+find "$STAGE/assets" -type f -name '*.js' -print -quit | grep -q .
+
+BACKUP="${DEST}.previous-$(date -u +%Y%m%dT%H%M%SZ)"
+if [ -e "$DEST" ]; then
+  mv "$DEST" "$BACKUP"
+fi
+if mv "$STAGE" "$DEST"; then
+  STAGE=""
+  if [ -n "$BACKUP" ] && [ -e "$BACKUP" ]; then
+    rm -rf "$BACKUP"
+  fi
+else
+  if [ -n "$BACKUP" ] && [ -e "$BACKUP" ] && [ ! -e "$DEST" ]; then
+    mv "$BACKUP" "$DEST"
+  fi
+  exit 1
+fi
 
 printf 'Pillage First deployed to %s\n' "$DEST"
