@@ -13,3 +13,7 @@ services/arcade-api/dist/
 *.sqlite
 *.sqlite-shm
 *.sqlite-wal
+game-intake/.scratch/
+game-intake/downloads/
+game-intake/raw/
+game-intake/tmp/
