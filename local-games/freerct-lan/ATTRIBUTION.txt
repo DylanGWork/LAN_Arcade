@@ -1,0 +1,4 @@
+FreeRCT
+Source: https://freerct.net/ and https://github.com/FreeRCT/FreeRCT/releases/tag/0.1
+Cached file: /var/www/html/mirrors/games/downloads/native/freerct/0.1/freerct-0.1-linux-amd64.deb
+QA: PARTIAL - offline launch screenshot, first build action pending.

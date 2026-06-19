@@ -817,3 +817,9 @@ The package cache was written to the NFS native shelf under /var/www/html/mirror
 QA after deploy: npm run qa:static passed 98/98 catalog entries with 0 external entrypoint refs; npm run qa:smoke:catalog passed 98/98 from localhost. LAN-origin desktop and mobile hub smokes passed for the 10 new entries under qa/reports/public-package-lan-origin/20260619T1748-lan-origin-*. Native no-network Xvfb smoke launched all 10 new games and saved screenshots, but they remain PARTIAL until each has stronger first-action gameplay proof.
 
 Safe regeneration still emits missing-asset warnings for several older native hubs whose download/doc shelves were moved or hidden by the NFS transition. The generic public catalog currently passes, but those older hub download shelves need a dedicated repair/audit pass before claiming every heavy/native installer is complete.
+
+## FreeRCT Upstream Release Intake - 2026-06-20
+
+Added FreeRCT as an upstream-release hub rather than a Debian-main package hub. Official FreeRCT 0.1 Linux amd64 package and upstream checksum are cached on the NFS native shelf at /var/www/html/mirrors/games/downloads/native/freerct/0.1/; sha256sum -c passed before install. The VM installed that local package only to run a no-network Xvfb launch smoke.
+
+QA status is PARTIAL: /usr/games/freerct launched under bwrap --unshare-net and produced a non-empty screenshot at qa/reports/upstream-release-smoke/freerct-lan-20260619T180322Z, but first path/ride placement proof is still pending. After safe regeneration, npm run qa:static and npm run qa:smoke:catalog passed 99/99 catalog entries; LAN-origin desktop/mobile hub smoke passed at qa/reports/freerct-lan-origin-20260619T1810-*. The remaining clean upstream-release queue is Tuxemon, Pioneer Space Sim, and Cytopia, but those need release/runtime-specific handling rather than the Debian package generator.
