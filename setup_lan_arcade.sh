@@ -924,6 +924,8 @@ write_public_index() {
       padding: 7px 9px;
       cursor: pointer;
       text-align: left;
+      text-decoration: none;
+      font: inherit;
     }
     .side-button:hover { background: #182023; color: var(--text); }
     .side-button.active { background: var(--green-soft); border-color: rgba(88,214,141,.42); color: #dfffea; }
@@ -1126,6 +1128,10 @@ write_public_index() {
         <div id="profileList" class="side-list"></div>
       </section>
       <section class="side-section">
+        <h2 class="side-title">Shelves</h2>
+        <div id="shelfList" class="side-list"></div>
+      </section>
+      <section class="side-section">
         <h2 class="side-title">Genres</h2>
         <input id="genreSearch" class="genre-search" type="search" placeholder="Find genre..." autocomplete="off">
         <div id="genreList" class="side-list"></div>
@@ -1179,7 +1185,15 @@ write_public_index() {
         { id: "native", label: "Native / server games", note: "Installers, LAN services, heavy hubs" },
         { id: "family", label: "Family / phone friendly", note: "Kid-friendly and mobile-leaning" }
       ];
-      var featuredIds = ["private-gbc-vault", "evolab", "gene-garden", "apotris-gba", "unciv-lan", "mindustry-lan", "zero-ad-lan", "wesnoth-lan", "openttd-lan", "life-engine"];
+      var shelves = [
+        { id: "emulator-library", label: "Emulator Library", note: "GB, GBC, DOS", href: "../emulator-library/" },
+        { id: "game-boy-vault", label: "Game Boy Vault", note: "743 titles", href: "../private-rom-vault/" },
+        { id: "dos-classics", label: "DOS Classics", note: "Restore queue", href: "../private-dos-classics/" },
+        { id: "board-games", label: "Board Games", note: "Filter", action: "category", value: "board-game" },
+        { id: "native-server", label: "Native / Server", note: "Filter", action: "profile", value: "native" },
+        { id: "retro-shelf", label: "Retro Shelf", note: "Filter", action: "profile", value: "retro" }
+      ];
+      var featuredIds = ["pillage-first-lan", "unciv-lan", "mindustry-lan", "evolab", "gene-garden", "zero-ad-lan", "wesnoth-lan", "openttd-lan", "life-engine", "apotris-gba"];
       var state = {
         catalog: { games: [], categories: [] },
         filters: { disabled_categories: [], disabled_games: [] },
@@ -1342,6 +1356,50 @@ write_public_index() {
           list.appendChild(button);
         });
       }
+      function categoryCount(categoryId) {
+        return (Array.isArray(state.catalog.games) ? state.catalog.games : []).filter(function (game) {
+          return gameEnabled(game) && toStringArray(game.categories).indexOf(categoryId) >= 0;
+        }).length;
+      }
+      function shelfCount(shelf) {
+        if (shelf.action === "profile") {
+          return (Array.isArray(state.catalog.games) ? state.catalog.games : []).filter(function (game) { return gameEnabled(game) && matchesProfile(game, shelf.value); }).length;
+        }
+        if (shelf.action === "category") return categoryCount(shelf.value);
+        return shelf.note;
+      }
+      function shelfActive(shelf) {
+        if (shelf.action === "profile") return state.profile === shelf.value && !state.category;
+        if (shelf.action === "category") return state.category === shelf.value;
+        return false;
+      }
+      function activateShelf(shelf) {
+        if (shelf.action === "profile") {
+          state.profile = shelf.value;
+          state.category = "";
+        } else if (shelf.action === "category") {
+          state.profile = "all";
+          state.category = shelf.value;
+        }
+        state.query = "";
+        document.getElementById("searchInput").value = "";
+        render();
+      }
+      function renderShelves() {
+        var list = document.getElementById("shelfList"); clear(list);
+        shelves.forEach(function (shelf) {
+          var item = shelf.href ? document.createElement("a") : document.createElement("button");
+          item.className = "side-button" + (shelfActive(shelf) ? " active" : "");
+          if (shelf.href) item.href = shelf.href;
+          if (!shelf.href) {
+            item.type = "button";
+            item.addEventListener("click", function () { activateShelf(shelf); });
+          }
+          var label = document.createElement("span"); label.textContent = shelf.label; item.appendChild(label);
+          var count = document.createElement("span"); count.className = "count"; count.textContent = shelfCount(shelf); item.appendChild(count);
+          list.appendChild(item);
+        });
+      }
       function renderGenres(baseGamesForProfile) {
         var list = document.getElementById("genreList"); var labels = categoryLabelMap(state.catalog); var counts = Object.create(null); clear(list);
         baseGamesForProfile.forEach(function (game) { toStringArray(game.categories).forEach(function (category) { counts[category] = (counts[category] || 0) + 1; }); });
@@ -1380,6 +1438,7 @@ write_public_index() {
         var profilePool = allEnabled.filter(function (game) { return matchesProfile(game, state.profile); });
         var visible = sortGames(filteredBaseGames());
         renderProfiles();
+        renderShelves();
         renderGenres(profilePool);
         renderStatus(visible, profilePool, allEnabled);
         var featuredGrid = document.getElementById("featuredGrid"); clear(featuredGrid);
