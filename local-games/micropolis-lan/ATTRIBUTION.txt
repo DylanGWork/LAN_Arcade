@@ -1,0 +1,4 @@
+Micropolis
+Source: https://packages.debian.org/bookworm/micropolis
+Packages: micropolis, micropolis-data
+QA: partial - Reached Micropolis city window with nonblank screenshot.

@@ -1,0 +1,4 @@
+Frozen Bubble
+Source: https://packages.debian.org/bookworm/frozen-bubble
+Packages: frozen-bubble, frozen-bubble-data
+QA: partial - Reached Frozen Bubble menu/gameplay with nonblank screenshot.

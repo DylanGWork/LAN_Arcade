@@ -1,0 +1,4 @@
+Bos Wars
+Source: https://packages.debian.org/bookworm/boswars
+Packages: boswars, boswars-data
+QA: partial - Reached Bos Wars menu/skirmish screen with nonblank screenshot.

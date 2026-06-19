@@ -1,0 +1,4 @@
+Drascula: The Vampire Strikes Back
+Source: https://www.scummvm.org/games/#games-drascula
+Packages: scummvm, scummvm-data, drascula, drascula-music
+QA: pass - Reached ScummVM title/intro with nonblank screenshot.

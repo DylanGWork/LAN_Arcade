@@ -1,0 +1,4 @@
+Colobot: Gold Edition
+Source: https://colobot.info/
+Packages: colobot, colobot-common, colobot-common-sounds, colobot-common-textures
+QA: partial - Reached Colobot menu/tutorial screen with nonblank screenshot.

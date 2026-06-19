@@ -1,0 +1,4 @@
+Flight of the Amazon Queen
+Source: https://www.scummvm.org/games/#games-queen
+Packages: scummvm, scummvm-data, flight-of-the-amazon-queen
+QA: partial - Screenshot captured but nonblank check was weak.

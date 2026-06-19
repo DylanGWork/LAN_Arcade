@@ -1,0 +1,4 @@
+Pushover
+Source: https://packages.debian.org/bookworm/pushover
+Packages: pushover, pushover-data
+QA: partial - Reached Pushover menu/level with nonblank screenshot.

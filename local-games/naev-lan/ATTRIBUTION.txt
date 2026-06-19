@@ -1,0 +1,4 @@
+Naev
+Source: https://naev.org/
+Packages: naev, naev-data
+QA: partial - Reached Naev menu/start screen with nonblank screenshot.

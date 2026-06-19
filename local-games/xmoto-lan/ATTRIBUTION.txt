@@ -1,0 +1,4 @@
+X-Moto
+Source: https://packages.debian.org/bookworm/xmoto
+Packages: xmoto, xmoto-data
+QA: partial - Screenshot captured but nonblank check was weak.

@@ -1,0 +1,4 @@
+Fish Fillets NG
+Source: https://packages.debian.org/bookworm/fillets-ng
+Packages: fillets-ng, fillets-ng-data
+QA: partial - Reached Fish Fillets NG menu/puzzle with nonblank screenshot.

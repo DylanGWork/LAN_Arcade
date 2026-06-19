@@ -1,0 +1,4 @@
+Beneath a Steel Sky
+Source: https://www.scummvm.org/games/#games-sky
+Packages: scummvm, scummvm-data, beneath-a-steel-sky
+QA: pass - Reached ScummVM title/intro with nonblank screenshot.

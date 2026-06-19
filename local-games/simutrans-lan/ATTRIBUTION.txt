@@ -1,0 +1,4 @@
+Simutrans
+Source: https://simutrans.net/
+Packages: simutrans, simutrans-data, simutrans-pak64
+QA: partial - Reached Simutrans menu/map with nonblank screenshot.

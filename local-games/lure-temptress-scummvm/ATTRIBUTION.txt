@@ -1,0 +1,4 @@
+Lure of the Temptress
+Source: https://www.scummvm.org/games/#games-lure
+Packages: scummvm, scummvm-data, lure-of-the-temptress
+QA: pass - Reached ScummVM title/intro with nonblank screenshot.

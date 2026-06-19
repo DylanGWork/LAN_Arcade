@@ -1,0 +1,4 @@
+GNU FreeDink / Dink Smallwood
+Source: https://packages.debian.org/bookworm/freedink
+Packages: freedink, freedink-engine, freedink-data, freedink-dfarc
+QA: partial - Reached FreeDink menu/game start with nonblank screenshot.

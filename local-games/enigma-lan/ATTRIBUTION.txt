@@ -1,0 +1,4 @@
+Enigma
+Source: https://packages.debian.org/bookworm/enigma
+Packages: enigma, enigma-data, enigma-doc
+QA: partial - Reached Enigma menu/level with nonblank screenshot.

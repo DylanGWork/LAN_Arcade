@@ -797,3 +797,13 @@ qa/reports/offline-catalog-audit-20260618T202234Z-lan-after-runtime
 ```
 
 That audit found 101 strict passes, 20 warnings, and 3 hidden blockers (`farm-clicker`, `koutoftimer-idle-miner`, `solaris`) across 124 catalog entries after fixing the EmulatorJS runtime directory permissions. The board hubs were all browser-hub clean, but native status must come from the smoke scripts above, not from the generic hub smoke. Full details are in `docs/BOARD_GAME_INTAKE_2026-06-19.md`.
+
+## Public Package Intake / DOS Vault Fix - 2026-06-20
+
+Added 16 public Debian-package-backed game hubs: Beneath a Steel Sky, Flight of the Amazon Queen, Lure of the Temptress, Drascula, FreeDink, Naev, Colobot Gold, Bos Wars, Neverball, X-Moto, Frozen Bubble, Fish Fillets NG, Enigma, Pushover, Micropolis, and Simutrans. Metadata is in games.meta.sh; hubs live under local-games/*; package cache/generation is driven by scripts/public_package_batch.py; native smoke helper is scripts/public_package_play_smoke.sh; summary report is docs/PUBLIC_PACKAGE_INTAKE_2026-06-20.md. Package closures are cached outside Git on the NFS native-downloads mount under /var/www/html/mirrors/games/downloads/native/debian-bookworm-pool/.
+
+Safe VM regeneration now deploys repo-local LOCAL_DIR::... bundles even when LAN_ARCADE_SKIP_MIRROR=1, so the safe command in docs/VM_DEVELOPMENT_AND_QA.md updates generated local hubs without running the full mirror/install path. After the deploy, npm run qa:static and npm run qa:smoke:catalog passed all 88 catalog entries. Treat the generic catalog result as hub/browser coverage only; native gameplay proof for the new package games remains PASS/PARTIAL as recorded in the public-package report.
+
+The private DOS vault no longer forces HTTP users to HTTPS. The persistent nginx config is /home/dylan/wordpress/nginx-conf/nginx.conf; backup before the edit is /home/dylan/wordpress/nginx-conf/nginx.conf.bak-lan-arcade-20260619T162815Z. The webserver container was reloaded after nginx -t, and both http://127.0.0.1/mirrors/private-dos-vault/ and http://192.168.1.106/mirrors/private-dos-vault/ returned 200. The Pillage First HTTPS redirect was left intact.
+
+The NFS mount initially hid older native client caches, so Unciv 4.20.13 and Stendhal 1.49 download shelves were restored under /var/www/html/mirrors/games/downloads/native/unciv/ and /var/www/html/mirrors/games/downloads/native/stendhal/. The old full docs mirrors for Unciv/Stendhal still need repair; their hubs now avoid stale local doc links until that mirror work is redone.

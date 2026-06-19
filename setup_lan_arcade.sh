@@ -1188,7 +1188,7 @@ write_public_index() {
       var shelves = [
         { id: "emulator-library", label: "Emulator Library", note: "GB, GBC, DOS", href: "../emulator-library/" },
         { id: "game-boy-vault", label: "Game Boy Vault", note: "743 titles", href: "../private-rom-vault/" },
-        { id: "dos-classics", label: "DOS Classics", note: "Restore queue", href: "../private-dos-classics/" },
+        { id: "dos-classics", label: "DOS Classics", note: "6 tracked", href: "../private-dos-vault/" },
         { id: "board-games", label: "Board Games", note: "Filter", action: "category", value: "board-game" },
         { id: "native-server", label: "Native / Server", note: "Filter", action: "profile", value: "native" },
         { id: "retro-shelf", label: "Retro Shelf", note: "Filter", action: "profile", value: "retro" }
@@ -2693,9 +2693,51 @@ else
   configure_admin_credentials
 fi
 
+deploy_local_bundled_games() {
+  local GAME URL TARGET MARKER local_spec local_source_dir
+
+  echo "===== Deploying local bundled games into $MIRRORS_DIR ====="
+  for GAME in "${!GAMES[@]}"; do
+    URL="${GAMES[$GAME]}"
+    [[ "$URL" == LOCAL_DIR::* ]] || continue
+
+    local_spec="${URL#LOCAL_DIR::}"
+    local_source_dir="$SCRIPT_DIR/$local_spec"
+    TARGET="$MIRRORS_DIR/$GAME"
+    MARKER="$TARGET/$READY_MARKER"
+
+    if [ ! -d "$local_source_dir" ]; then
+      echo "WARN local bundled game source missing for $GAME: $local_source_dir"
+      continue
+    fi
+
+    echo "Local deploy $GAME"
+    mkdir -p "$TARGET"
+    if command -v rsync >/dev/null 2>&1; then
+      rsync -a --delete --exclude "$READY_MARKER" "$local_source_dir"/ "$TARGET"/
+    else
+      rm -rf "$TARGET"
+      mkdir -p "$TARGET"
+      shopt -s dotglob nullglob
+      cp -a "$local_source_dir"/* "$TARGET"/ 2>/dev/null || true
+      shopt -u dotglob nullglob
+    fi
+
+    promote_entrypoint_if_missing "$TARGET"
+    patch_mirror_for_offline_use "$GAME" "$TARGET"
+    if mirror_content_is_complete "$GAME" "$TARGET"; then
+      touch "$MARKER"
+    else
+      rm -f "$MARKER"
+      echo "WARN local bundled game $GAME did not pass mirror completeness checks."
+    fi
+  done
+}
+
 # ---------- Mirror each game ----------
 if [ "$LAN_ARCADE_SKIP_MIRROR" = "1" ]; then
-  echo "===== Skipping game mirroring because LAN_ARCADE_SKIP_MIRROR=1 ====="
+  echo "===== Skipping remote game mirroring because LAN_ARCADE_SKIP_MIRROR=1 ====="
+  deploy_local_bundled_games
 else
   echo "===== Mirroring games into $MIRRORS_DIR ====="
 

@@ -30,7 +30,11 @@
     "rom:vault:build": "python3 scripts/build_private_rom_vault.py",
     "rom:vault:smoke": "node scripts/playtest_private_rom_vault.mjs",
     "dos:vault:build": "python3 scripts/build_private_dos_vault.py",
-    "qa": "npm run qa:static && npm run qa:smoke"
+    "qa": "npm run qa:static && npm run qa:smoke",
+    "native:public:cache": "python3 scripts/public_package_batch.py cache",
+    "native:public:hubs": "python3 scripts/public_package_batch.py generate",
+    "native:public:all": "python3 scripts/public_package_batch.py all",
+    "native:public:smoke": "bash scripts/public_package_play_smoke.sh"
   },
   "devDependencies": {
     "@types/node": "20.19.1",
