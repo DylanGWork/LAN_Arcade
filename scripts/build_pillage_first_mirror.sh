@@ -1018,6 +1018,643 @@ tile_modal.write_text(s)
 
 PY
 
+
+python3 - <<'PY'
+from pathlib import Path
+root = Path('.')
+
+# LAN Arcade persistent reports and conservative raid defence patch.
+# Keep this separate from the upstream compatibility patch above so rebuilds
+# cannot lose player reports after troop return events are resolved/deleted.
+report_controllers = root / 'packages/api/src/http/controllers/report-controllers.ts'
+report_controllers.write_text(r"""import { z } from 'zod';
+import type { DbFacade } from '@pillage-first/utils/facades/database';
+import { createController } from '../controller';
+
+const reportTagSchema = z.enum(['read', 'archived']);
+const reportTypeSchema = z.enum([
+  'attack',
+  'raid',
+  'defence',
+  'scout-attack',
+  'scout-defence',
+  'adventure',
+  'trade',
+]);
+const reportResponseSchema = z.strictObject({
+  id: z.string(),
+  tags: z.array(reportTagSchema),
+  timestamp: z.number().int(),
+  villageId: z.number().int(),
+  type: reportTypeSchema,
+  title: z.string(),
+  body: z.string(),
+});
+
+const reportRowSchema = z.strictObject({
+  id: z.string(),
+  playerId: z.number(),
+  villageId: z.number(),
+  timestamp: z.number(),
+  type: reportTypeSchema,
+  title: z.string(),
+  body: z.string(),
+  tags: z.string(),
+});
+
+const reportEventRowSchema = z.strictObject({
+  id: z.number(),
+  timestamp: z.number(),
+  villageId: z.number().nullable(),
+  meta: z.string().nullable(),
+});
+
+type ReportEventRow = z.infer<typeof reportEventRowSchema>;
+type ReportTag = z.infer<typeof reportTagSchema>;
+type RaidResourceBundle = [number, number, number, number];
+type EventMeta = Record<string, unknown>;
+
+const ensureLanArcadeReportsTable = (database: DbFacade) => {
+  database.exec({
+    sql: `
+      CREATE TABLE IF NOT EXISTS lan_arcade_reports
+      (
+        id TEXT PRIMARY KEY,
+        player_id INTEGER NOT NULL,
+        village_id INTEGER NOT NULL,
+        timestamp INTEGER NOT NULL,
+        type TEXT NOT NULL CHECK (type IN ('attack', 'raid', 'defence', 'scout-attack', 'scout-defence', 'adventure', 'trade')),
+        title TEXT NOT NULL,
+        body TEXT NOT NULL,
+        tags TEXT NOT NULL
+      ) STRICT;
+    `,
+  });
+};
+
+const parseEventMeta = (meta: string | null): EventMeta => {
+  if (!meta) {
+    return {};
+  }
+
+  try {
+    const parsed = JSON.parse(meta);
+    return parsed && typeof parsed === 'object' ? parsed : {};
+  } catch {
+    return {};
+  }
+};
+
+const parseReportTags = (value: unknown): ReportTag[] => {
+  if (typeof value === 'string') {
+    try {
+      return parseReportTags(JSON.parse(value));
+    } catch {
+      return [];
+    }
+  }
+
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.filter(
+    (tag): tag is ReportTag => tag === 'read' || tag === 'archived',
+  );
+};
+
+const parseCarriedResources = (value: unknown): RaidResourceBundle => {
+  if (!Array.isArray(value)) {
+    return [0, 0, 0, 0];
+  }
+
+  return [0, 1, 2, 3].map((index) => {
+    const amount = Number(value[index]);
+    return Number.isFinite(amount) ? Math.max(0, Math.floor(amount)) : 0;
+  }) as RaidResourceBundle;
+};
+
+const formatLoot = ([wood, clay, iron, wheat]: RaidResourceBundle) => {
+  return `${wood} wood, ${clay} clay, ${iron} iron, ${wheat} wheat`;
+};
+
+const mapReportRow = (row: z.infer<typeof reportRowSchema>) => {
+  return reportResponseSchema.parse({
+    id: row.id,
+    tags: parseReportTags(row.tags),
+    timestamp: row.timestamp,
+    villageId: row.villageId,
+    type: row.type,
+    title: row.title,
+    body: row.body,
+  });
+};
+
+const raidReportId = (eventId: number) => `raid-${eventId}`;
+const legacyRaidReturnReportId = (eventId: number) => `raid-return-${eventId}`;
+
+const mapRaidEventToReport = (row: ReportEventRow) => {
+  const meta = parseEventMeta(row.meta);
+  if (meta.originalMovementType !== 'troopMovementRaid') {
+    return null;
+  }
+
+  const originalMovementEventId = Number(meta.originalMovementEventId);
+  const id = Number.isFinite(originalMovementEventId)
+    ? raidReportId(originalMovementEventId)
+    : legacyRaidReturnReportId(row.id);
+  const carriedResources = parseCarriedResources(meta.carriedResources);
+  const defenderCount = Number(meta.defenderCount ?? 0);
+  const total = carriedResources.reduce((sum, amount) => sum + amount, 0);
+  const wasBlocked = Number.isFinite(defenderCount) && defenderCount > 0;
+
+  return {
+    id,
+    tags: parseReportTags(meta.lanArcadeReportTags),
+    timestamp: row.timestamp,
+    villageId: row.villageId ?? 0,
+    type: 'raid' as const,
+    title: wasBlocked
+      ? `Raid blocked by ${Math.floor(defenderCount)} defenders`
+      : total > 0
+        ? `Raid gained ${total} resources`
+        : 'Raid returned empty',
+    body: wasBlocked
+      ? 'Your troops found defenders and returned without loot. Full casualty combat is still disabled in this LAN build.'
+      : total > 0
+        ? `Loot carried home: ${formatLoot(carriedResources)}.`
+        : 'Your troops reached the target but found no resources to carry home.',
+  };
+};
+
+const persistDerivedRaidReports = (database: DbFacade, playerId: number) => {
+  const rows = database.selectObjects({
+    sql: `
+      SELECT
+        id,
+        starts_at AS timestamp,
+        village_id AS villageId,
+        meta
+      FROM
+        events
+      WHERE
+        type = 'troopMovementReturn'
+      ORDER BY
+        starts_at DESC;
+    `,
+    schema: reportEventRowSchema,
+  });
+
+  const stmt = database.prepare({
+    sql: `
+      INSERT OR IGNORE INTO lan_arcade_reports
+        (id, player_id, village_id, timestamp, type, title, body, tags)
+      VALUES
+        ($id, $player_id, $village_id, $timestamp, $type, $title, $body, $tags);
+    `,
+  });
+
+  for (const row of rows) {
+    const report = mapRaidEventToReport(row);
+    if (!report) {
+      continue;
+    }
+
+    stmt
+      .bind({
+        $id: report.id,
+        $player_id: playerId,
+        $village_id: report.villageId,
+        $timestamp: report.timestamp,
+        $type: report.type,
+        $title: report.title,
+        $body: report.body,
+        $tags: JSON.stringify(report.tags),
+      })
+      .stepReset();
+  }
+};
+
+const getReports = (database: DbFacade, playerId: number) => {
+  ensureLanArcadeReportsTable(database);
+  persistDerivedRaidReports(database, playerId);
+
+  const rows = database.selectObjects({
+    sql: `
+      SELECT
+        id,
+        player_id AS playerId,
+        village_id AS villageId,
+        timestamp,
+        type,
+        title,
+        body,
+        tags
+      FROM
+        lan_arcade_reports
+      WHERE
+        player_id = $player_id
+      ORDER BY
+        timestamp DESC,
+        id DESC;
+    `,
+    bind: { $player_id: playerId },
+    schema: reportRowSchema,
+  });
+
+  return rows.map(mapReportRow);
+};
+
+const tagPersistentReport = (
+  database: DbFacade,
+  reportId: string,
+  tag: ReportTag,
+) => {
+  ensureLanArcadeReportsTable(database);
+
+  const row = database.selectObject({
+    sql: 'SELECT tags FROM lan_arcade_reports WHERE id = $report_id;',
+    bind: { $report_id: reportId },
+    schema: z.strictObject({ tags: z.string() }),
+  });
+
+  if (!row) {
+    return;
+  }
+
+  const tags = Array.from(new Set([...parseReportTags(row.tags), tag]));
+
+  database.exec({
+    sql: 'UPDATE lan_arcade_reports SET tags = $tags WHERE id = $report_id;',
+    bind: { $report_id: reportId, $tags: JSON.stringify(tags) },
+  });
+};
+
+export const getMyReports = createController('/players/:playerId/reports', {
+  summary: 'Get my reports',
+  requestParams: {
+    path: z.strictObject({
+      playerId: z.coerce.number(),
+    }),
+  },
+  response: z.array(reportResponseSchema),
+})(({ database, path: { playerId } }) => {
+  // LAN Arcade persistent raid reports: reports survive troop return cleanup.
+  return getReports(database, playerId);
+});
+
+export const getUnreadReportCount = createController(
+  '/players/:playerId/reports/unread-count',
+  {
+    summary: 'Get unread reports count',
+    requestParams: {
+      path: z.strictObject({
+        playerId: z.coerce.number(),
+      }),
+    },
+    response: z.number().int(),
+  },
+)(({ database, path: { playerId } }) => {
+  return getReports(database, playerId).filter(
+    (report) => !report.tags.includes('read') && !report.tags.includes('archived'),
+  ).length;
+});
+
+export const updateReport = createController('/reports/:reportId', 'patch', {
+  summary: 'Update report',
+  requestParams: {
+    path: z.strictObject({
+      reportId: z.string(),
+    }),
+  },
+  requestBody: z.strictObject({
+    tag: reportTagSchema,
+  }),
+})(({ database, path: { reportId }, body: { tag } }) => {
+  tagPersistentReport(database, reportId, tag);
+});
+
+export const deleteReport = createController('/reports/:reportId', 'delete', {
+  summary: 'Delete report',
+  requestParams: {
+    path: z.strictObject({
+      reportId: z.string(),
+    }),
+  },
+})(({ database, path: { reportId } }) => {
+  tagPersistentReport(database, reportId, 'archived');
+});
+""")
+
+resolver = root / 'packages/api/src/http/events/resolvers/troop-movement-resolver.ts'
+s = resolver.read_text()
+if 'LAN_ARCADE_REPORT_TABLE_PATCH' not in s:
+    target = """const raidTargetResourcesSchema = z.strictObject({
+  villageId: z.number(),
+  wood: z.number(),
+  clay: z.number(),
+  iron: z.number(),
+  wheat: z.number(),
+});
+
+"""
+    replacement = target + r"""// LAN_ARCADE_REPORT_TABLE_PATCH
+const ensureLanArcadeReportsTable = (
+  database: Parameters<Resolver<GameEvent<'troopMovementRaid'>>>[0],
+) => {
+  database.exec({
+    sql: `
+      CREATE TABLE IF NOT EXISTS lan_arcade_reports
+      (
+        id TEXT PRIMARY KEY,
+        player_id INTEGER NOT NULL,
+        village_id INTEGER NOT NULL,
+        timestamp INTEGER NOT NULL,
+        type TEXT NOT NULL CHECK (type IN ('attack', 'raid', 'defence', 'scout-attack', 'scout-defence', 'adventure', 'trade')),
+        title TEXT NOT NULL,
+        body TEXT NOT NULL,
+        tags TEXT NOT NULL
+      ) STRICT;
+    `,
+  });
+};
+
+const formatRaidLoot = ([wood, clay, iron, wheat]: RaidResourceBundle) => {
+  return `${wood} wood, ${clay} clay, ${iron} iron, ${wheat} wheat`;
+};
+
+const insertLanArcadeReport = (
+  database: Parameters<Resolver<GameEvent<'troopMovementRaid'>>>[0],
+  report: {
+    id: string;
+    villageId: number;
+    timestamp: number;
+    type: 'attack' | 'raid';
+    title: string;
+    body: string;
+  },
+) => {
+  ensureLanArcadeReportsTable(database);
+
+  database.exec({
+    sql: `
+      INSERT OR REPLACE INTO lan_arcade_reports
+        (id, player_id, village_id, timestamp, type, title, body, tags)
+      VALUES
+        ($id, $player_id, $village_id, $timestamp, $type, $title, $body,
+         COALESCE((SELECT tags FROM lan_arcade_reports WHERE id = $id), '[]'));
+    `,
+    bind: {
+      $id: report.id,
+      $player_id: PLAYER_ID,
+      $village_id: report.villageId,
+      $timestamp: report.timestamp,
+      $type: report.type,
+      $title: report.title,
+      $body: report.body,
+    },
+  });
+};
+
+const countDefendersAtTile = (
+  database: Parameters<Resolver<GameEvent<'troopMovementRaid'>>>[0],
+  targetTileId: number,
+) => {
+  return database.selectValue({
+    sql: `
+      SELECT
+        COALESCE(SUM(amount), 0) AS defender_count
+      FROM
+        troops
+      WHERE
+        tile_id = $target_tile_id;
+    `,
+    bind: { $target_tile_id: targetTileId },
+    schema: z.number(),
+  }) ?? 0;
+};
+
+const createLanArcadeRaidReport = (
+  database: Parameters<Resolver<GameEvent<'troopMovementRaid'>>>[0],
+  args: {
+    eventId: number;
+    villageId: number;
+    timestamp: number;
+    carriedResources: RaidResourceBundle;
+    defenderCount: number;
+  },
+) => {
+  const total = args.carriedResources.reduce((sum, amount) => sum + amount, 0);
+
+  insertLanArcadeReport(database, {
+    id: `raid-${args.eventId}`,
+    villageId: args.villageId,
+    timestamp: args.timestamp,
+    type: 'raid',
+    title:
+      args.defenderCount > 0
+        ? `Raid blocked by ${args.defenderCount} defenders`
+        : total > 0
+          ? `Raid gained ${total} resources`
+          : 'Raid returned empty',
+    body:
+      args.defenderCount > 0
+        ? 'Your troops found defenders and returned without loot. Full casualty combat is still disabled in this LAN build.'
+        : total > 0
+          ? `Loot carried home: ${formatRaidLoot(args.carriedResources)}.`
+          : 'Your troops reached the target but found no resources to carry home.',
+  });
+};
+
+const createLanArcadeAttackReport = (
+  database: Parameters<Resolver<GameEvent<'troopMovementAttack'>>>[0],
+  args: {
+    eventId: number;
+    villageId: number;
+    timestamp: number;
+    defenderCount: number;
+  },
+) => {
+  insertLanArcadeReport(database, {
+    id: `attack-${args.eventId}`,
+    villageId: args.villageId,
+    timestamp: args.timestamp,
+    type: 'attack',
+    title:
+      args.defenderCount > 0
+        ? `Attack met ${args.defenderCount} defenders`
+        : 'Attack reached an undefended target',
+    body:
+      args.defenderCount > 0
+        ? 'Your troops found defenders and returned without casualties. Full attack combat is still disabled in this LAN build.'
+        : 'Your troops reached the target and returned. Full attack combat is still disabled in this LAN build.',
+  });
+};
+
+"""
+    if target not in s:
+        raise SystemExit('Failed to find raid target schema insertion point')
+    s = s.replace(target, replacement, 1)
+
+old_attack = """export const attackMovementResolver: Resolver<
+  GameEvent<'troopMovementAttack'>
+> = (database, args) => {
+  const { villageId, resolvesAt, originTileId, targetTileId, troops } = args;
+
+  // TODO: Combat
+  createEvents<'troopMovementReturn'>(database, {
+    villageId,
+    troops,
+    targetTileId: originTileId,
+    originTileId: targetTileId,
+    startsAt: resolvesAt,
+    type: 'troopMovementReturn',
+    originalMovementType: 'troopMovementAttack',
+  });
+
+  const targetVillageIds = database.selectValues({
+    sql: selectPlayerVillageIdByTileIdQuery,
+    bind: { $tile_id: targetTileId, $player_id: PLAYER_ID },
+    schema: z.number(),
+  });
+
+  return {
+    affectedVillageIds: [villageId, ...targetVillageIds],
+  };
+};
+"""
+new_attack = """export const attackMovementResolver: Resolver<
+  GameEvent<'troopMovementAttack'>
+> = (database, args) => {
+  const { id, villageId, resolvesAt, originTileId, targetTileId, troops } = args;
+  const defenderCount = countDefendersAtTile(database, targetTileId);
+
+  // LAN Arcade: make incomplete combat visible instead of silently bypassing it.
+  createLanArcadeAttackReport(database, {
+    eventId: id,
+    villageId,
+    timestamp: resolvesAt,
+    defenderCount,
+  });
+
+  createEvents<'troopMovementReturn'>(database, {
+    villageId,
+    troops,
+    targetTileId: originTileId,
+    originTileId: targetTileId,
+    startsAt: resolvesAt,
+    type: 'troopMovementReturn',
+    originalMovementType: 'troopMovementAttack',
+    originalMovementEventId: id,
+    defenderCount,
+  } as never);
+
+  const targetVillageIds = database.selectValues({
+    sql: selectPlayerVillageIdByTileIdQuery,
+    bind: { $tile_id: targetTileId, $player_id: PLAYER_ID },
+    schema: z.number(),
+  });
+
+  return {
+    affectedVillageIds: [villageId, ...targetVillageIds],
+  };
+};
+"""
+if old_attack not in s:
+    raise SystemExit('Failed to find attack resolver block')
+s = s.replace(old_attack, new_attack, 1)
+
+old_raid = """export const raidMovementResolver: Resolver<GameEvent<'troopMovementRaid'>> = (
+  database,
+  args,
+) => {
+  const { villageId, resolvesAt, troops, originTileId, targetTileId } = args;
+  const carriedResources = raidVillageResources(
+    database,
+    targetTileId,
+    resolvesAt,
+    calculateRaidCarryCapacity(troops),
+  );
+
+  // TODO: Combat. LAN Arcade currently implements non-lethal raid loot so raids
+  // are rewarding while upstream combat/report systems are still incomplete.
+  createEvents<'troopMovementReturn'>(database, {
+    villageId,
+    troops,
+    startsAt: resolvesAt,
+    targetTileId: originTileId,
+    originTileId: targetTileId,
+    type: 'troopMovementReturn',
+    originalMovementType: 'troopMovementRaid',
+    carriedResources,
+  } as never);
+
+  const targetVillageIds = database.selectValues({
+    sql: selectPlayerVillageIdByTileIdQuery,
+    bind: { $tile_id: targetTileId, $player_id: PLAYER_ID },
+    schema: z.number(),
+  });
+
+  return {
+    affectedVillageIds: [villageId, ...targetVillageIds],
+  };
+};
+"""
+new_raid = """export const raidMovementResolver: Resolver<GameEvent<'troopMovementRaid'>> = (
+  database,
+  args,
+) => {
+  const { id, villageId, resolvesAt, troops, originTileId, targetTileId } = args;
+  const defenderCount = countDefendersAtTile(database, targetTileId);
+  const carriedResources =
+    defenderCount > 0
+      ? emptyRaidResourceBundle()
+      : raidVillageResources(
+          database,
+          targetTileId,
+          resolvesAt,
+          calculateRaidCarryCapacity(troops),
+        );
+
+  // LAN Arcade: defended raids return empty until full casualty combat exists.
+  createLanArcadeRaidReport(database, {
+    eventId: id,
+    villageId,
+    timestamp: resolvesAt,
+    carriedResources,
+    defenderCount,
+  });
+
+  createEvents<'troopMovementReturn'>(database, {
+    villageId,
+    troops,
+    startsAt: resolvesAt,
+    targetTileId: originTileId,
+    originTileId: targetTileId,
+    type: 'troopMovementReturn',
+    originalMovementType: 'troopMovementRaid',
+    originalMovementEventId: id,
+    carriedResources,
+    defenderCount,
+  } as never);
+
+  const targetVillageIds = database.selectValues({
+    sql: selectPlayerVillageIdByTileIdQuery,
+    bind: { $tile_id: targetTileId, $player_id: PLAYER_ID },
+    schema: z.number(),
+  });
+
+  return {
+    affectedVillageIds: [villageId, ...targetVillageIds],
+  };
+};
+"""
+if old_raid not in s:
+    raise SystemExit('Failed to find raid resolver block')
+s = s.replace(old_raid, new_raid, 1)
+resolver.write_text(s)
+PY
+
 uid=$(id -u)
 gid=$(id -g)
 docker run --rm \
