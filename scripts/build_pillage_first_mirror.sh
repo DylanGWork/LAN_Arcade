@@ -94,6 +94,72 @@ if 'rally-point-send-troops-tab=attack-or-raid' not in s:
     )
 if 'rally-point-send-troops-tab=attack-or-raid' not in s:
     raise SystemExit('Failed to expose map attack/raid action')
+if 'const TileModalTroopIntel' not in s:
+    s = s.replace(
+        "const TileModalPlayerInfo = ({ tile }: TileModalProps) => {",
+        """const TileModalTroopIntelSkeleton = () => {
+  return (
+    <div className=\"flex flex-wrap gap-2\">
+      {Array.from({ length: 5 }, (_, i) => (
+        <Skeleton
+          // biome-ignore lint/suspicious/noArrayIndexKey: It's a static loading placeholder.
+          key={`troop-intel-skeleton-${i}`}
+          className=\"h-5 w-12 rounded-xs\"
+        />
+      ))}
+    </div>
+  );
+};
+
+const TileModalTroopIntel = ({ tile }: TileModalProps) => {
+  const { t } = useTranslation();
+  const { tileTroops } = useTileTroops(tile.id);
+
+  const visibleTroops = tileTroops.filter(({ amount }) => amount > 0);
+
+  if (visibleTroops.length === 0) {
+    return (
+      <Text className=\"text-sm text-muted-foreground\">
+        {t('No defenders detected')}
+      </Text>
+    );
+  }
+
+  return (
+    <div className=\"flex flex-wrap gap-2\">
+      {visibleTroops.map(({ unitId, amount }) => (
+        <span
+          key={unitId}
+          className=\"flex items-center gap-1 rounded-xs border border-border px-2 py-1 text-sm\"
+        >
+          <Icon
+            className=\"size-4\"
+            type={unitIdToUnitIconMapper(unitId)}
+          />
+          {amount}
+        </span>
+      ))}
+    </div>
+  );
+};
+
+const TileModalPlayerInfo = ({ tile }: TileModalProps) => {""",
+    )
+    s = s.replace(
+        "      <TileModalPlayerInfo tile={tile} />\n      <div className=\"flex flex-col gap-2\">",
+        """      <TileModalPlayerInfo tile={tile} />
+      {!isOwnedByPlayer && (
+        <div className=\"flex flex-col gap-2\">
+          <Text as=\"h3\">{t('Scout intel')}</Text>
+          <Suspense fallback={<TileModalTroopIntelSkeleton />}>
+            <TileModalTroopIntel tile={tile} />
+          </Suspense>
+        </div>
+      )}
+      <div className=\"flex flex-col gap-2\">""",
+    )
+if 'const TileModalTroopIntel' not in s or "{t('Scout intel')}" not in s:
+    raise SystemExit('Failed to expose map scout intel')
 tile_modal.write_text(s)
 
 PY
