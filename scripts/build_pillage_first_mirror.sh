@@ -442,6 +442,495 @@ export const adventureMovementResolver""",
         raise SystemExit('Failed to patch raid loot resolver')
     resolver.write_text(s)
 
+report_model = root / 'packages/types/src/models/report.ts'
+s = report_model.read_text()
+if 'title: string;' not in s:
+    s = s.replace(
+        'export type Report = BaseReport;\n',
+        """export type Report = BaseReport & {
+  type: ReportType;
+  title: string;
+  body: string;
+};
+""",
+        1,
+    )
+    if 'title: string;' not in s:
+        raise SystemExit('Failed to expand report model')
+    report_model.write_text(s)
+
+report_controllers = root / 'packages/api/src/http/controllers/report-controllers.ts'
+s = report_controllers.read_text()
+if 'LAN Arcade derived raid reports' not in s:
+    report_controllers.write_text("""import { z } from 'zod';
+import type { DbFacade } from '@pillage-first/utils/facades/database';
+import { createController } from '../controller';
+
+const reportTagSchema = z.enum(['read', 'archived']);
+const reportResponseSchema = z.strictObject({
+  id: z.string(),
+  tags: z.array(reportTagSchema),
+  timestamp: z.number().int(),
+  villageId: z.number().int(),
+  type: z.enum([
+    'attack',
+    'raid',
+    'defence',
+    'scout-attack',
+    'scout-defence',
+    'adventure',
+    'trade',
+  ]),
+  title: z.string(),
+  body: z.string(),
+});
+
+const reportEventRowSchema = z.strictObject({
+  id: z.number(),
+  timestamp: z.number(),
+  villageId: z.number().nullable(),
+  meta: z.string().nullable(),
+});
+
+type ReportEventRow = z.infer<typeof reportEventRowSchema>;
+type RaidResourceBundle = [number, number, number, number];
+type EventMeta = Record<string, unknown>;
+
+const raidReportId = (eventId: number) => `raid-${eventId}`;
+const parseRaidReportEventId = (reportId: string) => {
+  const match = /^raid-(\\d+)$/.exec(reportId);
+  return match ? Number(match[1]) : null;
+};
+
+const parseEventMeta = (meta: string | null): EventMeta => {
+  if (!meta) {
+    return {};
+  }
+
+  try {
+    const parsed = JSON.parse(meta);
+    return parsed && typeof parsed === 'object' ? parsed : {};
+  } catch {
+    return {};
+  }
+};
+
+const parseTags = (meta: EventMeta) => {
+  if (!Array.isArray(meta.lanArcadeReportTags)) {
+    return [];
+  }
+
+  return meta.lanArcadeReportTags.filter(
+    (tag): tag is z.infer<typeof reportTagSchema> =>
+      tag === 'read' || tag === 'archived',
+  );
+};
+
+const parseCarriedResources = (value: unknown): RaidResourceBundle => {
+  if (!Array.isArray(value)) {
+    return [0, 0, 0, 0];
+  }
+
+  return [0, 1, 2, 3].map((index) => {
+    const amount = Number(value[index]);
+    return Number.isFinite(amount) ? Math.max(0, Math.floor(amount)) : 0;
+  }) as RaidResourceBundle;
+};
+
+const formatLoot = ([wood, clay, iron, wheat]: RaidResourceBundle) => {
+  return `${wood} wood, ${clay} clay, ${iron} iron, ${wheat} wheat`;
+};
+
+const mapRaidEventToReport = (row: ReportEventRow) => {
+  const meta = parseEventMeta(row.meta);
+  if (meta.originalMovementType !== 'troopMovementRaid') {
+    return null;
+  }
+
+  const carriedResources = parseCarriedResources(meta.carriedResources);
+  const total = carriedResources.reduce((sum, amount) => sum + amount, 0);
+
+  return {
+    id: raidReportId(row.id),
+    tags: parseTags(meta),
+    timestamp: row.timestamp,
+    villageId: row.villageId ?? 0,
+    type: 'raid' as const,
+    title: total > 0 ? `Raid gained ${total} resources` : 'Raid returned empty',
+    body:
+      total > 0
+        ? `Loot carried home: ${formatLoot(carriedResources)}.`
+        : 'Your troops reached the target but found no resources to carry home.',
+  };
+};
+
+const getDerivedRaidReports = (database: DbFacade) => {
+  const rows = database.selectObjects({
+    sql: `
+      SELECT
+        id,
+        starts_at AS timestamp,
+        village_id AS villageId,
+        meta
+      FROM
+        events
+      WHERE
+        type = 'troopMovementReturn'
+      ORDER BY
+        starts_at DESC;
+    `,
+    schema: reportEventRowSchema,
+  });
+
+  return rows.flatMap((row) => {
+    const report = mapRaidEventToReport(row);
+    return report ? [report] : [];
+  });
+};
+
+const tagDerivedRaidReport = (
+  database: DbFacade,
+  reportId: string,
+  tag: z.infer<typeof reportTagSchema>,
+) => {
+  const eventId = parseRaidReportEventId(reportId);
+  if (eventId === null) {
+    return;
+  }
+
+  const row = database.selectObject({
+    sql: "SELECT meta FROM events WHERE id = $event_id AND type = 'troopMovementReturn';",
+    bind: { $event_id: eventId },
+    schema: z.strictObject({ meta: z.string().nullable() }),
+  });
+
+  if (!row) {
+    return;
+  }
+
+  const meta = parseEventMeta(row.meta);
+  if (meta.originalMovementType !== 'troopMovementRaid') {
+    return;
+  }
+
+  meta.lanArcadeReportTags = Array.from(new Set([...parseTags(meta), tag]));
+
+  database.exec({
+    sql: 'UPDATE events SET meta = $meta WHERE id = $event_id;',
+    bind: { $event_id: eventId, $meta: JSON.stringify(meta) },
+  });
+};
+
+export const getMyReports = createController('/players/:playerId/reports', {
+  summary: 'Get my reports',
+  requestParams: {
+    path: z.strictObject({
+      playerId: z.coerce.number(),
+    }),
+  },
+  response: z.array(reportResponseSchema),
+})(({ database }) => {
+  // LAN Arcade derived raid reports: upstream reports are still incomplete.
+  return getDerivedRaidReports(database);
+});
+
+export const getUnreadReportCount = createController(
+  '/players/:playerId/reports/unread-count',
+  {
+    summary: 'Get unread reports count',
+    requestParams: {
+      path: z.strictObject({
+        playerId: z.coerce.number(),
+      }),
+    },
+    response: z.number().int(),
+  },
+)(({ database }) => {
+  return getDerivedRaidReports(database).filter(
+    (report) => !report.tags.includes('read') && !report.tags.includes('archived'),
+  ).length;
+});
+
+export const updateReport = createController('/reports/:reportId', 'patch', {
+  summary: 'Update report',
+  requestParams: {
+    path: z.strictObject({
+      reportId: z.string(),
+    }),
+  },
+  requestBody: z.strictObject({
+    tag: reportTagSchema,
+  }),
+})(({ database, path: { reportId }, body: { tag } }) => {
+  tagDerivedRaidReport(database, reportId, tag);
+});
+
+export const deleteReport = createController('/reports/:reportId', 'delete', {
+  summary: 'Delete report',
+  requestParams: {
+    path: z.strictObject({
+      reportId: z.string(),
+    }),
+  },
+})(({ database, path: { reportId } }) => {
+  tagDerivedRaidReport(database, reportId, 'archived');
+});
+""")
+
+reports_components = root / 'apps/web/app/(game)/(village-slug)/(reports)/components'
+report_list = reports_components / 'report-list.tsx'
+if not report_list.exists():
+    report_list.write_text("""import { useTranslation } from 'react-i18next';
+import type { Report } from '@pillage-first/types/models/report';
+import { Text } from 'app/components/text';
+import { Alert } from 'app/components/ui/alert';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHeader,
+  TableHeaderCell,
+  TableRow,
+} from 'app/components/ui/table';
+
+type ReportListProps = {
+  reports: Report[];
+};
+
+const formatTimestamp = (timestamp: number) => {
+  return new Date(timestamp).toLocaleString();
+};
+
+export const ReportList = ({ reports }: ReportListProps) => {
+  const { t } = useTranslation();
+
+  if (reports.length === 0) {
+    return <Alert variant="info">{t('No reports yet')}</Alert>;
+  }
+
+  return (
+    <div className="w-full overflow-x-auto">
+      <Table className="min-w-[760px]">
+        <TableHeader>
+          <TableRow>
+            <TableHeaderCell>{t('Time')}</TableHeaderCell>
+            <TableHeaderCell>{t('Type')}</TableHeaderCell>
+            <TableHeaderCell>{t('Report')}</TableHeaderCell>
+            <TableHeaderCell>{t('Village')}</TableHeaderCell>
+            <TableHeaderCell>{t('Tags')}</TableHeaderCell>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {reports.map((report) => (
+            <TableRow key={report.id}>
+              <TableCell className="whitespace-nowrap text-left">
+                {formatTimestamp(report.timestamp)}
+              </TableCell>
+              <TableCell className="capitalize">{report.type}</TableCell>
+              <TableCell className="text-left">
+                <Text className="font-semibold">{report.title}</Text>
+                <Text className="text-sm text-muted-foreground">
+                  {report.body}
+                </Text>
+              </TableCell>
+              <TableCell>{report.villageId}</TableCell>
+              <TableCell>
+                {report.tags.length > 0 ? report.tags.join(', ') : t('New')}
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  );
+};
+""")
+
+reports_page = reports_components / 'reports.tsx'
+reports_page.write_text("""import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
+import { ReportFilters } from 'app/(game)/(village-slug)/(reports)/components/components/report-filters';
+import { ReportList } from 'app/(game)/(village-slug)/(reports)/components/report-list';
+import { useReportFilters } from 'app/(game)/(village-slug)/(reports)/hooks/use-report-filters';
+import {
+  Section,
+  SectionContent,
+} from 'app/(game)/(village-slug)/components/building-layout';
+import { usePagination } from 'app/(game)/(village-slug)/hooks/use-pagination';
+import { useReports } from 'app/(game)/(village-slug)/hooks/use-reports';
+import { Text } from 'app/components/text';
+import { Pagination } from 'app/components/ui/pagination';
+
+export const Reports = () => {
+  const { t } = useTranslation();
+  const { reports } = useReports();
+  const {
+    filters: reportFilters,
+    onFiltersChange: onReportFiltersChange,
+    page,
+    handlePageChange,
+  } = useReportFilters();
+
+  const filteredReports = useMemo(() => {
+    return reports.filter(
+      (report) =>
+        reportFilters.includes(report.type) && !report.tags.includes('archived'),
+    );
+  }, [reportFilters, reports]);
+
+  const pagination = usePagination(filteredReports, 20, page);
+
+  return (
+    <Section>
+      <SectionContent>
+        <Text as="h2">{t('All reports')}</Text>
+        <Text>
+          {t(
+            'This is a categorized view of in-game reports. You can toggle different types of reports by using report filters below.',
+          )}
+        </Text>
+      </SectionContent>
+      <ReportFilters
+        reportFilters={reportFilters}
+        onChange={onReportFiltersChange}
+      />
+      <ReportList reports={pagination.currentPageItems} />
+      <div className="flex w-full justify-end">
+        <Pagination
+          {...pagination}
+          setPage={handlePageChange}
+        />
+      </div>
+    </Section>
+  );
+};
+""")
+
+current_reports_page = reports_components / 'current-village-reports.tsx'
+current_reports_page.write_text("""import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
+import { ReportFilters } from 'app/(game)/(village-slug)/(reports)/components/components/report-filters';
+import { ReportList } from 'app/(game)/(village-slug)/(reports)/components/report-list';
+import { useReportFilters } from 'app/(game)/(village-slug)/(reports)/hooks/use-report-filters';
+import {
+  Section,
+  SectionContent,
+} from 'app/(game)/(village-slug)/components/building-layout';
+import { useCurrentVillage } from 'app/(game)/(village-slug)/hooks/current-village/use-current-village';
+import { usePagination } from 'app/(game)/(village-slug)/hooks/use-pagination';
+import { useReports } from 'app/(game)/(village-slug)/hooks/use-reports';
+import { Text } from 'app/components/text';
+import { Pagination } from 'app/components/ui/pagination';
+
+export const CurrentVillageReports = () => {
+  const { t } = useTranslation();
+  const { reports } = useReports();
+  const { currentVillage } = useCurrentVillage();
+  const {
+    filters: reportFilters,
+    onFiltersChange: onReportFiltersChange,
+    page,
+    handlePageChange,
+  } = useReportFilters();
+
+  const filteredReports = useMemo(() => {
+    return reports.filter(
+      (report) =>
+        report.villageId === currentVillage.id &&
+        reportFilters.includes(report.type) &&
+        !report.tags.includes('archived'),
+    );
+  }, [currentVillage.id, reportFilters, reports]);
+
+  const pagination = usePagination(filteredReports, 20, page);
+
+  return (
+    <Section>
+      <SectionContent>
+        <Text as="h2">{t('Current village reports')}</Text>
+        <Text>
+          {t(
+            'This is a categorized view of in-game reports for current village. You can toggle different types of reports by using report filters below.',
+          )}
+        </Text>
+      </SectionContent>
+      <ReportFilters
+        reportFilters={reportFilters}
+        onChange={onReportFiltersChange}
+      />
+      <ReportList reports={pagination.currentPageItems} />
+      <div className="flex w-full justify-end">
+        <Pagination
+          {...pagination}
+          setPage={handlePageChange}
+        />
+      </div>
+    </Section>
+  );
+};
+""")
+
+archived_reports_page = reports_components / 'archived-reports.tsx'
+archived_reports_page.write_text("""import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
+import { ReportFilters } from 'app/(game)/(village-slug)/(reports)/components/components/report-filters';
+import { ReportList } from 'app/(game)/(village-slug)/(reports)/components/report-list';
+import { useReportFilters } from 'app/(game)/(village-slug)/(reports)/hooks/use-report-filters';
+import {
+  Section,
+  SectionContent,
+} from 'app/(game)/(village-slug)/components/building-layout';
+import { usePagination } from 'app/(game)/(village-slug)/hooks/use-pagination';
+import { useReports } from 'app/(game)/(village-slug)/hooks/use-reports';
+import { Text } from 'app/components/text';
+import { Pagination } from 'app/components/ui/pagination';
+
+export const ArchivedReports = () => {
+  const { t } = useTranslation();
+  const { reports } = useReports();
+  const {
+    filters: reportFilters,
+    onFiltersChange: onReportFiltersChange,
+    page,
+    handlePageChange,
+  } = useReportFilters();
+
+  const filteredReports = useMemo(() => {
+    return reports.filter(
+      (report) =>
+        reportFilters.includes(report.type) && report.tags.includes('archived'),
+    );
+  }, [reportFilters, reports]);
+
+  const pagination = usePagination(filteredReports, 20, page);
+
+  return (
+    <Section>
+      <SectionContent>
+        <Text as="h2">{t('Archived reports')}</Text>
+        <Text>
+          {t(
+            'This is a categorized view of archived reports. These reports are not deleted once a limit is reached and you can have an unlimited amount of them. You can toggle different types of reports by using report filters below.',
+          )}
+        </Text>
+      </SectionContent>
+      <ReportFilters
+        reportFilters={reportFilters}
+        onChange={onReportFiltersChange}
+      />
+      <ReportList reports={pagination.currentPageItems} />
+      <div className="flex w-full justify-end">
+        <Pagination
+          {...pagination}
+          setPage={handlePageChange}
+        />
+      </div>
+    </Section>
+  );
+};
+""")
+
+
 tile_modal = root / 'apps/web/app/(game)/(village-slug)/(map)/components/tile-modal.tsx'
 s = tile_modal.read_text()
 if 'rally-point-send-troops-tab=attack-or-raid' not in s:

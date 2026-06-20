@@ -2,7 +2,7 @@
 
 Dylan reported that raids travelled out and back but produced no reports or resources. Upstream Pillage First had `// TODO: Combat` in both attack and raid movement resolvers, and report controllers still return empty/no-op data. LAN Arcade now patches the mirrored build in `scripts/build_pillage_first_mirror.sh` so new raid resolutions steal resources from target villages according to troop carry capacity, attach the loot bundle to the return event, and deposit it into the source village when troops return. Existing return events created before this patch will not retroactively gain loot.
 
-Verification completed after rebuild/deploy: `node qa/pillage-first-live-smoke.mjs`, `node qa/pillage-first-attack-briefing-smoke.mjs`, upstream resolver suite via Docker Node 24, and a temporary focused resolver regression proving 5 legionnaires carried 250 resources, lowered the target stockpile by the carried bundle, and deposited the same bundle on return. Reports remain a separate unfinished feature because upstream has no real report persistence/API yet.
+Verification completed after rebuild/deploy: `node qa/pillage-first-live-smoke.mjs`, `node qa/pillage-first-attack-briefing-smoke.mjs`, `npm run qa:static`, upstream resolver suite via Docker Node 24, a temporary focused resolver regression proving 5 legionnaires carried 250 resources, lowered the target stockpile by the carried bundle, and deposited the same bundle on return, plus a temporary report-controller regression proving raid events appear as reports and can be marked read/archived. Reports are currently lightweight LAN-derived raid reports from movement events; the broader upstream report system is still incomplete.
 
 # Native Batch Three Intake - 2026-06-19
 
