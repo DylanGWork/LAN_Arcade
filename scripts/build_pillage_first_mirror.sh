@@ -5,11 +5,17 @@ UPSTREAM="https://github.com/jurerotar/Pillage-First-Ask-Questions-Later.git"
 COMMIT="${PILLAGE_FIRST_COMMIT:-54451093040b3934382fa585be2b61f26a653bfb}"
 WORKDIR="${PILLAGE_FIRST_WORKDIR:-/tmp/lan-arcade-pillage-first-build}"
 DEST="${PILLAGE_FIRST_DEST:-/var/www/html/mirrors/pillage-first}"
-PREFIX="/mirrors/pillage-first"
+PREFIX="${PILLAGE_FIRST_PREFIX:-/mirrors/pillage-first}"
+export PREFIX
 
 case "$(readlink -f "$DEST" 2>/dev/null || echo "$DEST")" in
-  /var/www/html/mirrors/pillage-first|/var/www/html/mirrors/pillage-first/*) ;;
+  /var/www/html/mirrors/pillage-first|/var/www/html/mirrors/pillage-first/*|/var/www/html/mirrors/pillage-first-*) ;;
   *) echo "Refusing unexpected destination: $DEST" >&2; exit 1 ;;
+esac
+
+case "$PREFIX" in
+  /mirrors/pillage-first|/mirrors/pillage-first/*|/mirrors/pillage-first-*) ;;
+  *) echo "Refusing unexpected prefix: $PREFIX" >&2; exit 1 ;;
 esac
 
 if [ ! -d "$WORKDIR/.git" ]; then
@@ -21,8 +27,10 @@ git fetch --depth 1 origin "$COMMIT"
 git checkout --detach "$COMMIT"
 
 python3 - <<'PY'
+import os
 from pathlib import Path
 root = Path('.')
+prefix = os.environ['PREFIX'].rstrip('/')
 app_root = root / 'apps/web/app/root.tsx'
 s = app_root.read_text()
 s = s.replace("import { WebRTCAdvertiser } from 'app/components/webrtc-advertiser';\n", '')
@@ -31,11 +39,11 @@ app_root.write_text(s)
 
 vite = root / 'apps/web/vite.config.ts'
 s = vite.read_text()
-s = s.replace("  start_url: '/',", "  start_url: '/mirrors/pillage-first/',")
-s = s.replace("      src: `/favicon/web-app-manifest-192x192.png?v=${graphicsVersion}`,", "      src: `/mirrors/pillage-first/favicon/web-app-manifest-192x192.png?v=${graphicsVersion}`,", 1)
-s = s.replace("      src: `/favicon/web-app-manifest-512x512.png?v=${graphicsVersion}`,", "      src: `/mirrors/pillage-first/favicon/web-app-manifest-512x512.png?v=${graphicsVersion}`,", 1)
-s = s.replace("  scope: '/',", "  scope: '/mirrors/pillage-first/',")
-s = s.replace("const viteConfig = defineViteConfig({\n", "const viteConfig = defineViteConfig({\n  base: '/mirrors/pillage-first/',\n", 1)
+s = s.replace("  start_url: '/',", f"  start_url: '{prefix}/',")
+s = s.replace("      src: `/favicon/web-app-manifest-192x192.png?v=${graphicsVersion}`,", f"      src: `{prefix}/favicon/web-app-manifest-192x192.png?v=${{graphicsVersion}}`,", 1)
+s = s.replace("      src: `/favicon/web-app-manifest-512x512.png?v=${graphicsVersion}`,", f"      src: `{prefix}/favicon/web-app-manifest-512x512.png?v=${{graphicsVersion}}`,", 1)
+s = s.replace("  scope: '/',", f"  scope: '{prefix}/',")
+s = s.replace("const viteConfig = defineViteConfig({\n", f"const viteConfig = defineViteConfig({{\n  base: '{prefix}/',\n", 1)
 vite.write_text(s)
 
 hook = root / 'apps/web/app/(public)/hooks/use-github-stars.ts'
@@ -43,6 +51,51 @@ hook.write_text("""import { useQuery } from '@tanstack/react-query';\n\nexport c
 
 discord_hook = root / 'apps/web/app/(public)/hooks/use-discord-members.ts'
 discord_hook.write_text("""import { useQuery } from '@tanstack/react-query';\n\nexport const useDiscordMembers = () => {\n  return useQuery({\n    queryKey: ['discord-members', 'lan-arcade-offline'],\n    queryFn: async () => ({\n      memberCount: 217,\n    }),\n    placeholderData: {\n      memberCount: 217,\n    },\n    staleTime: Infinity,\n  });\n};\n""")
+
+rally_point = root / 'apps/web/app/(game)/(village-slug)/(village)/(...building-field-id)/components/components/rally-point/rally-point-send-troops.tsx'
+s = rally_point.read_text()
+if 'AttackRaidForm' not in s:
+    s = s.replace(
+        "import { FoundNewVillageForm } from 'app/(game)/(village-slug)/components/send-troops/found-new-village-form';\n",
+        "import { AttackRaidForm } from 'app/(game)/(village-slug)/components/send-troops/attack-raid-form';\n"
+        "import { FoundNewVillageForm } from 'app/(game)/(village-slug)/components/send-troops/found-new-village-form';\n",
+    )
+s = s.replace("// import { AttackRaidForm } from './send-troops/attack-raid-form';\n", '')
+s = s.replace(
+    "const tabs = [\n  // 'attack-or-raid',\n  'reinforce-or-relocate',",
+    "const tabs = [\n  'attack-or-raid',\n  'reinforce-or-relocate',",
+)
+s = s.replace(
+    "          {/*<Tab value=\"attack-or-raid\">{t('Attack or raid')}</Tab>*/}",
+    "          <Tab value=\"attack-or-raid\">{t('Attack or raid')}</Tab>",
+)
+s = s.replace(
+    "        {/*<TabPanel value=\"attack-or-raid\">*/}\n        {/*  <AttackRaidForm />*/}\n        {/*</TabPanel>*/}",
+    "        <TabPanel value=\"attack-or-raid\">\n          <AttackRaidForm />\n        </TabPanel>",
+)
+if 'AttackRaidForm' not in s or '<Tab value="attack-or-raid">' not in s:
+    raise SystemExit('Failed to expose Rally Point attack/raid tab')
+rally_point.write_text(s)
+
+tile_modal = root / 'apps/web/app/(game)/(village-slug)/(map)/components/tile-modal.tsx'
+s = tile_modal.read_text()
+if 'rally-point-send-troops-tab=attack-or-raid' not in s:
+    s = s.replace(
+        "        {!isOwnedByPlayer && <Text>{t('No actions available')}</Text>}",
+        """        {!isOwnedByPlayer && (
+          <Text variant=\"link\">
+            <Link
+              to={`${getVillageBasePath(currentVillage.slug)}/village/39?tab=send-troops&rally-point-send-troops-tab=attack-or-raid&x=${tile.coordinates.x}&y=${tile.coordinates.y}`}
+            >
+              {t('Attack or raid')}
+            </Link>
+          </Text>
+        )}""",
+    )
+if 'rally-point-send-troops-tab=attack-or-raid' not in s:
+    raise SystemExit('Failed to expose map attack/raid action')
+tile_modal.write_text(s)
+
 PY
 
 uid=$(id -u)
@@ -57,9 +110,10 @@ docker run --rm \
   bash -lc 'npx -y npm@11.16.0 ci --ignore-scripts && npx -y npm@11.16.0 run inject-graphics && npx -y npm@11.16.0 run -w @pillage-first/web build'
 
 python3 - <<'PY'
+import os
 from pathlib import Path
 root = Path('apps/web/build/client')
-prefix = '/mirrors/pillage-first'
+prefix = os.environ['PREFIX'].rstrip('/')
 for path in list(root.rglob('*.html')) + [root / 'manifest.webmanifest']:
     if not path.exists():
         continue
@@ -98,14 +152,14 @@ def prefix_graphics_pack_urls(text):
     return text
 for path in root.rglob('*.js'):
     s = path.read_text(errors='ignore')
-    ns = s.replace('`/landing/${', '`/mirrors/pillage-first/landing/${')
-    ns = ns.replace('`/react-icons-sprite-', '`/mirrors/pillage-first/react-icons-sprite-')
-    ns = ns.replace('\"/react-icons-sprite-', '\"/mirrors/pillage-first/react-icons-sprite-')
-    ns = ns.replace('\"/landing/', '\"/mirrors/pillage-first/landing/')
-    ns = ns.replace("'/landing/", "'/mirrors/pillage-first/landing/")
-    ns = ns.replace('`/pillage-first-logo-horizontal.svg`', '`/mirrors/pillage-first/pillage-first-logo-horizontal.svg`')
-    ns = ns.replace('\"/pillage-first-logo-horizontal.svg\"', '\"/mirrors/pillage-first/pillage-first-logo-horizontal.svg\"')
-    ns = ns.replace("'/pillage-first-logo-horizontal.svg'", "'/mirrors/pillage-first/pillage-first-logo-horizontal.svg'")
+    ns = s.replace('`/landing/${', '`' + prefix + '/landing/${')
+    ns = ns.replace('`/react-icons-sprite-', '`' + prefix + '/react-icons-sprite-')
+    ns = ns.replace('\"/react-icons-sprite-', '\"' + prefix + '/react-icons-sprite-')
+    ns = ns.replace('\"/landing/', '\"' + prefix + '/landing/')
+    ns = ns.replace("'/landing/", "'" + prefix + "/landing/")
+    ns = ns.replace('`/pillage-first-logo-horizontal.svg`', '`' + prefix + '/pillage-first-logo-horizontal.svg`')
+    ns = ns.replace('\"/pillage-first-logo-horizontal.svg\"', '\"' + prefix + '/pillage-first-logo-horizontal.svg\"')
+    ns = ns.replace("'/pillage-first-logo-horizontal.svg'", "'" + prefix + "/pillage-first-logo-horizontal.svg'")
     ns = ns.replace('queryFn:async()=>await(await fetch(`/api/discord-members?code=Ep7NKVXUZA`)).json(),', 'queryFn:async()=>({memberCount:217}),')
     ns = ns.replace('fetch(`/api/discord-members?code=Ep7NKVXUZA`)', 'Promise.resolve({json:async()=>({memberCount:217})})')
     if not ns.startswith('(()=>{const g=globalThis;let c=g.crypto;'):
