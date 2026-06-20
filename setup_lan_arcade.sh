@@ -1124,11 +1124,11 @@ write_public_index() {
         <span>Offline LAN game library</span>
       </div>
       <section class="side-section">
-        <h2 class="side-title">Library</h2>
+        <h2 class="side-title">Catalog Profiles</h2>
         <div id="profileList" class="side-list"></div>
       </section>
       <section class="side-section">
-        <h2 class="side-title">Shelves</h2>
+        <h2 class="side-title">Shelves &amp; Filters</h2>
         <div id="shelfList" class="side-list"></div>
       </section>
       <section class="side-section">
@@ -1146,7 +1146,7 @@ write_public_index() {
       <header class="topbar">
         <div class="headline">
           <h2>Game Library</h2>
-          <p>Browse web games, retro shelves, LAN hubs, and heavier service candidates from one offline catalog.</p>
+          <p>Browse top-level catalog cards, retro shelves, LAN hubs, and heavier service candidates from one offline catalog.</p>
         </div>
         <label class="control">
           <span>Search</span>
@@ -1186,12 +1186,20 @@ write_public_index() {
         { id: "family", label: "Family / phone friendly", note: "Kid-friendly and mobile-leaning" }
       ];
       var shelves = [
+        { id: "game-boy-wave-1", label: "Game Boy Wave 1", note: "201 curated titles", href: "../private-rom-wave-1/" },
         { id: "emulator-library", label: "Emulator Library", note: "GB, GBC, DOS", href: "../emulator-library/" },
         { id: "game-boy-vault", label: "Game Boy Vault", note: "743 titles", href: "../private-rom-vault/" },
         { id: "dos-classics", label: "DOS Classics", note: "6 tracked", href: "../private-dos-vault/" },
-        { id: "board-games", label: "Board Games", note: "Filter", action: "category", value: "board-game" },
-        { id: "native-server", label: "Native / Server", note: "Filter", action: "profile", value: "native" },
-        { id: "retro-shelf", label: "Retro Shelf", note: "Filter", action: "profile", value: "retro" }
+        { id: "board-games-wave-1", label: "Board Games Wave 1", note: "200 entries", href: "../board-games-wave-1/" },
+        { id: "board-games", label: "Board-game cards", note: "Catalog filter", action: "category", value: "board-game" },
+        { id: "native-server", label: "Native / Server cards", note: "Catalog filter", action: "profile", value: "native" },
+        { id: "retro-shelf", label: "Retro cards", note: "Catalog filter", action: "profile", value: "retro" }
+      ];
+      var internalShelfStats = [
+        [743, "Game Boy vault titles"],
+        [201, "curated GB/GBC titles"],
+        [200, "board-game entries"],
+        [6, "DOS classics"]
       ];
       var featuredIds = ["pillage-first-lan", "travianz-lan", "unciv-lan", "mindustry-lan", "evolab", "gene-garden", "zero-ad-lan", "wesnoth-lan", "openttd-lan", "life-engine", "apotris-gba"];
       var state = {
@@ -1352,6 +1360,7 @@ write_public_index() {
           var button = document.createElement("button"); button.type = "button"; button.className = "side-button" + (state.profile === profile.id ? " active" : "");
           var label = document.createElement("span"); label.textContent = profile.label; button.appendChild(label);
           var countEl = document.createElement("span"); countEl.className = "count"; countEl.textContent = count; button.appendChild(countEl);
+          countEl.title = count + " top-level catalog cards";
           button.addEventListener("click", function () { state.profile = profile.id; state.category = ""; render(); });
           list.appendChild(button);
         });
@@ -1419,10 +1428,11 @@ write_public_index() {
       function renderStatus(visible, profilePool, allEnabled) {
         var status = document.getElementById("status"); clear(status);
         var chips = [
-          [visible.length, "shown"],
-          [profilePool.length, "in profile"],
-          [allEnabled.length, "enabled"]
+          [visible.length, "cards shown"],
+          [profilePool.length, "cards in profile"],
+          [allEnabled.length, "cards enabled"]
         ];
+        chips = chips.concat(internalShelfStats);
         if (state.query) chips.push(["search", state.query]);
         if (state.category) chips.push(["genre", (categoryLabelMap(state.catalog)[state.category] || state.category)]);
         if (state.filters.disabled_categories.length || state.filters.disabled_games.length) chips.push([state.filters.disabled_games.length, "admin-hidden games"]);
