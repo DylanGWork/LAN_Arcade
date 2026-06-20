@@ -1,0 +1,4 @@
+Moon Lander
+Source: https://packages.debian.org/bookworm/moon-lander
+Package: moon-lander
+QA: pass - No-network native launch reached a nonblank post-input screen. This is a first-play smoke, not a full completion proof.

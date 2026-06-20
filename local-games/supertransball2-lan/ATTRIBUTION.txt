@@ -1,0 +1,4 @@
+Super Transball 2
+Source: https://packages.debian.org/bookworm/supertransball2
+Package: supertransball2
+QA: partial - No-network launch reached the packaged intro splash, but the generic harness did not reach a playable menu/level. Needs tailored manual start before promotion to smoke-pass.

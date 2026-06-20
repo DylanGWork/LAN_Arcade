@@ -1,0 +1,4 @@
+Kraptor
+Source: https://packages.debian.org/bookworm/kraptor
+Package: kraptor
+QA: pass - No-network native launch reached a nonblank post-input screen. This is a first-play smoke, not a full completion proof.

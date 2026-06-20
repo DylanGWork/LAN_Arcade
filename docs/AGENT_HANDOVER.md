@@ -839,3 +839,24 @@ npm run qa:smoke:catalog          # 99/99 strict pass, 99 playable
 ```
 
 Detailed logs are under `qa/reports/native-shelf-repair-20260620/`. Important caveat: these checks prove hub/static/catalog/offline-link completeness, not deep native gameplay. Some native entries still need first-action or LAN-client gameplay proof as recorded in their intake reports.
+
+## Public Package Expansion 50 - 2026-06-20
+
+Added 50 additional Debian-package-backed native/offline hubs from `scripts/public_package_expansion_20260620.csv`, covering lightweight arcade, platformer, shooter, puzzle, sports, board-game, and retro-style entries. The generator/smoke runner is `scripts/public_package_expansion_20260620.py`; hub pages live under `local-games/*`; package closures and manifests are cached outside Git on the NFS native shelf under `/var/www/html/mirrors/games/downloads/native/` and the shared `debian-bookworm-pool/`.
+
+Native no-internet Xvfb smoke results: 49 PASS and 1 PARTIAL. `supertransball2-lan` launches offline and renders the packaged intro splash, but the generic harness did not reach a playable menu/level, so it needs a tailored/manual first-play retest before promotion to smoke-pass. Alex4 initially false-blocked because the screenshot uses a very low-colour retro palette; the threshold in the runner was adjusted and Alex4 now passes.
+
+QA/deploy commands and results:
+
+```text
+python3 scripts/public_package_expansion_20260620.py cache     # 50/50 package shelves cached on NFS
+python3 scripts/public_package_expansion_20260620.py smoke     # 49 PASS, 1 PARTIAL
+python3 scripts/public_package_expansion_20260620.py generate
+python3 scripts/public_package_expansion_20260620.py metadata
+python3 scripts/public_package_expansion_20260620.py summary
+ARCADE_NAME='GannanNet' LAN_ARCADE_SKIP_PACKAGE_INSTALL=1 LAN_ARCADE_SKIP_ADMIN_AUTH=1 LAN_ARCADE_SKIP_MIRROR=1 LAN_ARCADE_CATALOG_SOURCE=metadata-existing bash ./setup_lan_arcade.sh
+npm run qa:static                 # 149/149 OK, 0 external entry HTML refs
+npm run qa:smoke:catalog          # 149/149 strict pass, 149 playable
+```
+
+Report/logs: `docs/PUBLIC_PACKAGE_EXPANSION_2026-06-20.md`, `qa/reports/public-package-expansion-20260620-*`, and per-game screenshot folders under `qa/reports/public-package-expansion-20260620/`. VM root after install/testing was about 134 GB used of 295 GB; NFS native shelf remained about 33 GB used of 12 TB. These results prove offline package availability plus first-launch/no-network rendering, not deep campaign completion or LAN multiplayer depth.

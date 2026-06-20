@@ -1,0 +1,51 @@
+id,pkg,title,icon,meta,description,tags,categories,commands
+abe-lan,abe,Abe's Amazing Adventure,ABE,Native Platformer - Retro,Side-scrolling platform adventure with a classic shareware-era feel,"Platformer,Arcade,Retro","arcade,platformer,retro,family,age-10-plus",abe
+airstrike-lan,airstrike,Airstrike,AIR,Native Arcade - Dogfight,Two-dimensional biplane dogfighting inspired by classic couch action games,"Arcade,Action,Local Multiplayer","arcade,action,multiplayer,retro,age-10-plus",airstrike
+alex4-lan,alex4,Alex the Allegator 4,ALEX,Native Platformer - Family,A retro Allegro platform game with friendly art and simple arcade goals,"Platformer,Family,Retro","arcade,platformer,family,casual,age-5-plus",alex4
+alienblaster-lan,alienblaster,Alien Blaster,ABLAST,Native Shooter - Co-op,Classic 2D shoot em up with local action potential,"Arcade,Shooter,Action","arcade,action,multiplayer,age-10-plus",alienblaster
+amphetamine-lan,amphetamine,Amphetamine,AMP,Native Platformer - Psychedelic,Fast jump-and-run game with distinctive visual effects,"Platformer,Action,Retro","arcade,platformer,action,age-10-plus",amphetamine
+berusky-lan,berusky,Berusky,BUGS,Native Puzzle - Sokoban-like,Logic puzzle game based on Sokoban-style movement and planning,"Puzzle,Logic,Family","puzzle,strategy,family,age-10-plus",berusky
+blobandconquer-lan,blobandconquer,Blob And Conquer,BLOB3D,Native 3D Platform Shooter,3D platform shooting game in the Blob Wars family,"Action,Platformer,3D","action,arcade,platformer,age-10-plus",blobAndConquer|blobandconquer
+blobwars-lan,blobwars,Blob Wars: Metal Blob Solid,BLOB,Native Platform Shooter,2D platform shooting game with missions and exploration,"Action,Platformer,Retro","action,arcade,platformer,age-10-plus",blobwars
+bloboats-lan,bloboats,Bloboats,BOAT,Native Racing - Physics Boat,Boat racing game with tricky physics and time-trial handling,"Racing,Physics,Arcade","racing,arcade,action,family,age-10-plus",bloboats
+blockattack-lan,blockattack,Block Attack,BLOCK,Native Puzzle - Panel Attack,Puzzle game inspired by Tetris Attack and Panel de Pon,"Puzzle,Arcade,Family","puzzle,arcade,family,casual,age-5-plus",blockattack
+bumprace-lan,bumprace,BumpRace,BUMP,Native Racing - Maze,One or two players race through maze-like levels,"Racing,Arcade,Local Multiplayer","racing,arcade,multiplayer,family,age-5-plus",bumprace
+burgerspace-lan,burgerspace,BurgerSpace,BURGER,Native Arcade - BurgerTime-like,Avoid hostile food and complete giant burgers in a BurgerTime-style arcade game,"Arcade,Retro,Family","arcade,retro,family,casual,age-5-plus",burgerspace
+caveexpress-lan,caveexpress,CaveExpress,CAVE,Native Physics Platformer,Physics-based cave delivery platformer,"Arcade,Physics,Family","arcade,puzzle,action,family,age-10-plus",caveexpress
+cavepacker-lan,cavepacker,CavePacker,PACK,Native Puzzle - Sokoban,Sokoban-style puzzle game with local and network multiplayer features,"Puzzle,Strategy,Family","puzzle,strategy,multiplayer,family,age-10-plus",cavepacker
+circuslinux-lan,circuslinux,Circus Linux!,CIRCUS,Native Arcade - Balloon Pop,A circus paddle game where clowns bounce to pop balloons,"Arcade,Family,Kids","arcade,family,casual,age-5-plus",circuslinux
+cultivation-lan,cultivation,Cultivation,GARDEN,Native Simulation - Garden Ecosystem,A game about interactions within a gardening community,"Simulation,Garden,Strategy","simulation,strategy,science,family,age-10-plus",cultivation
+enemylines3-lan,enemylines3,Enemy Lines 3,EL3,Native FPS - Abstract,Semi-abstract first-person 3D shooter,"FPS,Action,3D","action,arcade,age-13-plus",enemylines3
+enemylines7-lan,enemylines7,Enemy Lines 7,EL7,Native FPS - Abstract,First-person 3D shooter with simple abstract visuals,"FPS,Action,3D","action,arcade,age-13-plus",enemylines7
+ltris-lan,ltris,LTris,LTRIS,Native Puzzle - Tetris-like,Polished falling-block puzzle game with CPU opponent modes,"Puzzle,Arcade,Family","puzzle,arcade,retro,family,age-5-plus",ltris
+epiphany-lan,epiphany,Epiphany,EPIPH,Native Puzzle - Boulder Dash-like,Boulder Dash style digging and gem-collection puzzle game,"Puzzle,Arcade,Retro","puzzle,arcade,retro,family,age-10-plus",epiphany-game|epiphany
+extremetuxracer-lan,extremetuxracer,Extreme Tux Racer,ETR,Native Racing - Snow,3D racing game featuring Tux sliding down snowy courses,"Racing,Family,3D","racing,arcade,family,casual,age-5-plus",etr|extremetuxracer
+flobopuyo-lan,flobopuyo,FloboPuyo,PUYO,Native Puzzle - Puyo-like,Puyo Puyo clone with chain-combo puzzle play,"Puzzle,Arcade,Family","puzzle,arcade,multiplayer,family,age-5-plus",flobopuyo
+foobillardplus-lan,foobillardplus,FooBillard++,POOL,Native Sports - Billiards,3D OpenGL billiards game,"Sports,Arcade,3D","arcade,simulation,family,casual,age-10-plus",foobillardplus
+gamine-lan,gamine,Gamine,KIDS,Native Kids - Mouse Play,Interactive game for very young children,"Kids,Family,Casual","educational,arcade,family,casual,age-5-plus",gamine
+garden-coloured-lights-lan,garden-of-coloured-lights,Garden of Coloured Lights,LIGHTS,Native Shooter - Music,Abstract vertical shooter with music elements,"Arcade,Shooter,Music","arcade,action,age-10-plus",garden
+gav-lan,gav,GPL Arcade Volleyball,VOLLEY,Native Sports - Volleyball,Arcade volleyball game for quick local matches,"Sports,Arcade,Family","arcade,multiplayer,family,casual,age-5-plus",gav
+geki2-lan,geki2,Geki 2,GEKI2,Native Shooter - Vertical,Xenon-like vertical shoot em up,"Arcade,Shooter,Retro","arcade,action,retro,age-10-plus",geki2
+geki3-lan,geki3,Geki 3,GEKI3,Native Shooter - Horizontal,R-Type-like horizontal shoot em up,"Arcade,Shooter,Retro","arcade,action,retro,age-10-plus",geki3
+gnujump-lan,gnujump,GNUjump,JUMP,Native Arcade - Vertical Platformer,Jump upward from platform to platform and survive as long as possible,"Arcade,Platformer,Family","arcade,platformer,family,casual,age-5-plus",gnujump
+heroes-lan,heroes,Heroes,TRAIL,Native Arcade - Light-cycle,Collect powerups and avoid opponents trails in a Tron-like arcade game,"Arcade,Retro,Multiplayer","arcade,action,multiplayer,retro,age-10-plus",heroes
+holotz-castle-lan,holotz-castle,Holotz Castle,CASTLE,Native Platformer - Mystery,Platform game with puzzles and a mysterious castle theme,"Platformer,Puzzle,Retro","arcade,platformer,puzzle,age-10-plus",holotz-castle|holotz
+kraptor-lan,kraptor,Kraptor,KRAP,Native Shooter - Scroller,Classic shoot em up scroller game,"Arcade,Shooter,Action","arcade,action,age-10-plus",kraptor
+krank-lan,krank,Krank,KRANK,Native Dexterity Puzzle,Dexterity game where you match stones together,"Puzzle,Dexterity,Casual","puzzle,arcade,casual,family,age-10-plus",krank
+lierolibre-lan,lierolibre,LieroLibre,WORM,Native Action - Worm Arena,Old-school earthworm action game,"Action,Arcade,Local Multiplayer","arcade,action,multiplayer,age-10-plus",lierolibre
+marsshooter-lan,marsshooter,M.A.R.S. Shooter,MARS,Native Space Shooter - Gravity,Ridiculous space shooter governed by gravity,"Space,Shooter,Arcade","space,arcade,action,multiplayer,age-10-plus",marsshooter|mars
+meritous-lan,meritous,Meritous,MERIT,Native Action Adventure,Action-adventure dungeon crawl with abstract rooms and charging attacks,"RPG,Action,Dungeon","rpg,adventure,action,roguelite,age-10-plus",meritous
+moon-lander-lan,moon-lander,Moon Lander,MOON,Native Arcade - Lunar Lander,Classic lunar lander style physics game,"Arcade,Physics,Family","arcade,simulation,family,casual,age-10-plus",moon-lander|moonlander
+morris-lan,morris,Nine Men's Morris,MORRIS,Native Board Game - Strategy,Nine men's morris board game,"Board Game,Strategy,Family","board-game,strategy,family,casual,age-10-plus",morris
+mrrescue-lan,mrrescue,Mr Rescue,RESCUE,Native Arcade - Fire Rescue,Arcade 2D action game about rescuing people from burning buildings,"Arcade,Action,Family","arcade,action,family,age-10-plus",mrrescue
+nikwi-lan,nikwi,Nikwi Deluxe,NIKWI,Native Platformer - Candy,Platform game where the goal is to collect candies,"Platformer,Family,Retro","arcade,platformer,family,casual,age-5-plus",nikwi
+numptyphysics-lan,numptyphysics,Numpty Physics,CRAYON,Native Puzzle - Drawing Physics,Crayon-based physics puzzle game,"Puzzle,Physics,Family","puzzle,science,family,casual,age-5-plus",numptyphysics
+open-invaders-lan,open-invaders,Open Invaders,INV,Native Arcade - Space Invaders,Space Invaders clone,"Arcade,Shooter,Retro","arcade,action,retro,family,age-10-plus",open-invaders
+pathological-lan,pathological,Pathological,PATH,Native Puzzle - Paths,Puzzle game involving paths and marbles,"Puzzle,Logic,Family","puzzle,strategy,family,age-10-plus",pathological
+pink-pony-lan,pink-pony,Pink Pony,PONY,Native Racing - 3D Arena,3D racing game with ponies,"Racing,Family,3D","racing,arcade,family,casual,age-5-plus",pink-pony
+powermanga-lan,powermanga,Powermanga,PMANGA,Native Shooter - Vertical,Vertical shoot em up with colorful graphics,"Arcade,Shooter,Retro","arcade,action,retro,age-10-plus",powermanga
+solarwolf-lan,solarwolf,SolarWolf,SWOLF,Native Arcade - Box Collector,Collect boxes while avoiding enemies and shots,"Arcade,Puzzle,Family","arcade,puzzle,family,age-10-plus",solarwolf
+supertransball2-lan,supertransball2,Super Transball 2,TRANS,Native Arcade - Thrust-like,Thrust-style game about transporting a ball through hostile terrain,"Arcade,Physics,Action","arcade,action,simulation,age-10-plus",supertransball2
+tecnoballz-lan,tecnoballz,TecnoballZ,TBALL,Native Arcade - Brick Breaker,Amiga-style brick-breaking arcade game,"Arcade,Puzzle,Retro","arcade,puzzle,retro,family,age-10-plus",tecnoballz
+tuxfootball-lan,tuxfootball,Tux Football,FOOTY,Native Sports - 2D Soccer,2D soccer game for quick local matches,"Sports,Arcade,Family","arcade,multiplayer,family,casual,age-5-plus",tuxfootball
+tuxpuck-lan,tuxpuck,TuxPuck,PUCK,Native Sports - Air Hockey,Single-player air hockey game,"Sports,Arcade,Family","arcade,family,casual,age-5-plus",tuxpuck

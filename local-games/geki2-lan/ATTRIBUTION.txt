@@ -1,0 +1,4 @@
+Geki 2
+Source: https://packages.debian.org/bookworm/geki2
+Package: geki2
+QA: pass - No-network native launch reached a nonblank post-input screen. This is a first-play smoke, not a full completion proof.

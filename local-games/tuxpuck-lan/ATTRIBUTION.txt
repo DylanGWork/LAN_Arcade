@@ -1,0 +1,4 @@
+TuxPuck
+Source: https://packages.debian.org/bookworm/tuxpuck
+Package: tuxpuck
+QA: pass - No-network native launch reached a nonblank post-input screen. This is a first-play smoke, not a full completion proof.

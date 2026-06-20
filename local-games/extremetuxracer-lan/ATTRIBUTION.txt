@@ -1,0 +1,4 @@
+Extreme Tux Racer
+Source: https://packages.debian.org/bookworm/extremetuxracer
+Package: extremetuxracer
+QA: pass - No-network native launch reached a nonblank post-input screen. This is a first-play smoke, not a full completion proof.

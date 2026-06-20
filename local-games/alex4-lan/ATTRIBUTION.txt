@@ -1,0 +1,4 @@
+Alex the Allegator 4
+Source: https://packages.debian.org/bookworm/alex4
+Package: alex4
+QA: pass - No-network native launch reached a nonblank post-input screen. This is a first-play smoke, not a full completion proof.
