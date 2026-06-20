@@ -1,0 +1,1 @@
+Game Boy Wave 1 uses Dylan-provided private ROM files from /var/www/html/mirrors/private-rom-vault. No ROM files are stored here.

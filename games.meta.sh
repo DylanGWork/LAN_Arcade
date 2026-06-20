@@ -214,6 +214,8 @@ declare -A GAMES=(
   ["tecnoballz-lan"]="LOCAL_DIR::local-games/tecnoballz-lan"
   ["tuxfootball-lan"]="LOCAL_DIR::local-games/tuxfootball-lan"
   ["tuxpuck-lan"]="LOCAL_DIR::local-games/tuxpuck-lan"
+  ["private-rom-wave-1"]="LOCAL_DIR::local-games/private-rom-wave-1"
+  ["board-games-wave-1"]="LOCAL_DIR::local-games/board-games-wave-1"
 )
 
 # ---------- Pretty card metadata ----------
@@ -426,6 +428,8 @@ declare -A GAME_INFO=(
   ["tecnoballz-lan"]="TecnoballZ|TBALL|Native Arcade - Brick Breaker|Amiga-style brick-breaking arcade game|Arcade,Puzzle,Retro"
   ["tuxfootball-lan"]="Tux Football|FOOTY|Native Sports - 2D Soccer|2D soccer game for quick local matches|Sports,Arcade,Family"
   ["tuxpuck-lan"]="TuxPuck|PUCK|Native Sports - Air Hockey|Single-player air hockey game|Sports,Arcade,Family"
+  ["private-rom-wave-1"]="Game Boy Wave 1|GB1|Private Retro Shelf - 201 Curated Titles|Curated Wave 1 Game Boy and Game Boy Color imports from the private VM vault, with title-level search and play links.|Retro,Emulator,Game Boy,GBC,Private,Curated,Searchable"
+  ["board-games-wave-1"]="Board Games Wave 1|BOARD|Board Game Intake - 200 Titles|Searchable board-game intake shelf with local playable links where source-clear implementations exist and metadata-only rows where rights review is still required.|Board Game,Family,Strategy,Party,Metadata,Searchable"
 )
 
 # ---------- Category metadata ----------
@@ -641,4 +645,6 @@ declare -A GAME_CATEGORIES=(
   ["tecnoballz-lan"]="arcade,puzzle,retro,family,age-10-plus"
   ["tuxfootball-lan"]="arcade,multiplayer,family,casual,age-5-plus"
   ["tuxpuck-lan"]="arcade,family,casual,age-5-plus"
+  ["private-rom-wave-1"]="retro,arcade,emulator,private,family,casual,age-10-plus"
+  ["board-games-wave-1"]="board-game,strategy,multiplayer,family,casual,age-10-plus"
 )
