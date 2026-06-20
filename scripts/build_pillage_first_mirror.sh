@@ -1655,6 +1655,562 @@ s = s.replace(old_raid, new_raid, 1)
 resolver.write_text(s)
 PY
 
+
+python3 - <<'PY'
+from pathlib import Path
+root = Path('.')
+
+
+report_controllers = root / 'packages/api/src/http/controllers/report-controllers.ts'
+rc = report_controllers.read_text()
+rc = rc.replace(
+    'Your troops found defenders and returned without loot. Full casualty combat is still disabled in this LAN build.',
+    'Legacy raid report: defenders stopped this raid before raid combat was implemented. New raids now resolve casualties and survivor loot.',
+)
+ensure_tail = """  });
+};
+
+const parseEventMeta"""
+ensure_replacement = """  });
+
+  // LAN Arcade legacy report text migration: existing browser saves may contain
+  // the previous stopgap wording even after the combat resolver is upgraded.
+  database.exec({
+    sql: `
+      UPDATE lan_arcade_reports
+      SET body = REPLACE(
+        REPLACE(
+          body,
+          'Your troops found defenders and returned without loot. Full casualty combat is still disabled in this LAN build.',
+          'Legacy raid report: defenders stopped this raid before raid combat was implemented. New raids now resolve casualties and survivor loot.'
+        ),
+        'Your troops found defenders and returned without casualties. Full attack combat is still disabled in this LAN build.',
+        'Legacy attack report: this attack was recorded before attack combat reporting was implemented. New attacks now resolve casualties.'
+      )
+      WHERE
+        body LIKE '%Full casualty combat is still disabled%'
+        OR body LIKE '%Full attack combat is still disabled%';
+    `,
+  });
+};
+
+const parseEventMeta"""
+if ensure_tail not in rc:
+    raise SystemExit('Failed to find report table ensure tail for legacy text migration')
+rc = rc.replace(ensure_tail, ensure_replacement, 1)
+report_controllers.write_text(rc)
+
+# LAN Arcade raid combat patch.
+# Adds small Travian-like raid/attack casualty handling on top of the persistent
+# report patch without refactoring the upstream event system.
+resolver = root / 'packages/api/src/http/events/resolvers/troop-movement-resolver.ts'
+s = resolver.read_text()
+s = s.replace(
+    "import type { GameEvent } from '@pillage-first/types/models/game-event';\n",
+    "import type { GameEvent } from '@pillage-first/types/models/game-event';\nimport { unitIdSchema } from '@pillage-first/types/models/unit';\n",
+    1,
+)
+s = s.replace(
+    "import { addTroops } from '../../../utils/troops';\n",
+    "import { addTroops, removeTroops } from '../../../utils/troops';\n",
+    1,
+)
+helper_start = s.index('const countDefendersAtTile = (')
+helper_end = s.index('const calculateRaidCarryCapacity', helper_start)
+combat_helpers = r"""type CombatTroop = GameEvent<'troopMovementRaid'>['troops'][number];
+type CombatMode = 'attack' | 'raid';
+
+type CombatResult = {
+  attackPower: number;
+  defencePower: number;
+  attackerLosses: CombatTroop[];
+  attackerSurvivors: CombatTroop[];
+  defenderLosses: CombatTroop[];
+  defenderSurvivors: CombatTroop[];
+};
+
+const combatTroopRowSchema = z.strictObject({
+  unitId: unitIdSchema,
+  amount: z.number(),
+  tileId: z.number(),
+  source: z.number(),
+});
+
+const selectDefendersAtTile = (
+  database: Parameters<Resolver<GameEvent<'troopMovementRaid'>>>[0],
+  targetTileId: number,
+): CombatTroop[] => {
+  return database.selectObjects({
+    sql: `
+      SELECT
+        ui.unit AS unitId,
+        t.amount,
+        t.tile_id AS tileId,
+        t.source_tile_id AS source
+      FROM
+        troops t
+          JOIN unit_ids ui ON ui.id = t.unit_id
+      WHERE
+        t.tile_id = $target_tile_id
+        AND t.amount > 0;
+    `,
+    bind: { $target_tile_id: targetTileId },
+    schema: combatTroopRowSchema,
+  });
+};
+
+const totalTroopCount = (troops: CombatTroop[]) => {
+  return troops.reduce((sum, troop) => sum + troop.amount, 0);
+};
+
+const summarizeTroops = (troops: CombatTroop[]) => {
+  if (troops.length === 0) {
+    return 'none';
+  }
+
+  return troops
+    .map(({ amount, unitId }) => `${amount} ${unitId.replaceAll('_', ' ')}`)
+    .join(', ');
+};
+
+const calculateAttackPower = (troops: CombatTroop[]) => {
+  return troops.reduce((total, { amount, unitId }) => {
+    return total + amount * getUnitDefinition(unitId).attack;
+  }, 0);
+};
+
+const calculateDefencePower = (
+  defenders: CombatTroop[],
+  attackers: CombatTroop[],
+) => {
+  const infantryAttackPower = attackers.reduce((total, { amount, unitId }) => {
+    const unit = getUnitDefinition(unitId);
+    return unit.category === 'cavalry' ? total : total + amount * unit.attack;
+  }, 0);
+  const cavalryAttackPower = attackers.reduce((total, { amount, unitId }) => {
+    const unit = getUnitDefinition(unitId);
+    return unit.category === 'cavalry' ? total + amount * unit.attack : total;
+  }, 0);
+  const totalAttackPower = infantryAttackPower + cavalryAttackPower;
+  const infantryWeight = totalAttackPower > 0 ? infantryAttackPower / totalAttackPower : 0.5;
+  const cavalryWeight = totalAttackPower > 0 ? cavalryAttackPower / totalAttackPower : 0.5;
+
+  return defenders.reduce((total, { amount, unitId }) => {
+    const unit = getUnitDefinition(unitId);
+    const weightedDefence =
+      unit.infantryDefence * infantryWeight + unit.cavalryDefence * cavalryWeight;
+    return total + amount * weightedDefence;
+  }, 0);
+};
+
+const splitTroopsByLossRatio = (
+  troops: CombatTroop[],
+  lossRatio: number,
+) => {
+  const total = totalTroopCount(troops);
+  const clampedRatio = Math.max(0, Math.min(1, lossRatio));
+  const targetLosses =
+    clampedRatio <= 0 || total === 0
+      ? 0
+      : clampedRatio >= 1
+        ? total
+        : Math.max(1, Math.min(total, Math.round(total * clampedRatio)));
+
+  const allocations = troops.map((troop) => {
+    const rawLoss = troop.amount * clampedRatio;
+    return {
+      troop,
+      loss: Math.min(troop.amount, Math.floor(rawLoss)),
+      remainder: rawLoss - Math.floor(rawLoss),
+    };
+  });
+
+  let allocated = allocations.reduce((sum, row) => sum + row.loss, 0);
+  const ordered = [...allocations].sort((a, b) => b.remainder - a.remainder);
+
+  while (allocated < targetLosses) {
+    const row = ordered.find((candidate) => candidate.loss < candidate.troop.amount);
+    if (!row) {
+      break;
+    }
+    row.loss += 1;
+    allocated += 1;
+  }
+
+  const losses = allocations
+    .filter(({ loss }) => loss > 0)
+    .map(({ troop, loss }) => ({ ...troop, amount: loss }));
+  const survivors = allocations
+    .filter(({ troop, loss }) => troop.amount - loss > 0)
+    .map(({ troop, loss }) => ({ ...troop, amount: troop.amount - loss }));
+
+  return { losses, survivors };
+};
+
+const resolveLanArcadeCombat = (
+  mode: CombatMode,
+  attackers: CombatTroop[],
+  defenders: CombatTroop[],
+): CombatResult => {
+  const attackPower = calculateAttackPower(attackers);
+  const defencePower = calculateDefencePower(defenders, attackers);
+  let attackerLossRatio = 0;
+  let defenderLossRatio = 0;
+
+  if (attackers.length === 0) {
+    attackerLossRatio = 0;
+    defenderLossRatio = 0;
+  } else if (defenders.length === 0 || defencePower <= 0) {
+    attackerLossRatio = 0;
+    defenderLossRatio = defenders.length > 0 && attackPower > 0 ? 1 : 0;
+  } else if (attackPower <= 0) {
+    attackerLossRatio = 1;
+    defenderLossRatio = 0;
+  } else if (mode === 'attack') {
+    if (attackPower >= defencePower) {
+      attackerLossRatio = Math.min(0.95, (defencePower / attackPower) * 0.7);
+      defenderLossRatio = 1;
+    } else {
+      attackerLossRatio = 1;
+      defenderLossRatio = Math.min(0.95, (attackPower / defencePower) * 0.7);
+    }
+  } else {
+    const combinedPower = attackPower + defencePower;
+    attackerLossRatio = defencePower / combinedPower;
+    defenderLossRatio = attackPower / combinedPower;
+
+    if (attackPower < defencePower * 0.35) {
+      attackerLossRatio = 1;
+    }
+    if (defencePower < attackPower * 0.2) {
+      defenderLossRatio = 1;
+    }
+  }
+
+  const attackerResult = splitTroopsByLossRatio(attackers, attackerLossRatio);
+  const defenderResult = splitTroopsByLossRatio(defenders, defenderLossRatio);
+
+  return {
+    attackPower,
+    defencePower,
+    attackerLosses: attackerResult.losses,
+    attackerSurvivors: attackerResult.survivors,
+    defenderLosses: defenderResult.losses,
+    defenderSurvivors: defenderResult.survivors,
+  };
+};
+
+const removeCombatLosses = (
+  database: Parameters<Resolver<GameEvent<'troopMovementRaid'>>>[0],
+  losses: CombatTroop[],
+) => {
+  if (losses.length > 0) {
+    removeTroops(database, losses);
+  }
+};
+
+const describeCombatReport = (args: {
+  sentAttackers: CombatTroop[];
+  defenders: CombatTroop[];
+  combat: CombatResult;
+  loot?: RaidResourceBundle;
+}) => {
+  const attackerLossCount = totalTroopCount(args.combat.attackerLosses);
+  const defenderLossCount = totalTroopCount(args.combat.defenderLosses);
+  const attackerSurvivorCount = totalTroopCount(args.combat.attackerSurvivors);
+  const defenderSurvivorCount = totalTroopCount(args.combat.defenderSurvivors);
+  const parts = [
+    `Attackers sent: ${summarizeTroops(args.sentAttackers)}.`,
+    `Attacker losses: ${summarizeTroops(args.combat.attackerLosses)}.`,
+    `Attackers returned: ${summarizeTroops(args.combat.attackerSurvivors)}.`,
+    `Defenders present: ${summarizeTroops(args.defenders)}.`,
+    `Defender losses: ${summarizeTroops(args.combat.defenderLosses)}.`,
+    `Defenders remaining: ${summarizeTroops(args.combat.defenderSurvivors)}.`,
+  ];
+
+  if (args.loot) {
+    parts.push(`Loot: ${formatRaidLoot(args.loot)}.`);
+  }
+
+  parts.push(
+    `Outcome: ${
+      attackerSurvivorCount === 0
+        ? 'attackers were wiped out'
+        : defenderSurvivorCount === 0 && args.defenders.length > 0
+          ? 'defenders were cleared'
+          : attackerLossCount > 0 || defenderLossCount > 0
+            ? 'both sides took losses'
+            : 'no resistance'
+    }.`
+  );
+
+  return parts.join(' ');
+};
+
+const createLanArcadeRaidReport = (
+  database: Parameters<Resolver<GameEvent<'troopMovementRaid'>>>[0],
+  args: {
+    eventId: number;
+    villageId: number;
+    timestamp: number;
+    sentAttackers: CombatTroop[];
+    defenders: CombatTroop[];
+    combat: CombatResult;
+    carriedResources: RaidResourceBundle;
+  },
+) => {
+  const total = args.carriedResources.reduce((sum, amount) => sum + amount, 0);
+  const attackerLossCount = totalTroopCount(args.combat.attackerLosses);
+  const survivorCount = totalTroopCount(args.combat.attackerSurvivors);
+
+  insertLanArcadeReport(database, {
+    id: `raid-${args.eventId}`,
+    villageId: args.villageId,
+    timestamp: args.timestamp,
+    type: 'raid',
+    title:
+      survivorCount === 0
+        ? `Raid failed: ${attackerLossCount} attackers lost`
+        : total > 0
+          ? `Raid gained ${total} resources`
+          : 'Raid returned empty',
+    body: describeCombatReport({
+      sentAttackers: args.sentAttackers,
+      defenders: args.defenders,
+      combat: args.combat,
+      loot: args.carriedResources,
+    }),
+  });
+};
+
+const createLanArcadeAttackReport = (
+  database: Parameters<Resolver<GameEvent<'troopMovementAttack'>>>[0],
+  args: {
+    eventId: number;
+    villageId: number;
+    timestamp: number;
+    sentAttackers: CombatTroop[];
+    defenders: CombatTroop[];
+    combat: CombatResult;
+  },
+) => {
+  const attackerSurvivorCount = totalTroopCount(args.combat.attackerSurvivors);
+  const defenderSurvivorCount = totalTroopCount(args.combat.defenderSurvivors);
+
+  insertLanArcadeReport(database, {
+    id: `attack-${args.eventId}`,
+    villageId: args.villageId,
+    timestamp: args.timestamp,
+    type: 'attack',
+    title:
+      attackerSurvivorCount === 0
+        ? 'Attack failed'
+        : defenderSurvivorCount === 0 && args.defenders.length > 0
+          ? 'Attack cleared defenders'
+          : 'Attack returned',
+    body: describeCombatReport({
+      sentAttackers: args.sentAttackers,
+      defenders: args.defenders,
+      combat: args.combat,
+    }),
+  });
+};
+
+"""
+s = s[:helper_start] + combat_helpers + s[helper_end:]
+old_attack = """export const attackMovementResolver: Resolver<
+  GameEvent<'troopMovementAttack'>
+> = (database, args) => {
+  const { id, villageId, resolvesAt, originTileId, targetTileId, troops } = args;
+  const defenderCount = countDefendersAtTile(database, targetTileId);
+
+  // LAN Arcade: make incomplete combat visible instead of silently bypassing it.
+  createLanArcadeAttackReport(database, {
+    eventId: id,
+    villageId,
+    timestamp: resolvesAt,
+    defenderCount,
+  });
+
+  createEvents<'troopMovementReturn'>(database, {
+    villageId,
+    troops,
+    targetTileId: originTileId,
+    originTileId: targetTileId,
+    startsAt: resolvesAt,
+    type: 'troopMovementReturn',
+    originalMovementType: 'troopMovementAttack',
+    originalMovementEventId: id,
+    defenderCount,
+  } as never);
+
+  const targetVillageIds = database.selectValues({
+    sql: selectPlayerVillageIdByTileIdQuery,
+    bind: { $tile_id: targetTileId, $player_id: PLAYER_ID },
+    schema: z.number(),
+  });
+
+  return {
+    affectedVillageIds: [villageId, ...targetVillageIds],
+  };
+};
+"""
+new_attack = """export const attackMovementResolver: Resolver<
+  GameEvent<'troopMovementAttack'>
+> = (database, args) => {
+  const { id, villageId, resolvesAt, originTileId, targetTileId, troops } = args;
+  const defenders = selectDefendersAtTile(database, targetTileId);
+  const combat = resolveLanArcadeCombat('attack', troops, defenders);
+
+  removeCombatLosses(database, combat.defenderLosses);
+
+  createLanArcadeAttackReport(database, {
+    eventId: id,
+    villageId,
+    timestamp: resolvesAt,
+    sentAttackers: troops,
+    defenders,
+    combat,
+  });
+
+  if (combat.attackerSurvivors.length > 0) {
+    createEvents<'troopMovementReturn'>(database, {
+      villageId,
+      troops: combat.attackerSurvivors,
+      targetTileId: originTileId,
+      originTileId: targetTileId,
+      startsAt: resolvesAt,
+      type: 'troopMovementReturn',
+      originalMovementType: 'troopMovementAttack',
+      originalMovementEventId: id,
+      attackerLosses: combat.attackerLosses,
+      defenderLosses: combat.defenderLosses,
+    } as never);
+  }
+
+  const targetVillageIds = database.selectValues({
+    sql: selectPlayerVillageIdByTileIdQuery,
+    bind: { $tile_id: targetTileId, $player_id: PLAYER_ID },
+    schema: z.number(),
+  });
+
+  return {
+    affectedVillageIds: [villageId, ...targetVillageIds],
+  };
+};
+"""
+if old_attack not in s:
+    raise SystemExit('Failed to find previous LAN attack resolver block')
+s = s.replace(old_attack, new_attack, 1)
+old_raid = """export const raidMovementResolver: Resolver<GameEvent<'troopMovementRaid'>> = (
+  database,
+  args,
+) => {
+  const { id, villageId, resolvesAt, troops, originTileId, targetTileId } = args;
+  const defenderCount = countDefendersAtTile(database, targetTileId);
+  const carriedResources =
+    defenderCount > 0
+      ? emptyRaidResourceBundle()
+      : raidVillageResources(
+          database,
+          targetTileId,
+          resolvesAt,
+          calculateRaidCarryCapacity(troops),
+        );
+
+  // LAN Arcade: defended raids return empty until full casualty combat exists.
+  createLanArcadeRaidReport(database, {
+    eventId: id,
+    villageId,
+    timestamp: resolvesAt,
+    carriedResources,
+    defenderCount,
+  });
+
+  createEvents<'troopMovementReturn'>(database, {
+    villageId,
+    troops,
+    startsAt: resolvesAt,
+    targetTileId: originTileId,
+    originTileId: targetTileId,
+    type: 'troopMovementReturn',
+    originalMovementType: 'troopMovementRaid',
+    originalMovementEventId: id,
+    carriedResources,
+    defenderCount,
+  } as never);
+
+  const targetVillageIds = database.selectValues({
+    sql: selectPlayerVillageIdByTileIdQuery,
+    bind: { $tile_id: targetTileId, $player_id: PLAYER_ID },
+    schema: z.number(),
+  });
+
+  return {
+    affectedVillageIds: [villageId, ...targetVillageIds],
+  };
+};
+"""
+new_raid = """export const raidMovementResolver: Resolver<GameEvent<'troopMovementRaid'>> = (
+  database,
+  args,
+) => {
+  const { id, villageId, resolvesAt, troops, originTileId, targetTileId } = args;
+  const defenders = selectDefendersAtTile(database, targetTileId);
+  const combat = resolveLanArcadeCombat('raid', troops, defenders);
+
+  removeCombatLosses(database, combat.defenderLosses);
+
+  const carriedResources = raidVillageResources(
+    database,
+    targetTileId,
+    resolvesAt,
+    calculateRaidCarryCapacity(combat.attackerSurvivors),
+  );
+
+  createLanArcadeRaidReport(database, {
+    eventId: id,
+    villageId,
+    timestamp: resolvesAt,
+    sentAttackers: troops,
+    defenders,
+    combat,
+    carriedResources,
+  });
+
+  if (combat.attackerSurvivors.length > 0) {
+    createEvents<'troopMovementReturn'>(database, {
+      villageId,
+      troops: combat.attackerSurvivors,
+      startsAt: resolvesAt,
+      targetTileId: originTileId,
+      originTileId: targetTileId,
+      type: 'troopMovementReturn',
+      originalMovementType: 'troopMovementRaid',
+      originalMovementEventId: id,
+      carriedResources,
+      attackerLosses: combat.attackerLosses,
+      defenderLosses: combat.defenderLosses,
+    } as never);
+  }
+
+  const targetVillageIds = database.selectValues({
+    sql: selectPlayerVillageIdByTileIdQuery,
+    bind: { $tile_id: targetTileId, $player_id: PLAYER_ID },
+    schema: z.number(),
+  });
+
+  return {
+    affectedVillageIds: [villageId, ...targetVillageIds],
+  };
+};
+"""
+if old_raid not in s:
+    raise SystemExit('Failed to find previous LAN raid resolver block')
+s = s.replace(old_raid, new_raid, 1)
+resolver.write_text(s)
+PY
+
 uid=$(id -u)
 gid=$(id -g)
 docker run --rm \
