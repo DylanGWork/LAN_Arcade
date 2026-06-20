@@ -261,6 +261,187 @@ if 'const AttackRaidBriefing' not in s:
     raise SystemExit('Failed to expose attack briefing')
 attack_form.write_text(s)
 
+resolver = root / 'packages/api/src/http/events/resolvers/troop-movement-resolver.ts'
+s = resolver.read_text()
+if 'calculateRaidCarryCapacity' not in s:
+    s = s.replace(
+        "import { buildingMap } from '@pillage-first/game-assets/buildings';\n",
+        "import { buildingMap } from '@pillage-first/game-assets/buildings';\nimport { getUnitDefinition } from '@pillage-first/game-assets/utils/units';\n",
+        1,
+    )
+    s = s.replace(
+        "import { updateVillageResourcesAt } from '../../../utils/village';\n",
+        "import {\n  addVillageResourcesAt,\n  subtractVillageResourcesAt,\n  updateVillageResourcesAt,\n} from '../../../utils/village';\n",
+        1,
+    )
+    s = s.replace(
+        "import type { Resolver } from '../resolver';\n\nexport const adventureMovementResolver",
+        """import type { Resolver } from '../resolver';
+
+type RaidResourceBundle = [number, number, number, number];
+type ReturnMovementWithLoot = GameEvent<'troopMovementReturn'> & {
+  carriedResources?: RaidResourceBundle;
+};
+
+const emptyRaidResourceBundle = (): RaidResourceBundle => [0, 0, 0, 0];
+
+const raidTargetResourcesSchema = z.strictObject({
+  villageId: z.number(),
+  wood: z.number(),
+  clay: z.number(),
+  iron: z.number(),
+  wheat: z.number(),
+});
+
+const calculateRaidCarryCapacity = (troops: GameEvent<'troopMovementRaid'>['troops']) => {
+  return troops.reduce((total, { amount, unitId }) => {
+    return total + amount * getUnitDefinition(unitId).unitCarryCapacity;
+  }, 0);
+};
+
+const splitRaidLootByCapacity = (
+  resources: RaidResourceBundle,
+  carryCapacity: number,
+): RaidResourceBundle => {
+  if (carryCapacity <= 0) {
+    return emptyRaidResourceBundle();
+  }
+
+  const loot = emptyRaidResourceBundle();
+  let remainingCapacity = Math.floor(carryCapacity);
+
+  for (let i = 0; i < resources.length; i += 1) {
+    const remainingSlots = resources.length - i;
+    const fairShare = Math.ceil(remainingCapacity / remainingSlots);
+    const amount = Math.min(Math.floor(resources[i]), fairShare);
+    loot[i] = amount;
+    remainingCapacity -= amount;
+  }
+
+  return loot;
+};
+
+const raidVillageResources = (
+  database: Parameters<Resolver<GameEvent<'troopMovementRaid'>>>[0],
+  targetTileId: number,
+  timestamp: number,
+  carryCapacity: number,
+): RaidResourceBundle => {
+  if (carryCapacity <= 0) {
+    return emptyRaidResourceBundle();
+  }
+
+  const target = database.selectObject({
+    sql: `
+      SELECT
+        v.id AS villageId,
+        rs.wood,
+        rs.clay,
+        rs.iron,
+        rs.wheat
+      FROM
+        villages v
+          JOIN resource_sites rs ON rs.tile_id = v.tile_id
+      WHERE
+        v.tile_id = $target_tile_id;
+    `,
+    bind: { $target_tile_id: targetTileId },
+    schema: raidTargetResourcesSchema,
+  });
+
+  if (!target) {
+    return emptyRaidResourceBundle();
+  }
+
+  updateVillageResourcesAt(database, target.villageId, timestamp);
+
+  const currentTargetResources = database.selectObject({
+    sql: `
+      SELECT
+        v.id AS villageId,
+        rs.wood,
+        rs.clay,
+        rs.iron,
+        rs.wheat
+      FROM
+        villages v
+          JOIN resource_sites rs ON rs.tile_id = v.tile_id
+      WHERE
+        v.id = $target_village_id;
+    `,
+    bind: { $target_village_id: target.villageId },
+    schema: raidTargetResourcesSchema,
+  })!;
+
+  const stolenResources = splitRaidLootByCapacity(
+    [
+      currentTargetResources.wood,
+      currentTargetResources.clay,
+      currentTargetResources.iron,
+      currentTargetResources.wheat,
+    ],
+    carryCapacity,
+  );
+
+  if (stolenResources.some((amount) => amount > 0)) {
+    subtractVillageResourcesAt(
+      database,
+      target.villageId,
+      timestamp,
+      stolenResources,
+    );
+  }
+
+  return stolenResources;
+};
+
+export const adventureMovementResolver""",
+        1,
+    )
+    s = s.replace(
+        "export const returnMovementResolver: Resolver<\n  GameEvent<'troopMovementReturn'>\n> = (database, args) => {\n  const { villageId, targetTileId, troops } = args;\n\n  addTroops(\n",
+        """export const returnMovementResolver: Resolver<
+  GameEvent<'troopMovementReturn'>
+> = (database, args) => {
+  const { villageId, targetTileId, troops, resolvesAt } = args;
+  const { carriedResources } = args as ReturnMovementWithLoot;
+
+  if (carriedResources?.some((amount) => amount > 0)) {
+    addVillageResourcesAt(database, villageId, resolvesAt, carriedResources);
+  }
+
+  addTroops(
+""",
+        1,
+    )
+    s = s.replace(
+        "  const { villageId, resolvesAt, troops, originTileId, targetTileId } = args;\n\n  // TODO: Combat\n  createEvents<'troopMovementReturn'>(database, {\n    villageId,\n    troops,\n    startsAt: resolvesAt,\n    targetTileId: originTileId,\n    originTileId: targetTileId,\n    type: 'troopMovementReturn',\n    originalMovementType: 'troopMovementRaid',\n  });",
+        """  const { villageId, resolvesAt, troops, originTileId, targetTileId } = args;
+  const carriedResources = raidVillageResources(
+    database,
+    targetTileId,
+    resolvesAt,
+    calculateRaidCarryCapacity(troops),
+  );
+
+  // TODO: Combat. LAN Arcade currently implements non-lethal raid loot so raids
+  // are rewarding while upstream combat/report systems are still incomplete.
+  createEvents<'troopMovementReturn'>(database, {
+    villageId,
+    troops,
+    startsAt: resolvesAt,
+    targetTileId: originTileId,
+    originTileId: targetTileId,
+    type: 'troopMovementReturn',
+    originalMovementType: 'troopMovementRaid',
+    carriedResources,
+  } as never);""",
+        1,
+    )
+    if 'calculateRaidCarryCapacity' not in s or 'carriedResources' not in s:
+        raise SystemExit('Failed to patch raid loot resolver')
+    resolver.write_text(s)
+
 tile_modal = root / 'apps/web/app/(game)/(village-slug)/(map)/components/tile-modal.tsx'
 s = tile_modal.read_text()
 if 'rally-point-send-troops-tab=attack-or-raid' not in s:
