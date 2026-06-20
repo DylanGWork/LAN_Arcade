@@ -823,3 +823,19 @@ Safe regeneration still emits missing-asset warnings for several older native hu
 Added FreeRCT as an upstream-release hub rather than a Debian-main package hub. Official FreeRCT 0.1 Linux amd64 package and upstream checksum are cached on the NFS native shelf at /var/www/html/mirrors/games/downloads/native/freerct/0.1/; sha256sum -c passed before install. The VM installed that local package only to run a no-network Xvfb launch smoke.
 
 QA status is PARTIAL: /usr/games/freerct launched under bwrap --unshare-net and produced a non-empty screenshot at qa/reports/upstream-release-smoke/freerct-lan-20260619T180322Z, but first path/ride placement proof is still pending. After safe regeneration, npm run qa:static and npm run qa:smoke:catalog passed 99/99 catalog entries; LAN-origin desktop/mobile hub smoke passed at qa/reports/freerct-lan-origin-20260619T1810-*. The remaining clean upstream-release queue is Tuxemon, Pioneer Space Sim, and Cytopia, but those need release/runtime-specific handling rather than the Debian package generator.
+
+## Native Shelf Repair Pass - 2026-06-20
+
+Ran a dedicated repair pass for older native/offline shelves that were hidden or missing after the NFS native-downloads transition. Repaired board-game shelves, Debian batch-three shelves, native next-ten shelves, original native-client shelves, and the Travian-like source shelf on the NFS mount at `/var/www/html/mirrors/games/downloads/native/`. The NFS shelf grew to about 33 GB used; VM root stayed about 133 GB used of 295 GB.
+
+Safe regeneration no longer reports missing local assets or mirror-completeness failures. The only remaining safe-regeneration warnings are the expected unprivileged `/var/www/html/_offline_assets` write warnings. Local path repairs were also added for FreeCol (`/mirrors/freecol/www.freecol.org/`), 0 A.D. (`/mirrors/0ad/play0ad.com/`), OpenTTD (`/mirrors/openttd/www.openttd.org/`), and Wesnoth wiki/manual (`/mirrors/wesnoth/wiki.wesnoth.org/`). Wesnoth's marketing homepage mirror is a local blocker page because the upstream mirror was blocked, but the linked wiki/manual pages are present.
+
+QA after the repair:
+
+```text
+ARCADE_NAME='GannanNet' LAN_ARCADE_SKIP_PACKAGE_INSTALL=1 LAN_ARCADE_SKIP_ADMIN_AUTH=1 LAN_ARCADE_SKIP_MIRROR=1 LAN_ARCADE_CATALOG_SOURCE=metadata-existing bash ./setup_lan_arcade.sh
+npm run qa:static                 # 99/99 OK, 0 external entry HTML refs
+npm run qa:smoke:catalog          # 99/99 strict pass, 99 playable
+```
+
+Detailed logs are under `qa/reports/native-shelf-repair-20260620/`. Important caveat: these checks prove hub/static/catalog/offline-link completeness, not deep native gameplay. Some native entries still need first-action or LAN-client gameplay proof as recorded in their intake reports.
