@@ -1,0 +1,11 @@
+TravianZ LAN Service Hub
+
+Upstream: https://github.com/Shadowss/TravianZ
+Cached source archive: /mirrors/games/downloads/native/travian-like/travianz/travianz-d00826167857.tar.gz
+Cached commit: d00826167857df55dc213d46a61de171397feecc
+License: GPL-3.0, based on upstream repository metadata and cached LICENSE.
+
+LAN Arcade notes:
+- Service runs as isolated Docker Compose containers on port 8092.
+- Source and database are prepared under Dylan's VM home directory, not committed into this repo.
+- The hub page links to the local service and cached source shelf.

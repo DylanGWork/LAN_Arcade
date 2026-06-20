@@ -48,6 +48,26 @@
       "adminState": "startable"
     },
     {
+      "id": "travianz-lan",
+      "label": "TravianZ LAN Service",
+      "tier": "native-docker-service-candidate",
+      "catalogHub": "/mirrors/travianz-lan/",
+      "composeFile": "deploy/travianz.compose.yml",
+      "ports": [
+        "8092/tcp",
+        "8093/tcp admin profile only"
+      ],
+      "dataDir": "$HOME/.lan-arcade/services/travianz/mysql",
+      "cachedArtifacts": [
+        "/mirrors/games/downloads/native/travian-like/travianz/travianz-d00826167857.tar.gz"
+      ],
+      "recommendedMemory": "Docker Compose caps MariaDB and web containers at 768 MiB each; start on demand, not for Pi profile",
+      "healthCheck": "TravianZ home/register pages render, player registration succeeds, login reaches village gameplay, and Playwright blocks off-LAN requests",
+      "smokeStatus": "install-register-login-gameplay-passed",
+      "lastReport": "qa/reports/travianz-smoke-20260620T102346Z/result.json",
+      "adminState": "startable-on-demand"
+    },
+    {
       "id": "freeciv-lan",
       "label": "Freeciv LAN Server",
       "tier": "native-package-client-and-server",
@@ -130,12 +150,20 @@
     {
       "id": "freecol-lan",
       "label": "FreeCol LAN Hub",
-      "tier": "native-client-only-until-tested",
+      "tier": "native-client-cached-and-vm-smoked",
       "catalogHub": "/mirrors/freecol-lan/",
       "ports": [],
-      "healthCheck": "pending Java release cache and launch smoke",
-      "smokeStatus": "pending",
-      "adminState": "research"
+      "healthCheck": "cached FreeCol 1.2.0 portable ZIP launches under Xvfb, starts a new single-player game, connects to its local server, and captures nonblank screenshots",
+      "smokeStatus": "java-zip-new-game-launch-passed",
+      "adminState": "client-smoked",
+      "cachedArtifacts": [
+        "/mirrors/games/downloads/native/freecol/1.2.0/freecol-1.2.0-with-java.exe",
+        "/mirrors/games/downloads/native/freecol/1.2.0/freecol-1.2.0-installer.jar",
+        "/mirrors/games/downloads/native/freecol/1.2.0/freecol-1.2.0.zip",
+        "/mirrors/games/downloads/native/freecol/1.2.0/FreeCol-1.2.0.dmg",
+        "/mirrors/games/downloads/native/freecol/1.2.0/FreeCol-intel-1.2.0.dmg"
+      ],
+      "lastReport": "qa/reports/native-client-launch/freecol-lan-20260620T095834Z/report.txt"
     },
     {
       "id": "veloren-lan",

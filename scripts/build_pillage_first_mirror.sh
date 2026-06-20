@@ -25,6 +25,8 @@ fi
 cd "$WORKDIR"
 git fetch --depth 1 origin "$COMMIT"
 git checkout --detach "$COMMIT"
+git reset --hard "$COMMIT"
+git clean -fdx
 
 python3 - <<'PY'
 import os
@@ -54,7 +56,7 @@ discord_hook.write_text("""import { useQuery } from '@tanstack/react-query';\n\n
 
 rally_point = root / 'apps/web/app/(game)/(village-slug)/(village)/(...building-field-id)/components/components/rally-point/rally-point-send-troops.tsx'
 s = rally_point.read_text()
-if 'AttackRaidForm' not in s:
+if "import { AttackRaidForm } from 'app/(game)/(village-slug)/components/send-troops/attack-raid-form';" not in s:
     s = s.replace(
         "import { FoundNewVillageForm } from 'app/(game)/(village-slug)/components/send-troops/found-new-village-form';\n",
         "import { AttackRaidForm } from 'app/(game)/(village-slug)/components/send-troops/attack-raid-form';\n"
@@ -73,9 +75,191 @@ s = s.replace(
     "        {/*<TabPanel value=\"attack-or-raid\">*/}\n        {/*  <AttackRaidForm />*/}\n        {/*</TabPanel>*/}",
     "        <TabPanel value=\"attack-or-raid\">\n          <AttackRaidForm />\n        </TabPanel>",
 )
-if 'AttackRaidForm' not in s or '<Tab value="attack-or-raid">' not in s:
+if "import { AttackRaidForm } from 'app/(game)/(village-slug)/components/send-troops/attack-raid-form';" not in s or '<Tab value="attack-or-raid">' not in s:
     raise SystemExit('Failed to expose Rally Point attack/raid tab')
 rally_point.write_text(s)
+
+attack_form = root / 'apps/web/app/(game)/(village-slug)/components/send-troops/attack-raid-form.tsx'
+s = attack_form.read_text()
+if 'const AttackRaidBriefing' not in s:
+    s = s.replace(
+        "import { type DefaultValues, useFormContext } from 'react-hook-form';",
+        "import { Suspense, useEffect, useMemo, useState } from 'react';\nimport { type DefaultValues, useFormContext, useWatch } from 'react-hook-form';",
+        1,
+    )
+    s = s.replace(
+        "import { useNavigate } from 'react-router';\n",
+        "import { useNavigate } from 'react-router';\nimport { useTileTroops } from 'app/(game)/(village-slug)/(map)/hooks/use-tile-troops';\n",
+        1,
+    )
+    s = s.replace(
+        "import { Text } from 'app/components/text';\n",
+        "import { Icon } from 'app/components/icon';\nimport { unitIdToUnitIconMapper } from 'app/components/icons/icons';\nimport { Text } from 'app/components/text';\n",
+        1,
+    )
+    s = s.replace(
+        "import { RadioGroup, RadioGroupItem } from 'app/components/ui/radio-group';\n",
+        "import { RadioGroup, RadioGroupItem } from 'app/components/ui/radio-group';\nimport { Skeleton } from 'app/components/ui/skeleton';\n",
+        1,
+    )
+    s = s.replace(
+        "const attackRaidDefaultValues = {\n  action: 'attack_normal',\n} satisfies DefaultValues<AttackRaidFormValues>;\n\n",
+        """const attackRaidDefaultValues = {
+  action: 'attack_normal',
+} satisfies DefaultValues<AttackRaidFormValues>;
+
+const AttackRaidDefenderIntelSkeleton = () => {
+  return (
+    <div className=\"flex flex-wrap gap-2\">
+      {Array.from({ length: 4 }, (_, i) => (
+        <Skeleton
+          // biome-ignore lint/suspicious/noArrayIndexKey: It's a static loading placeholder.
+          key={`attack-briefing-skeleton-${i}`}
+          className=\"h-6 w-14 rounded-xs\"
+        />
+      ))}
+    </div>
+  );
+};
+
+const AttackRaidDefenderIntel = ({ tileId }: { tileId: number }) => {
+  const { t } = useTranslation();
+  const { tileTroops } = useTileTroops(tileId);
+
+  const visibleTroops = tileTroops.filter(({ amount }) => amount > 0);
+  const totalDefenders = visibleTroops.reduce(
+    (total, { amount }) => total + amount,
+    0,
+  );
+
+  if (visibleTroops.length === 0) {
+    return (
+      <Text className=\"text-sm text-muted-foreground\">
+        {t('No defenders detected at this tile.')}
+      </Text>
+    );
+  }
+
+  return (
+    <div className=\"flex flex-col gap-2\">
+      <Text className=\"text-sm text-muted-foreground\">
+        {t('Detected defenders')}: {totalDefenders}
+      </Text>
+      <div className=\"flex flex-wrap gap-2\">
+        {visibleTroops.map(({ unitId, amount }) => (
+          <span
+            key={unitId}
+            className=\"flex items-center gap-1 rounded-xs border border-border px-2 py-1 text-sm\"
+          >
+            <Icon
+              className=\"size-4\"
+              type={unitIdToUnitIconMapper(unitId)}
+            />
+            {amount}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+const AttackRaidBriefingShell = () => {
+  const { t } = useTranslation();
+
+  return (
+    <div className="min-w-64 rounded-md border border-border bg-card/60 p-3">
+      <div className="flex flex-col gap-3">
+        <div>
+          <Text as="h3">{t('Attack briefing')}</Text>
+          <Text className="text-sm text-muted-foreground">
+            {t('Preparing target intel...')}
+          </Text>
+        </div>
+        <AttackRaidDefenderIntelSkeleton />
+      </div>
+    </div>
+  );
+};
+
+const AttackRaidBriefingContent = () => {
+  const { t } = useTranslation();
+  const { control } = useFormContext<AttackRaidFormValues>();
+  const target = useWatch({ control, name: 'target' });
+  const units = useWatch({ control, name: 'units' });
+
+  const selectedTroopCount = useMemo(() => {
+    return (units ?? []).reduce((total, unit) => total + unit.selected, 0);
+  }, [units]);
+
+  const targetTileId = target?.tileId;
+  const targetLabel =
+    target?.x !== undefined && target?.y !== undefined
+      ? `(${target.x}|${target.y})`
+      : t('No target selected');
+
+  return (
+    <div className="min-w-64 rounded-md border border-border bg-card/60 p-3">
+      <div className="flex flex-col gap-3">
+        <div>
+          <Text as="h3">{t('Attack briefing')}</Text>
+          <Text className="text-sm text-muted-foreground">
+            {t('Target')}: {targetLabel}
+          </Text>
+        </div>
+        <div>
+          <Text className="text-sm text-muted-foreground">
+            {t('Selected troops')}: {selectedTroopCount}
+          </Text>
+          {selectedTroopCount === 0 ? (
+            <Text className="text-sm text-warning">
+              {t('Select at least one troop before confirming.')}
+            </Text>
+          ) : null}
+        </div>
+        <div>
+          <Text className="text-sm font-medium">{t('Scout intel')}</Text>
+          {targetTileId ? (
+            <Suspense fallback={<AttackRaidDefenderIntelSkeleton />}>
+              <AttackRaidDefenderIntel tileId={targetTileId} />
+            </Suspense>
+          ) : (
+            <Text className="text-sm text-muted-foreground">
+              {t('Choose a target to show defender intel.')}
+            </Text>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const AttackRaidBriefing = () => {
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  return isMounted ? <AttackRaidBriefingContent /> : <AttackRaidBriefingShell />;
+};
+
+""",
+        1,
+    )
+    s = s.replace(
+        "          extraTargetContent={<AttackRaidActionSelector />}\n",
+        """          extraTargetContent={
+            <div className=\"flex flex-col gap-4\">
+              <AttackRaidActionSelector />
+              <AttackRaidBriefing />
+            </div>
+          }
+""",
+        1,
+    )
+if 'const AttackRaidBriefing' not in s:
+    raise SystemExit('Failed to expose attack briefing')
+attack_form.write_text(s)
 
 tile_modal = root / 'apps/web/app/(game)/(village-slug)/(map)/components/tile-modal.tsx'
 s = tile_modal.read_text()

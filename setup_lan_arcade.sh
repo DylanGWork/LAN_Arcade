@@ -1193,7 +1193,7 @@ write_public_index() {
         { id: "native-server", label: "Native / Server", note: "Filter", action: "profile", value: "native" },
         { id: "retro-shelf", label: "Retro Shelf", note: "Filter", action: "profile", value: "retro" }
       ];
-      var featuredIds = ["pillage-first-lan", "unciv-lan", "mindustry-lan", "evolab", "gene-garden", "zero-ad-lan", "wesnoth-lan", "openttd-lan", "life-engine", "apotris-gba"];
+      var featuredIds = ["pillage-first-lan", "travianz-lan", "unciv-lan", "mindustry-lan", "evolab", "gene-garden", "zero-ad-lan", "wesnoth-lan", "openttd-lan", "life-engine", "apotris-gba"];
       var state = {
         catalog: { games: [], categories: [] },
         filters: { disabled_categories: [], disabled_games: [] },

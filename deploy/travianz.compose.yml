@@ -1,0 +1,54 @@
+name: lan-arcade-travianz
+
+services:
+  db:
+    image: mariadb:11
+    container_name: lan-arcade-travianz-db
+    restart: unless-stopped
+    environment:
+      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD:-rootpassword}
+      MARIADB_DATABASE: ${MARIADB_DATABASE:-travian}
+      MARIADB_USER: ${MARIADB_USER:-travianz}
+      MARIADB_PASSWORD: ${MARIADB_PASSWORD:-travianzpass}
+    command: --sql_mode="" --innodb-buffer-pool-size=128M --max-connections=80
+    volumes:
+      - ${TRAVIANZ_DB_DIR:?TRAVIANZ_DB_DIR is required}:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mariadb-admin ping -h 127.0.0.1 -uroot -p$$MARIADB_ROOT_PASSWORD --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    mem_limit: 768m
+
+  web:
+    build:
+      context: ${TRAVIANZ_APP_DIR:?TRAVIANZ_APP_DIR is required}
+      dockerfile: Dockerfile
+    container_name: lan-arcade-travianz-web
+    restart: unless-stopped
+    environment:
+      APACHE_DOCUMENT_ROOT: /var/www/html
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "${TRAVIANZ_HTTP_PORT:-8092}:80"
+    volumes:
+      - ${TRAVIANZ_APP_DIR:?TRAVIANZ_APP_DIR is required}:/var/www/html
+    mem_limit: 768m
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin:5
+    container_name: lan-arcade-travianz-phpmyadmin
+    profiles: ["admin"]
+    restart: unless-stopped
+    environment:
+      PMA_HOST: db
+      PMA_PORT: 3306
+      PMA_USER: root
+      PMA_PASSWORD: ${MARIADB_ROOT_PASSWORD:-rootpassword}
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "${TRAVIANZ_PHPMYADMIN_PORT:-8093}:80"

@@ -860,3 +860,31 @@ npm run qa:smoke:catalog          # 149/149 strict pass, 149 playable
 ```
 
 Report/logs: `docs/PUBLIC_PACKAGE_EXPANSION_2026-06-20.md`, `qa/reports/public-package-expansion-20260620-*`, and per-game screenshot folders under `qa/reports/public-package-expansion-20260620/`. VM root after install/testing was about 134 GB used of 295 GB; NFS native shelf remained about 33 GB used of 12 TB. These results prove offline package availability plus first-launch/no-network rendering, not deep campaign completion or LAN multiplayer depth.
+
+## TravianZ / FreeCol / Pillage First Pass - 2026-06-20
+
+Brought the three Travian-like strategy tracks forward together.
+
+TravianZ is now a live on-demand Docker service candidate:
+
+```text
+Hub:     http://192.168.1.106/mirrors/travianz-lan/
+Service: http://192.168.1.106:8092/
+Start:   scripts/prepare_travianz_service.sh start
+Smoke:   node qa/travianz-smoke.mjs
+Stop:    scripts/prepare_travianz_service.sh stop
+Report:  qa/reports/travianz-smoke-20260620T102346Z/result.json
+```
+
+The source archive remains outside Git on the native shelf at `/var/www/html/mirrors/games/downloads/native/travian-like/travianz/travianz-d00826167857.tar.gz`; runtime/database state is under `$HOME/.lan-arcade/services/travianz/`. The smoke installs if needed, registers a throwaway player, logs in, reaches village gameplay, captures screenshots, and blocks off-LAN requests. Docker images are present in the local Docker cache after the first start, but a future stronger offline-hardening pass should export/cache those images on the NFS shelf if the VM ever needs to rebuild with no internet.
+
+FreeCol has been promoted from pending to client-smoked. The official 1.2.0 Windows/JAR/ZIP/macOS clients are cached locally, and the portable ZIP launched under Xvfb into a new single-player game with screenshots/logs. Live hub copy now points at the cached downloads and records the latest QA report: `qa/reports/native-client-launch/freecol-lan-20260620T095834Z/report.txt`.
+
+Pillage First now has a clearer attack flow while preserving existing games/worlds. The reproducible build script now hard-resets and cleans its temporary upstream checkout before applying LAN patches, preventing stale patched source from surviving across rebuilds. Attack/raid remains exposed from the map and Rally Point; enemy map popups still show scout intel; the Rally Point attack tab now adds an Attack briefing panel with target coordinates, selected troop count, defender intel, and a clear no-troops warning. Latest checks:
+
+```text
+node qa/pillage-first-live-smoke.mjs                 # qa/reports/pillage-first-live-smoke-20260620T102016Z
+node qa/pillage-first-attack-briefing-smoke.mjs      # qa/reports/pillage-first-attack-briefing-20260620T102216Z
+```
+
+The focused attack briefing smoke treats React minified error `#418` as a known Rally Point route-level hydration warning because it also appears on untouched send-troops tabs. It still fails on missing UI terms, blocked network requests, failed LAN responses, console errors, or any other page error.
