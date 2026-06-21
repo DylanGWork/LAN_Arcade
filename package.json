@@ -34,7 +34,8 @@
     "native:public:cache": "python3 scripts/public_package_batch.py cache",
     "native:public:hubs": "python3 scripts/public_package_batch.py generate",
     "native:public:all": "python3 scripts/public_package_batch.py all",
-    "native:public:smoke": "bash scripts/public_package_play_smoke.sh"
+    "native:public:smoke": "bash scripts/public_package_play_smoke.sh",
+    "qa:library-platform": "python3 scripts/library_platform_audit.py"
   },
   "devDependencies": {
     "@types/node": "20.19.1",

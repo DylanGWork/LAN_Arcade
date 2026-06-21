@@ -1076,8 +1076,21 @@ write_public_index() {
       line-height: 1.2;
     }
     .tag.primary { background: var(--green-soft); color: #c9f8dc; }
+    .detail-chips { display: flex; flex-wrap: wrap; gap: 5px; }
+    .detail-chip {
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 6px;
+      background: #172226;
+      color: #d9e7df;
+      padding: 3px 6px;
+      font-size: 11px;
+      line-height: 1.25;
+    }
+    .detail-chip.ready { background: rgba(88,214,141,.15); border-color: rgba(88,214,141,.44); color: #c9f8dc; }
+    .detail-chip.warn { background: #2b2113; border-color: #6b5228; color: #ffe0a3; }
     .launch-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 2px; }
-    .launch { color: #f6fbf8; font-weight: 850; font-size: 13px; }
+    .launch { display: inline-flex; align-items: center; gap: 6px; color: #f6fbf8; font-weight: 850; font-size: 13px; }
+    .launch::before { content: ""; width: 7px; height: 7px; border-radius: 999px; background: var(--green); box-shadow: 0 0 0 3px rgba(88,214,141,.13); }
     .path { color: #7f8b91; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .game-grid {
       display: grid;
@@ -1124,11 +1137,11 @@ write_public_index() {
         <span>Offline LAN game library</span>
       </div>
       <section class="side-section">
-        <h2 class="side-title">Catalog Profiles</h2>
+        <h2 class="side-title">Play Modes</h2>
         <div id="profileList" class="side-list"></div>
       </section>
       <section class="side-section">
-        <h2 class="side-title">Shelves &amp; Filters</h2>
+        <h2 class="side-title">Collections &amp; Shelves</h2>
         <div id="shelfList" class="side-list"></div>
       </section>
       <section class="side-section">
@@ -1146,7 +1159,7 @@ write_public_index() {
       <header class="topbar">
         <div class="headline">
           <h2>Game Library</h2>
-          <p>Browse top-level catalog cards, retro shelves, LAN hubs, and heavier service candidates from one offline catalog.</p>
+          <p>Find something playable by device, people, platform shelf, or hosted LAN service from one offline catalogue.</p>
         </div>
         <label class="control">
           <span>Search</span>
@@ -1164,7 +1177,7 @@ write_public_index() {
       </header>
       <div id="status" class="status-row" aria-live="polite"></div>
       <section class="shelf" id="featuredShelf">
-        <div class="shelf-head"><h3>Featured</h3><span class="shelf-note">Ready picks and high-interest shelves</span></div>
+        <div class="shelf-head"><h3>Featured</h3><span class="shelf-note">Ready picks, collections, and high-interest LAN services</span></div>
         <div id="featuredGrid" class="featured-grid"></div>
       </section>
       <section class="shelf">
@@ -1179,11 +1192,14 @@ write_public_index() {
       "use strict";
 
       var profiles = [
-        { id: "all", label: "GannanNet full", note: "Everything visible" },
-        { id: "pi", label: "Camping / Pi-friendly", note: "Lightweight picks" },
-        { id: "retro", label: "Retro shelf", note: "Emulator and ROM shelves" },
-        { id: "native", label: "Native / server games", note: "Installers, LAN services, heavy hubs" },
-        { id: "family", label: "Family / phone friendly", note: "Kid-friendly and mobile-leaning" }
+        { id: "all", label: "Full library", note: "Everything visible" },
+        { id: "ready", label: "Ready now", note: "Low-friction browser, emulator, and collection picks" },
+        { id: "guest", label: "Guest quick-play", note: "Family, casual, and low-setup choices" },
+        { id: "pi", label: "Camping / Pi-friendly", note: "Lightweight picks for modest devices" },
+        { id: "lan", label: "LAN multiplayer", note: "Multiplayer games and hosted sessions" },
+        { id: "emulation", label: "Emulation shelves", note: "ROM vaults, DOS shelves, and emulator entries" },
+        { id: "native", label: "Native / services", note: "Installers, clients, LAN services, and heavier hubs" },
+        { id: "research", label: "Research / QA", note: "Candidates, blockers, and entries needing promotion" }
       ];
       var shelves = [
         { id: "game-boy-wave-1", label: "Game Boy Wave 1", note: "201 curated titles", href: "../private-rom-wave-1/" },
@@ -1191,9 +1207,12 @@ write_public_index() {
         { id: "game-boy-vault", label: "Game Boy Vault", note: "743 titles", href: "../private-rom-vault/" },
         { id: "dos-classics", label: "DOS Classics", note: "6 tracked", href: "../private-dos-vault/" },
         { id: "board-games-wave-1", label: "Board Games Wave 1", note: "200 entries", href: "../board-games-wave-1/" },
+        { id: "ready-shelf", label: "Ready-now cards", note: "Quick filter", action: "profile", value: "ready" },
+        { id: "guest-shelf", label: "Guest-friendly cards", note: "Quick filter", action: "profile", value: "guest" },
+        { id: "lan-shelf", label: "LAN multiplayer cards", note: "Quick filter", action: "profile", value: "lan" },
         { id: "board-games", label: "Board-game cards", note: "Catalog filter", action: "category", value: "board-game" },
-        { id: "native-server", label: "Native / Server cards", note: "Catalog filter", action: "profile", value: "native" },
-        { id: "retro-shelf", label: "Retro cards", note: "Catalog filter", action: "profile", value: "retro" }
+        { id: "native-server", label: "Native / service cards", note: "Quick filter", action: "profile", value: "native" },
+        { id: "research-shelf", label: "Research / QA cards", note: "Quick filter", action: "profile", value: "research" }
       ];
       var internalShelfStats = [
         [743, "Game Boy vault titles"],
@@ -1246,31 +1265,111 @@ write_public_index() {
         if (disabledGames.has(String(game.id || ""))) return false;
         return !toStringArray(game.categories).some(function (category) { return disabledCategories.has(category); });
       }
+      function hasCategory(game, category) { return toStringArray(game.categories).indexOf(category) >= 0; }
+      function hasAnyCategory(game, categories) { return categories.some(function (category) { return hasCategory(game, category); }); }
+      function textBlob(game) {
+        return [String(game.id || ""), String(game.title || ""), String(game.meta || ""), String(game.description || ""), toStringArray(game.categories).join(" "), toStringArray(game.tags).join(" ")].join(" ").toLowerCase();
+      }
+      function hasText(game, needles) {
+        var text = textBlob(game);
+        return needles.some(function (needle) { return text.indexOf(needle) >= 0; });
+      }
+      function isRetro(game) { return hasCategory(game, "retro"); }
+      function isEmulator(game) { return hasCategory(game, "emulator") || hasText(game, ["emulator", "game boy", "gbc", "gba", "dos shelf", "rom"]); }
+      function isCollection(game) {
+        var id = String(game.id || "").toLowerCase();
+        if (["emulator-library", "private-gbc-vault", "private-dos-classics", "private-rom-wave-1", "board-games-wave-1", "retro-emulator-lab"].indexOf(id) >= 0) return true;
+        return hasText(game, ["vault", "shelf", "collection", "wave 1", "intake"]) && (isEmulator(game) || hasCategory(game, "board-game") || hasCategory(game, "private"));
+      }
+      function isServerService(game) { return hasText(game, ["lan service", "lan server", "server", "hosted service"]); }
       function isNativeOrServerGame(game) {
         var id = String(game.id || "").toLowerCase();
-        var categories = toStringArray(game.categories);
-        var tags = toStringArray(game.tags).join(" ").toLowerCase();
-        return id.slice(-4) === "-lan" || categories.indexOf("multiplayer") >= 0 || tags.indexOf("native") >= 0 || tags.indexOf("server") >= 0;
+        return id.slice(-4) === "-lan" || isServerService(game) || hasText(game, ["native", "client required", "installer"]);
       }
-      function isRetro(game) { return toStringArray(game.categories).indexOf("retro") >= 0; }
+      function isResearchEntry(game) {
+        if (isCollection(game)) return hasText(game, ["restore needed", "blocked", "waiting", "research", "candidate"]);
+        return hasText(game, ["research", "candidate", "blocked", "waiting", "needs qa", "partial smoke", "not yet", "restore needed"]);
+      }
+      function isReadyNow(game) {
+        if (isResearchEntry(game) || hasText(game, ["restore needed", "blocked", "waiting"])) return false;
+        if (isCollection(game)) return true;
+        return !isNativeOrServerGame(game);
+      }
+      function isGuestFriendly(game) {
+        if (!isReadyNow(game)) return false;
+        return hasAnyCategory(game, ["family", "casual", "mobile-friendly", "puzzle", "retro", "board-game", "age-5-plus"]);
+      }
       function matchesProfile(game, profile) {
-        var categories = toStringArray(game.categories);
-        if (profile === "retro") return isRetro(game);
+        if (profile === "ready") return isReadyNow(game);
+        if (profile === "guest") return isGuestFriendly(game);
+        if (profile === "lan") return hasCategory(game, "multiplayer") || isServerService(game);
+        if (profile === "emulation") return isEmulator(game) || isCollection(game);
         if (profile === "native") return isNativeOrServerGame(game);
-        if (profile === "family") return categories.indexOf("family") >= 0 || categories.indexOf("mobile-friendly") >= 0 || categories.indexOf("age-5-plus") >= 0;
+        if (profile === "research") return isResearchEntry(game);
         if (profile === "pi") {
-          if (isNativeOrServerGame(game)) return false;
-          return categories.indexOf("mobile-friendly") >= 0 || categories.indexOf("family") >= 0 || categories.indexOf("casual") >= 0 || categories.indexOf("puzzle") >= 0 || categories.indexOf("retro") >= 0 || categories.indexOf("age-5-plus") >= 0;
+          if (!isReadyNow(game) || isNativeOrServerGame(game)) return false;
+          return hasAnyCategory(game, ["mobile-friendly", "family", "casual", "puzzle", "retro", "age-5-plus"]);
         }
         return true;
       }
       function statusLabel(game) {
-        var categories = toStringArray(game.categories);
-        if (categories.indexOf("private") >= 0) return "VM-local private";
-        if (isNativeOrServerGame(game)) return "LAN hub";
-        if (isRetro(game)) return "Retro";
-        if (categories.indexOf("mobile-friendly") >= 0) return "Phone friendly";
+        if (isCollection(game)) return "Collection";
+        if (isServerService(game)) return "LAN service";
+        if (isNativeOrServerGame(game)) return "Native hub";
+        if (isEmulator(game)) return "Emulator";
+        if (hasCategory(game, "board-game")) return "Board game";
+        if (hasCategory(game, "mobile-friendly")) return "Phone friendly";
         return "Browser ready";
+      }
+      function readinessLabel(game) {
+        if (hasText(game, ["restore needed"])) return "Restore needed";
+        if (hasText(game, ["blocked", "waiting"])) return "Blocked";
+        if (isResearchEntry(game)) return "Needs QA";
+        if (isServerService(game)) return "Start on demand";
+        if (isNativeOrServerGame(game)) return "Client install";
+        if (isCollection(game)) return "Shelf ready";
+        if (hasCategory(game, "private")) return "Private";
+        return "Ready offline";
+      }
+      function readinessTone(game) {
+        var label = readinessLabel(game);
+        if (label === "Ready offline" || label === "Shelf ready") return "ready";
+        if (label === "Blocked" || label === "Needs QA" || label === "Restore needed") return "warn";
+        return "";
+      }
+      function deviceLabel(game) {
+        if (hasCategory(game, "mobile-friendly")) return "Phone/browser";
+        if (isCollection(game)) return "Shelf";
+        if (isEmulator(game)) return "Emulator";
+        if (isNativeOrServerGame(game)) return "Desktop/client";
+        return "Browser";
+      }
+      function playerLabel(game) {
+        if (hasCategory(game, "multiplayer")) return "Multiplayer";
+        if (hasCategory(game, "board-game")) return "Tabletop";
+        if (hasCategory(game, "family")) return "Family";
+        return "Solo";
+      }
+      function ageLabel(game) {
+        if (hasCategory(game, "age-5-plus")) return "Ages 5+";
+        if (hasCategory(game, "age-13-plus")) return "Ages 13+";
+        if (hasCategory(game, "age-10-plus")) return "Ages 10+";
+        return "Age unset";
+      }
+      function primaryActionLabel(game) {
+        if (isResearchEntry(game)) return "Review";
+        if (isCollection(game)) return "Open shelf";
+        if (isServerService(game)) return "Start / join";
+        if (isNativeOrServerGame(game)) return "Install / play";
+        return "Play";
+      }
+      function detailChipData(game) {
+        return [
+          { label: readinessLabel(game), tone: readinessTone(game) },
+          { label: deviceLabel(game), tone: "" },
+          { label: playerLabel(game), tone: "" },
+          { label: ageLabel(game), tone: "" }
+        ];
       }
       function searchText(game, labelsByCategory) {
         var categories = toStringArray(game.categories);
@@ -1294,9 +1393,13 @@ write_public_index() {
         var featuredIndex = featuredIds.indexOf(id);
         if (featuredIndex >= 0) score += 1000 - featuredIndex * 20;
         if (game.preview) score += 80;
+        if (isReadyNow(game)) score += 60;
+        if (isCollection(game)) score += 35;
+        if (isGuestFriendly(game)) score += 20;
         if (toStringArray(game.categories).indexOf("mobile-friendly") >= 0) score += 20;
-        if (toStringArray(game.categories).indexOf("private") >= 0) score += 35;
-        if (isNativeOrServerGame(game)) score += 15;
+        if (isServerService(game)) score += 25;
+        if (isNativeOrServerGame(game)) score += 10;
+        if (isResearchEntry(game)) score -= 120;
         return score;
       }
       function sortGames(games) {
@@ -1338,17 +1441,29 @@ write_public_index() {
         });
         return tags;
       }
+      function makeDetailChips(game) {
+        var chips = document.createElement("div"); chips.className = "detail-chips";
+        detailChipData(game).forEach(function (chip) {
+          var pill = document.createElement("span");
+          pill.className = "detail-chip" + (chip.tone ? " " + chip.tone : "");
+          pill.textContent = chip.label;
+          chips.appendChild(pill);
+        });
+        return chips;
+      }
       function makeCard(game, featured) {
         var card = document.createElement("a"); card.className = featured ? "featured-card" : "game-card"; card.href = gameUrl(game);
+        card.setAttribute("aria-label", primaryActionLabel(game) + " " + String(game.title || game.id || "game"));
         card.appendChild(makeMedia(game));
         var body = document.createElement("div"); body.className = "card-body";
         var title = document.createElement("h4"); title.className = "card-title"; title.textContent = String(game.title || game.id || "Unknown"); body.appendChild(title);
         var meta = document.createElement("div"); meta.className = "meta"; meta.textContent = String(game.meta || "Offline game"); body.appendChild(meta);
         var desc = document.createElement("p"); desc.className = "desc"; desc.textContent = String(game.description || "Offline-friendly game mirrored on this LAN."); body.appendChild(desc);
         body.appendChild(makeTags(game, featured ? 4 : 3));
+        body.appendChild(makeDetailChips(game));
         var launchRow = document.createElement("div"); launchRow.className = "launch-row";
-        var launch = document.createElement("span"); launch.className = "launch"; launch.textContent = isNativeOrServerGame(game) ? "Open hub" : "Play"; launchRow.appendChild(launch);
-        var path = document.createElement("span"); path.className = "path"; path.textContent = shortPath(gameUrl(game)); launchRow.appendChild(path);
+        var launch = document.createElement("span"); launch.className = "launch"; launch.textContent = primaryActionLabel(game); launchRow.appendChild(launch);
+        var path = document.createElement("span"); path.className = "path"; path.textContent = shortPath(gameUrl(game)); path.title = shortPath(gameUrl(game)); launchRow.appendChild(path);
         body.appendChild(launchRow);
         card.appendChild(body);
         return card;
