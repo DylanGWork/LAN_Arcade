@@ -696,6 +696,7 @@ type ReportSummaryItem = {
 };
 
 const reportFieldLabels = [
+  'Target',
   'Attackers sent',
   'Attacker losses',
   'Attackers returned',
@@ -766,6 +767,7 @@ const typeBadgeVariant = (type: Report['type']) => {
 
 const summarizeReport = (report: Report): ReportSummaryItem[] => {
   const body = report.body;
+  const target = extractReportField(body, 'Target');
   const attackers = extractFirstReportField(body, [
     'Attackers sent',
     'Attackers returned',
@@ -781,6 +783,7 @@ const summarizeReport = (report: Report): ReportSummaryItem[] => {
 
   return [
     { label: 'Outcome', value: sentenceCase(outcome) },
+    { label: 'Target', value: target },
     { label: 'Attackers', value: attackers },
     { label: 'Defenders', value: defenders },
     { label: 'Attacker losses', value: attackerLosses, emphasis: attackerLosses && attackerLosses !== 'none' ? 'bad' : 'good' },
@@ -1924,6 +1927,84 @@ const combatTroopRowSchema = z.strictObject({
   source: z.number(),
 });
 
+type TargetIdentity = {
+  tileId: number;
+  x: number;
+  y: number;
+  villageId: number | null;
+  villageName: string | null;
+  villageSlug: string | null;
+  playerId: number | null;
+  playerName: string | null;
+  playerSlug: string | null;
+};
+
+const targetIdentitySchema = z.strictObject({
+  tileId: z.number(),
+  x: z.number(),
+  y: z.number(),
+  villageId: z.number().nullable(),
+  villageName: z.string().nullable(),
+  villageSlug: z.string().nullable(),
+  playerId: z.number().nullable(),
+  playerName: z.string().nullable(),
+  playerSlug: z.string().nullable(),
+});
+
+const selectTargetIdentity = (
+  database: Parameters<Resolver<GameEvent<'troopMovementRaid'>>>[0],
+  targetTileId: number,
+): TargetIdentity => {
+  const target = database.selectObject({
+    sql: `
+      SELECT
+        t.id AS tileId,
+        t.x,
+        t.y,
+        v.id AS villageId,
+        v.name AS villageName,
+        v.slug AS villageSlug,
+        p.id AS playerId,
+        p.name AS playerName,
+        p.slug AS playerSlug
+      FROM
+        tiles t
+          LEFT JOIN villages v ON v.tile_id = t.id
+          LEFT JOIN players p ON p.id = v.player_id
+      WHERE
+        t.id = $target_tile_id;
+    `,
+    bind: { $target_tile_id: targetTileId },
+    schema: targetIdentitySchema,
+  });
+
+  return target ?? {
+    tileId: targetTileId,
+    x: 0,
+    y: 0,
+    villageId: null,
+    villageName: null,
+    villageSlug: null,
+    playerId: null,
+    playerName: null,
+    playerSlug: null,
+  };
+};
+
+const describeTargetIdentity = (target: TargetIdentity) => {
+  const coordinates = `(${target.x}|${target.y})`;
+  const villageLabel =
+    target.villageName ?? target.villageSlug ??
+    (target.villageId === null ? 'free tile' : `Village #${target.villageId}`);
+  const playerLabel =
+    target.playerName ?? target.playerSlug ??
+    (target.playerId === null ? null : `player #${target.playerId}`);
+
+  return playerLabel
+    ? `${villageLabel} ${coordinates} owned by ${playerLabel}`
+    : `${villageLabel} ${coordinates}`;
+};
+
 const selectDefendersAtTile = (
   database: Parameters<Resolver<GameEvent<'troopMovementRaid'>>>[0],
   targetTileId: number,
@@ -2098,6 +2179,7 @@ const removeCombatLosses = (
 };
 
 const describeCombatReport = (args: {
+  target: TargetIdentity;
   sentAttackers: CombatTroop[];
   defenders: CombatTroop[];
   combat: CombatResult;
@@ -2108,6 +2190,7 @@ const describeCombatReport = (args: {
   const attackerSurvivorCount = totalTroopCount(args.combat.attackerSurvivors);
   const defenderSurvivorCount = totalTroopCount(args.combat.defenderSurvivors);
   const parts = [
+    `Target: ${describeTargetIdentity(args.target)}.`,
     `Attackers sent: ${summarizeTroops(args.sentAttackers)}.`,
     `Attacker losses: ${summarizeTroops(args.combat.attackerLosses)}.`,
     `Attackers returned: ${summarizeTroops(args.combat.attackerSurvivors)}.`,
@@ -2141,6 +2224,7 @@ const createLanArcadeRaidReport = (
     eventId: number;
     villageId: number;
     timestamp: number;
+    target: TargetIdentity;
     sentAttackers: CombatTroop[];
     defenders: CombatTroop[];
     combat: CombatResult;
@@ -2163,6 +2247,7 @@ const createLanArcadeRaidReport = (
           ? `Raid gained ${total} resources`
           : 'Raid returned empty',
     body: describeCombatReport({
+      target: args.target,
       sentAttackers: args.sentAttackers,
       defenders: args.defenders,
       combat: args.combat,
@@ -2177,6 +2262,7 @@ const createLanArcadeAttackReport = (
     eventId: number;
     villageId: number;
     timestamp: number;
+    target: TargetIdentity;
     sentAttackers: CombatTroop[];
     defenders: CombatTroop[];
     combat: CombatResult;
@@ -2197,6 +2283,7 @@ const createLanArcadeAttackReport = (
           ? 'Attack cleared defenders'
           : 'Attack returned',
     body: describeCombatReport({
+      target: args.target,
       sentAttackers: args.sentAttackers,
       defenders: args.defenders,
       combat: args.combat,
@@ -2247,6 +2334,7 @@ new_attack = """export const attackMovementResolver: Resolver<
   GameEvent<'troopMovementAttack'>
 > = (database, args) => {
   const { id, villageId, resolvesAt, originTileId, targetTileId, troops } = args;
+  const target = selectTargetIdentity(database, targetTileId);
   const defenders = selectDefendersAtTile(database, targetTileId);
   const combat = resolveLanArcadeCombat('attack', troops, defenders);
 
@@ -2256,6 +2344,7 @@ new_attack = """export const attackMovementResolver: Resolver<
     eventId: id,
     villageId,
     timestamp: resolvesAt,
+    target,
     sentAttackers: troops,
     defenders,
     combat,
@@ -2344,6 +2433,7 @@ new_raid = """export const raidMovementResolver: Resolver<GameEvent<'troopMoveme
   args,
 ) => {
   const { id, villageId, resolvesAt, troops, originTileId, targetTileId } = args;
+  const target = selectTargetIdentity(database, targetTileId);
   const defenders = selectDefendersAtTile(database, targetTileId);
   const combat = resolveLanArcadeCombat('raid', troops, defenders);
 
@@ -2360,6 +2450,7 @@ new_raid = """export const raidMovementResolver: Resolver<GameEvent<'troopMoveme
     eventId: id,
     villageId,
     timestamp: resolvesAt,
+    target,
     sentAttackers: troops,
     defenders,
     combat,
