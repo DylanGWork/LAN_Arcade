@@ -679,26 +679,157 @@ export const deleteReport = createController('/reports/:reportId', 'delete', {
 
 reports_components = root / 'apps/web/app/(game)/(village-slug)/(reports)/components'
 report_list = reports_components / 'report-list.tsx'
-if not report_list.exists():
-    report_list.write_text("""import { useTranslation } from 'react-i18next';
+report_list.write_text(r"""import { useTranslation } from 'react-i18next';
 import type { Report } from '@pillage-first/types/models/report';
 import { Text } from 'app/components/text';
 import { Alert } from 'app/components/ui/alert';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHeader,
-  TableHeaderCell,
-  TableRow,
-} from 'app/components/ui/table';
+import { Badge } from 'app/components/ui/badge';
 
 type ReportListProps = {
   reports: Report[];
 };
 
+type ReportSummaryItem = {
+  label: string;
+  value: string;
+  emphasis?: 'neutral' | 'good' | 'bad';
+};
+
+const reportFieldLabels = [
+  'Attackers sent',
+  'Attacker losses',
+  'Attackers returned',
+  'Defenders present',
+  'Defender losses',
+  'Defenders remaining',
+  'Loot',
+  'Outcome',
+] as const;
+
 const formatTimestamp = (timestamp: number) => {
+  return new Intl.DateTimeFormat(undefined, {
+    day: '2-digit',
+    month: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(new Date(timestamp));
+};
+
+const formatTimestampTitle = (timestamp: number) => {
   return new Date(timestamp).toLocaleString();
+};
+
+const escapeRegExp = (value: string) => {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+};
+
+const extractReportField = (body: string, label: string) => {
+  const match = body.match(new RegExp(`${escapeRegExp(label)}:\\s*([^.]*)`, 'i'));
+  return match?.[1]?.trim() ?? '';
+};
+
+const extractFirstReportField = (body: string, labels: string[]) => {
+  for (const label of labels) {
+    const value = extractReportField(body, label);
+
+    if (value) {
+      return value;
+    }
+  }
+
+  return '';
+};
+
+const sentenceCase = (value: string) => {
+  if (!value) {
+    return value;
+  }
+
+  return value.charAt(0).toUpperCase() + value.slice(1);
+};
+
+const typeLabel = (type: Report['type']) => {
+  return type.replaceAll('-', ' ');
+};
+
+const typeBadgeVariant = (type: Report['type']) => {
+  if (type === 'attack' || type === 'defence') {
+    return 'destructive' as const;
+  }
+
+  if (type === 'raid' || type === 'trade') {
+    return 'secondary' as const;
+  }
+
+  return 'outline' as const;
+};
+
+const summarizeReport = (report: Report): ReportSummaryItem[] => {
+  const body = report.body;
+  const attackers = extractFirstReportField(body, [
+    'Attackers sent',
+    'Attackers returned',
+  ]);
+  const defenders = extractFirstReportField(body, [
+    'Defenders present',
+    'Defenders remaining',
+  ]);
+  const attackerLosses = extractReportField(body, 'Attacker losses');
+  const defenderLosses = extractReportField(body, 'Defender losses');
+  const loot = extractFirstReportField(body, ['Loot', 'Loot carried home']);
+  const outcome = extractReportField(body, 'Outcome') || report.title;
+
+  return [
+    { label: 'Outcome', value: sentenceCase(outcome) },
+    { label: 'Attackers', value: attackers },
+    { label: 'Defenders', value: defenders },
+    { label: 'Attacker losses', value: attackerLosses, emphasis: attackerLosses && attackerLosses !== 'none' ? 'bad' : 'good' },
+    { label: 'Defender losses', value: defenderLosses },
+    { label: 'Resources', value: loot },
+  ].filter((item) => item.value) as ReportSummaryItem[];
+};
+
+const hasStructuredReportFields = (report: Report) => {
+  return reportFieldLabels.some((label) => report.body.includes(`${label}:`));
+};
+
+const ReportSummaryGrid = ({ report }: { report: Report }) => {
+  const { t } = useTranslation();
+  const summary = summarizeReport(report);
+
+  if (summary.length === 0) {
+    return (
+      <Text className="break-words text-sm text-muted-foreground">
+        {report.body}
+      </Text>
+    );
+  }
+
+  return (
+    <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+      {summary.map((item) => (
+        <div
+          key={`${report.id}-${item.label}`}
+          className="min-w-0 rounded-sm border border-border bg-background/60 p-2"
+        >
+          <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            {t(item.label)}
+          </div>
+          <div
+            className={`break-words text-sm ${
+              item.emphasis === 'bad'
+                ? 'text-destructive'
+                : item.emphasis === 'good'
+                  ? 'text-success'
+                  : 'text-foreground'
+            }`}
+          >
+            {item.value}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
 };
 
 export const ReportList = ({ reports }: ReportListProps) => {
@@ -709,38 +840,56 @@ export const ReportList = ({ reports }: ReportListProps) => {
   }
 
   return (
-    <div className="w-full overflow-x-auto">
-      <Table className="min-w-[760px]">
-        <TableHeader>
-          <TableRow>
-            <TableHeaderCell>{t('Time')}</TableHeaderCell>
-            <TableHeaderCell>{t('Type')}</TableHeaderCell>
-            <TableHeaderCell>{t('Report')}</TableHeaderCell>
-            <TableHeaderCell>{t('Village')}</TableHeaderCell>
-            <TableHeaderCell>{t('Tags')}</TableHeaderCell>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {reports.map((report) => (
-            <TableRow key={report.id}>
-              <TableCell className="whitespace-nowrap text-left">
-                {formatTimestamp(report.timestamp)}
-              </TableCell>
-              <TableCell className="capitalize">{report.type}</TableCell>
-              <TableCell className="text-left">
-                <Text className="font-semibold">{report.title}</Text>
-                <Text className="text-sm text-muted-foreground">
-                  {report.body}
-                </Text>
-              </TableCell>
-              <TableCell>{report.villageId}</TableCell>
-              <TableCell>
-                {report.tags.length > 0 ? report.tags.join(', ') : t('New')}
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+    <div className="grid w-full gap-3">
+      {reports.map((report) => (
+        <article
+          key={report.id}
+          className="w-full rounded-md border border-border bg-card/70 p-3 shadow-sm"
+        >
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+            <div className="min-w-0 space-y-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge variant={typeBadgeVariant(report.type)}>
+                  {t(sentenceCase(typeLabel(report.type)))}
+                </Badge>
+                <Badge variant="outline">
+                  {report.tags.length > 0 ? report.tags.join(', ') : t('New')}
+                </Badge>
+                <span
+                  className="text-sm text-muted-foreground"
+                  title={formatTimestampTitle(report.timestamp)}
+                >
+                  {formatTimestamp(report.timestamp)}
+                </span>
+              </div>
+              <Text
+                as="h3"
+                className="break-words text-base font-semibold"
+              >
+                {report.title}
+              </Text>
+            </div>
+            <div className="shrink-0 text-sm text-muted-foreground">
+              {t('Village')} #{report.villageId}
+            </div>
+          </div>
+
+          <div className="mt-3">
+            <ReportSummaryGrid report={report} />
+          </div>
+
+          {hasStructuredReportFields(report) ? (
+            <details className="mt-3 rounded-sm border border-border bg-background/40 p-2 text-sm">
+              <summary className="cursor-pointer font-medium text-muted-foreground">
+                {t('Full report text')}
+              </summary>
+              <Text className="mt-2 break-words text-sm text-muted-foreground">
+                {report.body}
+              </Text>
+            </details>
+          ) : null}
+        </article>
+      ))}
     </div>
   );
 };
@@ -778,7 +927,7 @@ export const Reports = () => {
     );
   }, [reportFilters, reports]);
 
-  const pagination = usePagination(filteredReports, 20, page);
+  const pagination = usePagination(filteredReports, 12, page);
 
   return (
     <Section>
@@ -794,6 +943,19 @@ export const Reports = () => {
         reportFilters={reportFilters}
         onChange={onReportFiltersChange}
       />
+      <Text className="text-sm text-muted-foreground">
+        {t('Showing {{start}}-{{end}} of {{count}} reports', {
+          start:
+            filteredReports.length === 0
+              ? 0
+              : (pagination.page - 1) * pagination.resultsPerPage + 1,
+          end: Math.min(
+            filteredReports.length,
+            pagination.page * pagination.resultsPerPage,
+          ),
+          count: filteredReports.length,
+        })}
+      </Text>
       <ReportList reports={pagination.currentPageItems} />
       <div className="flex w-full justify-end">
         <Pagination
@@ -842,7 +1004,7 @@ export const CurrentVillageReports = () => {
     );
   }, [currentVillage.id, reportFilters, reports]);
 
-  const pagination = usePagination(filteredReports, 20, page);
+  const pagination = usePagination(filteredReports, 12, page);
 
   return (
     <Section>
@@ -858,6 +1020,19 @@ export const CurrentVillageReports = () => {
         reportFilters={reportFilters}
         onChange={onReportFiltersChange}
       />
+      <Text className="text-sm text-muted-foreground">
+        {t('Showing {{start}}-{{end}} of {{count}} reports', {
+          start:
+            filteredReports.length === 0
+              ? 0
+              : (pagination.page - 1) * pagination.resultsPerPage + 1,
+          end: Math.min(
+            filteredReports.length,
+            pagination.page * pagination.resultsPerPage,
+          ),
+          count: filteredReports.length,
+        })}
+      </Text>
       <ReportList reports={pagination.currentPageItems} />
       <div className="flex w-full justify-end">
         <Pagination
@@ -902,7 +1077,7 @@ export const ArchivedReports = () => {
     );
   }, [reportFilters, reports]);
 
-  const pagination = usePagination(filteredReports, 20, page);
+  const pagination = usePagination(filteredReports, 12, page);
 
   return (
     <Section>
@@ -918,6 +1093,19 @@ export const ArchivedReports = () => {
         reportFilters={reportFilters}
         onChange={onReportFiltersChange}
       />
+      <Text className="text-sm text-muted-foreground">
+        {t('Showing {{start}}-{{end}} of {{count}} reports', {
+          start:
+            filteredReports.length === 0
+              ? 0
+              : (pagination.page - 1) * pagination.resultsPerPage + 1,
+          end: Math.min(
+            filteredReports.length,
+            pagination.page * pagination.resultsPerPage,
+          ),
+          count: filteredReports.length,
+        })}
+      </Text>
       <ReportList reports={pagination.currentPageItems} />
       <div className="flex w-full justify-end">
         <Pagination
