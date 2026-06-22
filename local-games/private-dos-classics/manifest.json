@@ -5,6 +5,22 @@
   "vaultUrl": "../private-dos-vault/",
   "manifestUrl": "../private-dos-vault/manifest.json",
   "builder": "npm run dos:vault:build",
-  "currentStatus": "source-cache-missing",
-  "sourceCache": "/srv/lan-arcade/native-downloads/intake/private-tycoon"
+  "currentStatus": "metadata-expanded-source-cache-missing",
+  "sourceCache": "/srv/lan-arcade/native-downloads/intake/private-tycoon",
+  "trackedEntries": 28,
+  "candidateEntries": 22,
+  "packagedEntries": 0,
+  "sourceLists": [
+    "game-intake/classic-downloadability-sweep-2026-06-19.csv",
+    "game-intake/tycoon-downloadability-sweep-2026-06-19.csv"
+  ],
+  "notableCandidates": [
+    "SimAnt",
+    "Sid Meier's Civilization",
+    "Lemmings",
+    "Oregon Trail Deluxe",
+    "Prince of Persia",
+    "Dune II",
+    "The Incredible Machine"
+  ]
 }

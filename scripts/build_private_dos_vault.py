@@ -21,6 +21,18 @@ GAMES = [
     dict(id='black-gold-dos-ma', title='Black Gold / Oil Imperium', status='blocked', genre='oil/business management', source='https://www.myabandonware.com/game/black-gold-lu', qa='black-gold-dos-ma-20260619T101711Z', summary='Launch reaches ownership/code-card verification and stops; codes are not exposed.'),
 ]
 
+SWEEP_FILES = [
+    ROOT / 'game-intake/classic-downloadability-sweep-2026-06-19.csv',
+    ROOT / 'game-intake/tycoon-downloadability-sweep-2026-06-19.csv',
+]
+DOS_RUNTIME_MARKERS = ('dosbox', 'emulatorjs', 'win3x')
+STATUS_LABELS = {
+    'smoke-pass': 'Smoke Pass',
+    'partial': 'Partial',
+    'blocked': 'Blocked',
+    'candidate': 'Candidate',
+}
+
 def sha(path):
     h = hashlib.sha256()
     with open(path,'rb') as f:
@@ -38,6 +50,50 @@ def rows():
     if not p.exists(): return {}
     with p.open(newline='', encoding='utf-8') as f:
         return {r.get('id',''): r for r in csv.DictReader(f)}
+
+def genre_from_lane(lane):
+    lane = (lane or '').replace('private-classic-', '').replace('private-', '')
+    return lane.replace('-', ' ') or 'DOS classic'
+
+def short_summary(row):
+    bits = [row.get('next_action', ''), row.get('notes', ''), row.get('download_evidence', '')]
+    text = ' '.join(b.strip() for b in bits if b and b.strip())
+    if not text:
+        return 'Candidate found in the approved intake sweep; source package is not cached on the VM yet.'
+    return 'Candidate only: ' + text[:260].rstrip()
+
+def load_sweep_candidates():
+    existing = {g['id'] for g in GAMES}
+    seen = set(existing)
+    out = []
+    for path in SWEEP_FILES:
+        if not path.exists():
+            continue
+        with path.open(newline='', encoding='utf-8') as f:
+            for row in csv.DictReader(f):
+                game_id = row.get('game_id') or row.get('id') or row.get('candidate_id')
+                runtime = row.get('runtime_hypothesis', '')
+                if not game_id or game_id in seen:
+                    continue
+                if not any(marker in runtime.lower() for marker in DOS_RUNTIME_MARKERS):
+                    continue
+                seen.add(game_id)
+                out.append(dict(
+                    id=game_id,
+                    title=row.get('title') or game_id,
+                    status='candidate',
+                    genre=genre_from_lane(row.get('lane', '')),
+                    source=row.get('source_url', ''),
+                    runtime=runtime or 'DOSBox/EmulatorJS candidate',
+                    availability=row.get('availability_status', ''),
+                    evidence=row.get('download_evidence', ''),
+                    summary=short_summary(row),
+                    controls=['Source package is not cached yet', 'No gameplay smoke has been run for this candidate'],
+                ))
+    return out
+
+def all_games():
+    return GAMES + load_sweep_candidates()
 
 def cp_contents(src, dst):
     for item in src.iterdir():
@@ -66,8 +122,8 @@ def source_problem(game):
         return f'{game["id"]}: no source matching {base / srcspec}'
     return None
 
-def preflight_sources():
-    return [problem for problem in (source_problem(g) for g in GAMES) if problem]
+def preflight_sources(games=None):
+    return [problem for problem in (source_problem(g) for g in (games or GAMES)) if problem]
 
 def stage_game(game, stage):
     if 'cmd' not in game: return None
@@ -128,35 +184,47 @@ def build(dest):
     cand=rows(); out=[]
     with tempfile.TemporaryDirectory(prefix='dos-vault-') as tmp:
         stage=Path(tmp)
-        for g in GAMES:
+        for g in all_games():
             row=cand.get(g['id'], {})
             report = f'qa/reports/private-tycoon/{g.get("qa","")}/REPORT.md' if g.get('qa') else ''
-            entry=dict(id=g['id'], title=g['title'], platform='DOS', genre=row.get('genre') or g['genre'], status=row.get('intake_status') or g['status'], sourceUrl=row.get('source_url') or g.get('source',''), summary=g['summary'], qaReport=report, controls=['Click inside the emulator first', 'If a DOSBox menu appears, choose PLAY.BAT'], manuals=[], screenshots=[], packageUrl='', packageSha256='', packageBytes=0, browserCore='dosbox_pure' if 'cmd' in g else '')
+            status = row.get('intake_status') or g.get('status', 'candidate')
+            if status == 'restore-needed' and g.get('status'):
+                status = g['status']
+            entry=dict(id=g['id'], title=g['title'], platform='DOS', genre=row.get('genre') or g.get('genre', 'DOS classic'), status=status, sourceUrl=row.get('source_url') or g.get('source',''), summary=g.get('summary', 'Candidate found in intake; source package is not cached yet.'), qaReport=report, controls=g.get('controls') or ['Click inside the emulator first', 'If a DOSBox menu appears, choose PLAY.BAT'], manuals=[], screenshots=[], packageUrl='', packageSha256='', packageBytes=0, browserCore='dosbox_pure' if 'cmd' in g else '', runtime=g.get('runtime','DOSBox'), availability=g.get('availability',''), downloadEvidence=g.get('evidence',''), sourceState='source-missing')
             root=stage_game(g, stage)
             if root:
                 target=dest/'packages'/f'{g["id"]}.zip'; zip_root(root,target)
-                entry.update(packageUrl=f'packages/{target.name}', packageSha256=sha(target), packageBytes=target.stat().st_size)
+                entry.update(packageUrl=f'packages/{target.name}', packageSha256=sha(target), packageBytes=target.stat().st_size, sourceState='packaged')
             entry['manuals']=copy_docs(g, root, dest)
             entry['screenshots']=copy_shots(g, dest)
             out.append(entry)
     return out
 
 def label(status):
-    return {'smoke-pass':'Smoke Pass','partial':'Partial','blocked':'Blocked'}.get(status, status)
+    return STATUS_LABELS.get(status, status)
 
 def write_index(dest, games):
     cards=[]
     for g in games:
         shot = g['screenshots'][0]['url'] if g['screenshots'] else ''
         media = f'<img src="{html.escape(shot)}" alt="{html.escape(g["title"])} screenshot">' if shot else '<div class="placeholder">DOS</div>'
-        play = f'<a class="primary" href="play.html?id={html.escape(g["id"])}">Play</a>' if g['packageUrl'] else '<span class="disabled">No Play Yet</span>'
-        manuals = ''.join(f'<a href="{html.escape(m["url"])}">{html.escape(m["name"])}</a>' for m in g['manuals']) or '<span>No manual cached yet</span>'
-        text = html.escape((g['title']+' '+g['genre']+' '+g['summary']).lower())
-        cards.append(f'<article class="card" data-status="{html.escape(g["status"])}" data-text="{text}"><div class="media">{media}<b class="{html.escape(g["status"])}">{label(g["status"])}</b></div><h2>{html.escape(g["title"])}</h2><p class="meta">DOS - {html.escape(g["genre"])}</p><p>{html.escape(g["summary"])}</p><div class="actions">{play}<a href="{html.escape(g["sourceUrl"])}">Source</a></div><div class="manuals">{manuals}</div></article>')
-    stats = {k:sum(1 for g in games if g['status']==k) for k in ['smoke-pass','partial','blocked']}
+        play = f'<a class="primary" href="play.html?id={html.escape(g["id"])}">Play</a>' if g['packageUrl'] else '<span class="disabled">Package Missing</span>'
+        source = f'<a href="{html.escape(g["sourceUrl"])}">Source</a>' if g.get('sourceUrl') else ''
+        manuals = ''.join(f'<a href="{html.escape(m["url"])}">{html.escape(m["name"])} </a>' for m in g['manuals']) or '<span>No manual cached yet</span>'
+        text = html.escape((g['title']+' '+g['genre']+' '+g['summary']+' '+g.get('runtime','')).lower())
+        cards.append(f'''<article class="card" data-status="{html.escape(g["status"])}" data-text="{text}">
+<div class="media">{media}<b class="{html.escape(g["status"])}">{label(g["status"])}</b></div>
+<h2>{html.escape(g["title"])}</h2>
+<p class="meta">DOS - {html.escape(g["genre"])} - {html.escape(g.get("runtime") or "candidate")}</p>
+<p>{html.escape(g["summary"])}</p>
+<div class="actions">{play}{source}</div>
+<div class="manuals">{manuals}</div>
+</article>''')
+    stats = {k:sum(1 for g in games if g['status']==k) for k in ['smoke-pass','partial','blocked','candidate']}
+    packaged = sum(1 for g in games if g.get('packageUrl'))
     page = f'''<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Private DOS Classics</title><style>
-:root{{color-scheme:dark;--bg:#080d12;--panel:#121922;--line:#314357;--text:#eef6ff;--muted:#a8b8cc;--green:#35d07f;--amber:#ffca55;--red:#ff7468}}*{{box-sizing:border-box}}body{{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,sans-serif}}main{{width:min(1220px,94vw);margin:auto;padding:24px 0 44px}}.top{{display:flex;justify-content:space-between;gap:12px;align-items:start}}h1{{font-size:clamp(30px,5vw,56px);margin:0}}p{{color:var(--muted);line-height:1.45}}a,.disabled,button{{border:1px solid var(--line);border-radius:7px;background:#182230;color:var(--text);text-decoration:none;font-weight:800;padding:8px 10px;display:inline-flex;align-items:center;min-height:38px}}.primary,button.active{{background:#1d7d4e;border-color:#35d07f}}.disabled{{opacity:.62}}.notice{{border-left:4px solid var(--amber);background:#18150b;border-radius:7px;padding:11px 12px;color:#f2ddb7;margin:14px 0}}.stats{{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:12px 0}}.stat,.card{{border:1px solid var(--line);background:var(--panel);border-radius:8px}}.stat{{padding:12px}}.stat strong{{display:block;font-size:26px}}.toolbar{{display:grid;grid-template-columns:1fr auto;gap:10px;margin:14px 0}}input{{background:#0e151f;color:var(--text);border:1px solid var(--line);border-radius:7px;padding:11px;font:inherit}}.filters{{display:flex;gap:8px;flex-wrap:wrap}}.grid{{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}}.card{{overflow:hidden;padding:0 14px 14px}}.media{{position:relative;aspect-ratio:16/9;background:#05080c;margin:0 -14px 12px;display:grid;place-items:center}}.media img{{width:100%;height:100%;object-fit:cover}}.placeholder{{font-size:42px;color:#304457;font-weight:900}}.media b{{position:absolute;top:10px;left:10px;border-radius:999px;padding:6px 10px;background:#233145}}.media b.smoke-pass{{background:#11351f;color:#b9ffd2}}.media b.partial{{background:#37290c;color:#ffe0a1}}.media b.blocked{{background:#3b1414;color:#ffd0cc}}h2{{font-size:20px;margin:0}}.meta{{text-transform:uppercase;font-size:12px;letter-spacing:.08em}}.actions,.manuals{{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}}.manuals{{border-top:1px solid var(--line);padding-top:10px}}.manuals a,.manuals span{{font-size:13px}}@media(max-width:900px){{.grid{{grid-template-columns:repeat(2,1fr)}}.stats{{grid-template-columns:repeat(2,1fr)}}}}@media(max-width:650px){{main{{width:96vw}}.top,.toolbar{{display:block}}.top a{{width:100%;justify-content:center;margin-top:10px}}.grid{{grid-template-columns:1fr}}.filters{{margin-top:8px}}}}
-</style></head><body><main><div class="top"><div><h1>Private DOS Classics</h1><p>The VM serves local DOS packages; your browser runs the emulator.</p></div><a href="../games/">Back to Arcade</a></div><div class="notice">Trust Smoke Pass first. Partial titles are exploratory. Blocked titles are documented but not launched.</div><section class="stats"><div class="stat"><strong>{len(games)}</strong><span>tracked</span></div><div class="stat"><strong>{stats['smoke-pass']}</strong><span>smoke pass</span></div><div class="stat"><strong>{stats['partial']}</strong><span>partial</span></div><div class="stat"><strong>{stats['blocked']}</strong><span>blocked</span></div></section><section class="toolbar"><input id="q" type="search" placeholder="Search DOS classics"><div class="filters"><button class="active" data-f="all">All</button><button data-f="smoke-pass">Smoke Pass</button><button data-f="partial">Partial</button><button data-f="blocked">Blocked</button></div></section><section class="grid">{''.join(cards)}</section></main><script>
+:root{{color-scheme:dark;--bg:#080d12;--panel:#121922;--line:#314357;--text:#eef6ff;--muted:#a8b8cc;--green:#35d07f;--amber:#ffca55;--red:#ff7468}}*{{box-sizing:border-box}}body{{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,sans-serif}}main{{width:min(1220px,94vw);margin:auto;padding:24px 0 44px}}.top{{display:flex;justify-content:space-between;gap:12px;align-items:start}}h1{{font-size:clamp(30px,5vw,56px);margin:0}}p{{color:var(--muted);line-height:1.45}}a,.disabled,button{{border:1px solid var(--line);border-radius:7px;background:#182230;color:var(--text);text-decoration:none;font-weight:800;padding:8px 10px;display:inline-flex;align-items:center;min-height:38px}}.primary,button.active{{background:#1d7d4e;border-color:#35d07f}}.disabled{{opacity:.62}}.notice{{border-left:4px solid var(--amber);background:#18150b;border-radius:7px;padding:11px 12px;color:#f2ddb7;margin:14px 0}}.stats{{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:12px 0}}.stat,.card{{border:1px solid var(--line);background:var(--panel);border-radius:8px}}.stat{{padding:12px}}.stat strong{{display:block;font-size:26px}}.toolbar{{display:grid;grid-template-columns:1fr auto;gap:10px;margin:14px 0}}input{{background:#0e151f;color:var(--text);border:1px solid var(--line);border-radius:7px;padding:11px;font:inherit}}.filters{{display:flex;gap:8px;flex-wrap:wrap}}.grid{{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}}.card{{overflow:hidden;padding:0 14px 14px}}.media{{position:relative;aspect-ratio:16/9;background:#05080c;margin:0 -14px 12px;display:grid;place-items:center}}.media img{{width:100%;height:100%;object-fit:cover}}.placeholder{{font-size:42px;color:#304457;font-weight:900}}.media b{{position:absolute;top:10px;left:10px;border-radius:999px;padding:6px 10px;background:#233145}}.media b.smoke-pass{{background:#11351f;color:#b9ffd2}}.media b.partial{{background:#37290c;color:#ffe0a1}}.media b.blocked{{background:#3b1414;color:#ffd0cc}}.media b.candidate{{background:#1b2d43;color:#c7ddff}}h2{{font-size:20px;margin:0}}.meta{{text-transform:uppercase;font-size:12px;letter-spacing:.08em}}.actions,.manuals{{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}}.manuals{{border-top:1px solid var(--line);padding-top:10px}}.manuals a,.manuals span{{font-size:13px}}@media(max-width:900px){{.grid{{grid-template-columns:repeat(2,1fr)}}.stats{{grid-template-columns:repeat(2,1fr)}}}}@media(max-width:650px){{main{{width:96vw}}.top,.toolbar{{display:block}}.top a{{width:100%;justify-content:center;margin-top:10px}}.grid{{grid-template-columns:1fr}}.filters{{margin-top:8px}}}}
+</style></head><body><main><div class="top"><div><h1>Private DOS Classics</h1><p>The VM serves local DOS packages when Dylan-provided files exist; candidate entries stay visible so they are not lost.</p></div><a href="../games/">Back to Arcade</a></div><div class="notice">Only cards with Play have local packages. Candidate cards are approved intake leads that still need private source files, checksums, and real offline gameplay smoke.</div><section class="stats"><div class="stat"><strong>{len(games)}</strong><span>tracked</span></div><div class="stat"><strong>{packaged}</strong><span>packaged</span></div><div class="stat"><strong>{stats['smoke-pass']}</strong><span>smoke pass</span></div><div class="stat"><strong>{stats['candidate']}</strong><span>candidates</span></div></section><section class="toolbar"><input id="q" type="search" placeholder="Search DOS classics"><div class="filters"><button class="active" data-f="all">All</button><button data-f="smoke-pass">Smoke Pass</button><button data-f="partial">Partial</button><button data-f="blocked">Blocked</button><button data-f="candidate">Candidate</button></div></section><section class="grid">{''.join(cards)}</section></main><script>
 const q=document.querySelector('#q'),cards=[...document.querySelectorAll('.card')],buttons=[...document.querySelectorAll('button')];let f='all';function draw(){{const s=q.value.toLowerCase().trim();for(const c of cards)c.hidden=!((f==='all'||c.dataset.status===f)&&(!s||c.dataset.text.includes(s)))}}q.oninput=draw;buttons.forEach(b=>b.onclick=()=>{{f=b.dataset.f;buttons.forEach(x=>x.classList.toggle('active',x===b));draw()}});
 </script></body></html>'''
     (dest/'index.html').write_text(page, encoding='utf-8')
@@ -186,15 +254,16 @@ def main():
     ap=argparse.ArgumentParser(); ap.add_argument('--dest',type=Path,default=DEST); args=ap.parse_args(); safe(args.dest)
     missing = preflight_sources()
     if missing:
-        message = 'Missing private DOS source files; refusing to rebuild vault.'
-        raise SystemExit(message + '\n' + '\n'.join(f'- {m}' for m in missing))
+        print('Warning: missing private DOS source files; building metadata-only entries where packages are unavailable.')
+        for m in missing:
+            print(f'- {m}')
     args.dest.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix=f'.{args.dest.name}-build-', dir=args.dest.parent) as tmp:
         staged = Path(tmp) / 'new'
         staged.mkdir()
         games=build(staged)
         write_index(staged,games); write_play(staged)
-        manifest=dict(name='Private DOS Classics', generatedAt=time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()), privateOnly=True, containsGameArchives=True, runtime='EmulatorJS dosbox_pure', notes='Generated on GannanNet from private intake; do not commit generated packages.', games=games)
+        manifest=dict(name='Private DOS Classics', generatedAt=time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()), privateOnly=True, containsGameArchives=any(g.get('packageUrl') for g in games), runtime='EmulatorJS dosbox_pure', notes='Generated on GannanNet from private intake; do not commit generated packages. Candidate entries need source files before gameplay smoke.', counts={k:sum(1 for g in games if g.get('status')==k) for k in ['smoke-pass','partial','blocked','candidate']}, packagedCount=sum(1 for g in games if g.get('packageUrl')), games=games)
         (staged/'manifest.json').write_text(json.dumps(manifest, indent=2), encoding='utf-8')
         (staged/'.lan-arcade-ready').touch()
         publish(staged, args.dest)

@@ -1205,7 +1205,7 @@ write_public_index() {
         { id: "game-boy-wave-1", label: "Game Boy Wave 1", note: "201 curated titles", href: "../private-rom-wave-1/" },
         { id: "emulator-library", label: "Emulator Library", note: "GB, GBC, DOS", href: "../emulator-library/" },
         { id: "game-boy-vault", label: "Game Boy Vault", note: "743 titles", href: "../private-rom-vault/" },
-        { id: "dos-classics", label: "DOS Classics", note: "6 tracked", href: "../private-dos-vault/" },
+        { id: "dos-classics", label: "DOS Classics", note: "28 tracked", href: "../private-dos-vault/" },
         { id: "board-games-wave-1", label: "Board Games Wave 1", note: "200 entries", href: "../board-games-wave-1/" },
         { id: "ready-shelf", label: "Ready-now cards", note: "Quick filter", action: "profile", value: "ready" },
         { id: "guest-shelf", label: "Guest-friendly cards", note: "Quick filter", action: "profile", value: "guest" },
@@ -1218,7 +1218,7 @@ write_public_index() {
         [743, "Game Boy vault titles"],
         [201, "curated GB/GBC titles"],
         [200, "board-game entries"],
-        [6, "DOS classics"]
+        [28, "DOS classics"]
       ];
       var featuredIds = ["pillage-first-lan", "travianz-lan", "unciv-lan", "mindustry-lan", "evolab", "gene-garden", "zero-ad-lan", "wesnoth-lan", "openttd-lan", "life-engine", "apotris-gba"];
       var state = {
