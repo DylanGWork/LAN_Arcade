@@ -4,6 +4,6 @@
   "containsGameArchives": false,
   "shelves": [
     {"name": "Game Boy Vault", "url": "../private-rom-vault/", "count": 743},
-    {"name": "DOS Classics", "url": "../private-dos-vault/", "count": 28}
+    {"name": "DOS Classics", "url": "../private-dos-vault/?v=dos28-20260622b", "count": 28}
   ]
 }
