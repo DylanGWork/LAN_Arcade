@@ -4473,6 +4473,18 @@ replace_once(
           </Text>
         ) : null}""",
 )
+# Avoid false confidence: tile intel is not a real scout report until scouts are sent.
+replace_once(
+    tile_modal_path,
+    "{t('No defenders detected')}",
+    "{t('No current scout intel')}",
+)
+replace_once(
+    attack_path,
+    "{t('No defenders detected at this tile.')}",
+    "{t('No current scout intel for this tile. Send a scout-only mission for reliable defender numbers.')}",
+)
+
 PY
 
 uid=$(id -u)
