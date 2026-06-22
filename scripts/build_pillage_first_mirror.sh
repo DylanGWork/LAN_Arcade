@@ -2608,6 +2608,1385 @@ s = s.replace(old_raid, new_raid, 1)
 resolver.write_text(s)
 PY
 
+# LAN Arcade phase upgrade patch 2026-06-22 phase 1: UI clarity, farm lists, scout labels, simulator.
+python3 - <<'PY'
+from pathlib import Path
+
+root = Path('.')
+
+def replace_once(path: Path, old: str, new: str) -> None:
+    text = path.read_text()
+    if old not in text:
+        raise SystemExit(f"Expected text not found in {path}: {old[:120]!r}")
+    path.write_text(text.replace(old, new, 1))
+
+# 1) Replace several missing unit icons with readable existing icons.
+icons_path = root / 'apps/web/app/components/icons/icons.tsx'
+icons = icons_path.read_text()
+icon_replacements = {
+    "  swordsman: (props) => icons.missingIcon(props),": "  swordsman: (props) => <LuSword {...props} />,",
+    "  gaulRam: (props) => icons.missingIcon(props),": "  gaulRam: (props) => <GiIBeam {...props} />,",
+    "  teutonicRam: (props) => icons.missingIcon(props),": "  teutonicRam: (props) => <GiIBeam {...props} />,",
+    "  slaveMilitia: (props) => icons.missingIcon(props),": "  slaveMilitia: (props) => <GiBarbedSpear {...props} />,",
+    "  ashWarden: (props) => icons.missingIcon(props),": "  ashWarden: (props) => <BsShieldFill {...props} />,",
+    "  khopeshWarrior: (props) => icons.missingIcon(props),": "  khopeshWarrior: (props) => <LuSword {...props} />,",
+    "  egyptianRam: (props) => icons.missingIcon(props),": "  egyptianRam: (props) => <GiIBeam {...props} />,",
+    "  mercenary: (props) => icons.missingIcon(props),": "  mercenary: (props) => <GiBattleAxe {...props} />,",
+    "  bowman: (props) => icons.missingIcon(props),": "  bowman: (props) => <GiBarbedSpear {...props} />,",
+    "  hunRam: (props) => icons.missingIcon(props),": "  hunRam: (props) => <GiIBeam {...props} />,",
+    "  pikeman: (props) => icons.missingIcon(props),": "  pikeman: (props) => <GiBarbedSpear {...props} />,",
+    "  thornedWarrior: (props) => icons.missingIcon(props),": "  thornedWarrior: (props) => <GiSpikedMace {...props} />,",
+    "  guardsman: (props) => icons.missingIcon(props),": "  guardsman: (props) => <BsShieldFill {...props} />,",
+    "  natarianRam: (props) => icons.missingIcon(props),": "  natarianRam: (props) => <GiIBeam {...props} />,",
+}
+for old, new in icon_replacements.items():
+    icons = icons.replace(old, new)
+icons_path.write_text(icons)
+
+# 2) Enrich farm-list DTOs so the farm-list page can show usable target rows.
+farm_dto_path = root / 'packages/types/src/dtos/farm-list.ts'
+farm_dto_path.write_text('''import { z } from 'zod';
+
+export const createFarmListDtoSchema = z.strictObject({
+  name: z.string(),
+  villageId: z.number(),
+});
+
+export const updateFarmListDtoSchema = z.strictObject({
+  name: z.string(),
+});
+
+export const farmListDtoSchema = z.strictObject({
+  id: z.number(),
+  name: z.string(),
+  villageId: z.number(),
+  targetCount: z.number(),
+});
+
+export const farmListTargetDtoSchema = z.strictObject({
+  tileId: z.number(),
+  x: z.number(),
+  y: z.number(),
+  villageName: z.string().nullable(),
+  playerName: z.string().nullable(),
+  playerSlug: z.string().nullable(),
+  tribe: z.string().nullable(),
+  population: z.number().nullable(),
+});
+
+export const farmListDetailsDtoSchema = farmListDtoSchema.extend({
+  tileIds: z.array(z.number()),
+  targets: z.array(farmListTargetDtoSchema),
+});
+
+export type CreateFarmListDto = z.infer<typeof createFarmListDtoSchema>;
+export type UpdateFarmListDto = z.infer<typeof updateFarmListDtoSchema>;
+export type FarmListDto = z.infer<typeof farmListDtoSchema>;
+export type FarmListTargetDto = z.infer<typeof farmListTargetDtoSchema>;
+export type FarmListDetailsDto = z.infer<typeof farmListDetailsDtoSchema>;
+''')
+
+# 3) Return target metadata from the farm-list details endpoint.
+farm_controller_path = root / 'packages/api/src/http/controllers/farm-list-controllers.ts'
+farm_controller = farm_controller_path.read_text()
+farm_controller = farm_controller.replace(
+    "  farmListDetailsDtoSchema,\n  farmListDtoSchema,",
+    "  farmListDetailsDtoSchema,\n  farmListDtoSchema,\n  farmListTargetDtoSchema,",
+)
+old_get = '''export const getFarmList = (request: Request, response: Response) => {
+  const farmListId = z.coerce.number().parse(request.params.farmListId);
+  const farmList = selectFarmListByIdQuery(database, farmListId);
+  const tileIds = selectFarmListTileIdsQuery(database, farmListId);
+
+  response.json(farmListDetailsDtoSchema.parse({
+    ...farmList,
+    tileIds,
+  }));
+};
+'''
+new_get = '''export const getFarmList = (request: Request, response: Response) => {
+  const farmListId = z.coerce.number().parse(request.params.farmListId);
+  const farmList = selectFarmListByIdQuery(database, farmListId);
+  const tileIds = selectFarmListTileIdsQuery(database, farmListId);
+  const targets = database.selectObjects({
+    sql: `
+      SELECT
+        flt.tile_id AS tileId,
+        t.x AS x,
+        t.y AS y,
+        v.name AS villageName,
+        p.name AS playerName,
+        p.slug AS playerSlug,
+        ti.tribe AS tribe,
+        CAST(COALESCE(ROUND(SUM(CASE WHEN ei.effect = 'wheatProduction' AND e.source = 'building' THEN -e.value ELSE 0 END)), 0) AS INTEGER) AS population
+      FROM farm_list_tiles flt
+      INNER JOIN tiles t ON t.id = flt.tile_id
+      LEFT JOIN villages v ON v.tile_id = t.id
+      LEFT JOIN players p ON p.id = v.player_id
+      LEFT JOIN tribe_ids ti ON ti.id = p.tribe_id
+      LEFT JOIN effects e ON e.village_id = v.id
+      LEFT JOIN effect_ids ei ON ei.id = e.effect_id
+      WHERE flt.farm_list_id = $farm_list_id
+      GROUP BY flt.tile_id, t.x, t.y, v.name, p.name, p.slug, ti.tribe
+      ORDER BY t.y ASC, t.x ASC
+    `,
+    parameters: { farm_list_id: farmListId },
+    schema: farmListTargetDtoSchema,
+  });
+
+  response.json(farmListDetailsDtoSchema.parse({
+    ...farmList,
+    tileIds,
+    targets,
+  }));
+};
+'''
+if old_get in farm_controller:
+    farm_controller = farm_controller.replace(old_get, new_get, 1)
+else:
+    create_start = "export const getFarmList = createController('/farm-lists/:farmListId', {"
+    delete_start = "\n\nexport const deleteFarmList = createController("
+    start = farm_controller.find(create_start)
+    end = farm_controller.find(delete_start, start)
+    if start == -1 or end == -1:
+        raise SystemExit('getFarmList controller shape not found')
+    new_create_get = '''export const getFarmList = createController('/farm-lists/:farmListId', {
+  summary: 'Get farm list details',
+  requestParams: {
+    path: z.strictObject({
+      farmListId: z.coerce.number(),
+    }),
+  },
+  response: farmListDetailsDtoSchema,
+})(({ database, path: { farmListId } }) => {
+  const farmList = database.selectObject({
+    sql: selectFarmListQuery,
+    bind: { $farm_list_id: farmListId },
+    schema: farmListSchema,
+  })!;
+
+  const tileRows = database.selectObjects({
+    sql: selectFarmListTileIdsQuery,
+    bind: { $farm_list_id: farmListId },
+    schema: farmListTileRowSchema,
+  });
+
+  const targets = database.selectObjects({
+    sql: `
+      SELECT
+        flt.tile_id AS tileId,
+        t.x AS x,
+        t.y AS y,
+        v.name AS villageName,
+        p.name AS playerName,
+        p.slug AS playerSlug,
+        ti.tribe AS tribe,
+        CAST(COALESCE(ROUND(SUM(CASE WHEN ei.effect = 'wheatProduction' AND e.source = 'building' THEN -e.value ELSE 0 END)), 0) AS INTEGER) AS population
+      FROM farm_list_tiles flt
+      INNER JOIN tiles t ON t.id = flt.tile_id
+      LEFT JOIN villages v ON v.tile_id = t.id
+      LEFT JOIN players p ON p.id = v.player_id
+      LEFT JOIN tribe_ids ti ON ti.id = p.tribe_id
+      LEFT JOIN effects e ON e.village_id = v.id
+      LEFT JOIN effect_ids ei ON ei.id = e.effect_id
+      WHERE flt.farm_list_id = $farm_list_id
+      GROUP BY flt.tile_id, t.x, t.y, v.name, p.name, p.slug, ti.tribe
+      ORDER BY t.y ASC, t.x ASC
+    `,
+    bind: { $farm_list_id: farmListId },
+    schema: farmListTargetDtoSchema,
+  });
+
+  return {
+    ...farmList,
+    tileIds: tileRows.map((r) => r.tile_id),
+    targets,
+  };
+});'''
+    farm_controller = farm_controller[:start] + new_create_get + farm_controller[end:]
+farm_controller_path.write_text(farm_controller)
+
+# 4) Fix farm-list cache invalidation so add/remove appears immediately.
+farm_hook_path = root / 'apps/web/app/(game)/(village-slug)/hooks/use-farm-lists.ts'
+farm_hook = farm_hook_path.read_text()
+farm_hook = farm_hook.replace(
+    '''      [
+        [farmListsCacheKey, currentVillage.id],
+      ],''',
+    '''      [
+        [farmListsCacheKey],
+        [farmListsCacheKey, currentVillage.id],
+      ],''',
+)
+farm_hook = farm_hook.replace(
+    '''      [
+        [farmListsCacheKey, currentVillage.id],
+      ],''',
+    '''      [
+        [farmListsCacheKey],
+        [farmListsCacheKey, currentVillage.id],
+      ],''',
+)
+farm_hook_path.write_text(farm_hook)
+
+# 5) Make the farm-list page show targets and provide direct raid links/removal.
+farm_list_page_path = root / 'apps/web/app/(game)/(village-slug)/components/rally-point-farm-list.tsx'
+farm_list_page_path.write_text('''import { useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router';
+
+import { Bookmark, Pencil, Trash2 } from 'lucide-react';
+
+import { CreateFarmListModal } from 'app/(game)/(village-slug)/components/create-farm-list-modal';
+import { EditFarmListModal } from 'app/(game)/(village-slug)/components/edit-farm-list-modal';
+import { Section } from 'app/(game)/(village-slug)/components/section';
+import { farmListsCacheKey, useFarmLists } from 'app/(game)/(village-slug)/hooks/use-farm-lists';
+import { usePlayerVillageListing } from 'app/(game)/(village-slug)/hooks/use-player-village-listing';
+import { Button } from 'app/components/buttons/button';
+import { Text } from 'app/components/text';
+import { useDialog } from 'app/hooks/use-dialog';
+
+const FarmListTargets = ({ farmListId, targetCount }: { farmListId: number; targetCount: number }) => {
+  const { getFarmList, removeTileFromFarmList } = useFarmLists();
+  const { data: details, isLoading } = useQuery({
+    queryKey: [farmListsCacheKey, farmListId],
+    queryFn: () => getFarmList(farmListId),
+    enabled: targetCount > 0,
+  });
+
+  if (targetCount === 0) {
+    return (
+      <div className="flex flex-col gap-2 p-4 text-center text-muted-foreground">
+        <Text>No targets in this farm list yet.</Text>
+        <Text className="text-sm">Open a village on the map and use Add to farm list.</Text>
+      </div>
+    );
+  }
+
+  if (isLoading || !details) {
+    return <div className="p-4 text-sm text-muted-foreground">Loading farm targets...</div>;
+  }
+
+  return (
+    <div className="divide-y">
+      {details.targets.map((target) => {
+        const title = target.villageName ?? `Tile (${target.x}|${target.y})`;
+        const owner = target.playerName ? ` by ${target.playerName}` : '';
+        return (
+          <div className="flex flex-wrap items-center justify-between gap-3 p-3" key={target.tileId}>
+            <div className="min-w-48">
+              <Text className="font-semibold">{title} ({target.x}|{target.y})</Text>
+              <Text className="text-sm text-muted-foreground">
+                {target.tribe ? `${target.tribe} village${owner}` : `Map target${owner}`}
+                {typeof target.population === 'number' && target.population > 0 ? ` - pop ${target.population}` : ''}
+              </Text>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button size="small" variant="outline" asChild>
+                <Link to={`?tab=send-troops&rally-point-send-troops-tab=attack-or-raid&x=${target.x}&y=${target.y}`}>Raid</Link>
+              </Button>
+              <Button
+                aria-label={`Remove ${title} from farm list`}
+                size="icon"
+                variant="ghost"
+                onClick={() => removeTileFromFarmList(farmListId, target.tileId)}
+              >
+                <Trash2 className="size-4" />
+              </Button>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
+export const RallyPointFarmList = () => {
+  const { farmLists, deleteFarmList } = useFarmLists();
+  const { playerVillages } = usePlayerVillageListing();
+  const { open } = useDialog();
+
+  const farmListsByVillage = useMemo(() => {
+    return playerVillages.map((village) => ({
+      ...village,
+      farmLists: farmLists.filter((farmList) => farmList.villageId === village.id),
+    }));
+  }, [farmLists, playerVillages]);
+
+  return (
+    <Section>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <Text as="h2">Farm list</Text>
+          <Text>
+            The Farm List lets you save repeat raid targets. Add targets from the map, then come back here to open pre-filled raid orders.
+          </Text>
+          <Text className="font-semibold">You currently have {farmLists.length} farm {farmLists.length === 1 ? 'list' : 'lists'}.</Text>
+        </div>
+        <Button aria-label="Bookmark farm list" size="icon" variant="outline">
+          <Bookmark className="size-5" />
+        </Button>
+      </div>
+
+      <div className="flex justify-end">
+        <Button size="small" onClick={() => open(<CreateFarmListModal />)}>
+          Create new list
+        </Button>
+      </div>
+
+      {farmListsByVillage.map((village) => (
+        <div className="mt-5" key={village.id}>
+          <Text as="h3">{village.name}</Text>
+          {village.farmLists.length === 0 ? (
+            <div className="mt-2 rounded border p-4 text-sm text-muted-foreground">No farm lists for this village yet.</div>
+          ) : (
+            <div className="mt-2 flex flex-col gap-4">
+              {village.farmLists.map((farmList) => (
+                <div className="overflow-hidden rounded border" key={farmList.id}>
+                  <div className="flex flex-wrap items-center justify-between gap-3 bg-muted/40 p-3">
+                    <div>
+                      <Text className="font-semibold">{farmList.name}</Text>
+                      <Text className="text-sm text-muted-foreground">{farmList.targetCount}/100 targets</Text>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button aria-label="Edit farm list" size="icon" variant="ghost" onClick={() => open(<EditFarmListModal farmListId={farmList.id} name={farmList.name} />)}>
+                        <Pencil className="size-4" />
+                      </Button>
+                      <Button aria-label="Delete farm list" size="icon" variant="ghost" onClick={() => deleteFarmList(farmList.id)}>
+                        <Trash2 className="size-4 text-destructive" />
+                      </Button>
+                    </div>
+                  </div>
+                  <FarmListTargets farmListId={farmList.id} targetCount={farmList.targetCount} />
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      ))}
+    </Section>
+  );
+};
+''')
+
+# 6) Improve map modal scout intel labels, add farm-list actions, and stop marker popover closing while typing.
+tile_modal_path = root / 'apps/web/app/(game)/(village-slug)/(map)/components/tile-modal.tsx'
+tile_modal = tile_modal_path.read_text()
+if "useFarmLists" not in tile_modal:
+    tile_modal = tile_modal.replace(
+        "import { useCurrentVillage } from 'app/(game)/(village-slug)/hooks/current-village-context';",
+        "import { useCurrentVillage } from 'app/(game)/(village-slug)/hooks/current-village-context';\nimport { useFarmLists } from 'app/(game)/(village-slug)/hooks/use-farm-lists';",
+    )
+tile_modal = tile_modal.replace(
+    '<Popover open={isOpen} onOpenChange={setIsOpen}>',
+    '<Popover modal open={isOpen} onOpenChange={setIsOpen}>',
+)
+tile_modal = tile_modal.replace(
+    '<PopoverContent align="end" className="w-72" side="bottom">',
+    '<PopoverContent align="end" className="w-72" side="bottom" onClick={(event) => event.stopPropagation()} onPointerDownOutside={(event) => event.preventDefault()}>',
+)
+tile_modal = tile_modal.replace(
+'''          <div className="flex flex-wrap items-center gap-2" key={unitId}>
+            <div className="flex items-center gap-1 rounded border px-2 py-1">
+              <Icon className="size-4" type={unitIdToUnitIconMapper(unitId)} />
+              <span>{amount}</span>
+            </div>
+          </div>''',
+'''          <div className="flex flex-wrap items-center gap-2" key={unitId}>
+            <div className="flex items-center gap-1 rounded border px-2 py-1" title={t(`UNITS.${unitId}.NAME`)}>
+              <Icon className="size-4" type={unitIdToUnitIconMapper(unitId)} />
+              <span>{amount}</span>
+              <span className="text-xs text-muted-foreground">{t(`UNITS.${unitId}.NAME`)}</span>
+            </div>
+          </div>''')
+farm_actions_component = r'''
+const TileModalFarmListActions = ({ tile }: TileModalProps) => {
+  const { farmLists, addTileToFarmList } = useFarmLists();
+  const currentVillage = useCurrentVillage();
+
+  if (!isOccupiedOccupiableTile(tile) || tile.owner.id === PLAYER_ID) {
+    return null;
+  }
+
+  const availableLists = farmLists.filter((farmList) => farmList.villageId === currentVillage.id);
+
+  if (availableLists.length === 0) {
+    return <Text className="text-sm text-muted-foreground">Create a farm list at the Rally Point to save this as a repeat raid target.</Text>;
+  }
+
+  return (
+    <div className="flex flex-wrap gap-2">
+      {availableLists.map((farmList) => (
+        <Button key={farmList.id} size="small" variant="outline" onClick={() => addTileToFarmList(farmList.id, tile.id)}>
+          Add to {farmList.name}
+        </Button>
+      ))}
+    </div>
+  );
+};
+
+'''
+if 'const TileModalFarmListActions' not in tile_modal:
+    tile_modal = tile_modal.replace('const TileModalPlayerInfo = ({ tile }: TileModalProps) => {', farm_actions_component + 'const TileModalPlayerInfo = ({ tile }: TileModalProps) => {', 1)
+tile_modal = tile_modal.replace(
+'''              <Suspense fallback={<Skeleton className="h-16 w-full" />}>
+                <TileModalTroopIntel tile={tile} />
+              </Suspense>
+              <Link className="font-semibold text-green-600" to={`../../village/39?tab=send-troops&rally-point-send-troops-tab=attack-or-raid&x=${tile.x}&y=${tile.y}`}>
+                Attack or raid
+              </Link>''',
+'''              <Suspense fallback={<Skeleton className="h-16 w-full" />}>
+                <TileModalTroopIntel tile={tile} />
+              </Suspense>
+              <TileModalFarmListActions tile={tile} />
+              <Link className="font-semibold text-green-600" to={`../../village/39?tab=send-troops&rally-point-send-troops-tab=attack-or-raid&x=${tile.x}&y=${tile.y}`}>
+                Attack or raid
+              </Link>''')
+tile_modal_path.write_text(tile_modal)
+
+# 7) Add named defender intel to map hover tooltips and explain treasure pickup.
+tile_tooltip_path = root / 'apps/web/app/(game)/(village-slug)/(map)/components/tile-tooltip.tsx'
+tile_tooltip = tile_tooltip_path.read_text()
+tile_tooltip = tile_tooltip.replace(
+'''        <TileTooltipVillageResources villageId={tile.village.id} />
+        <TileTooltipWorldItem tile={tile} />
+      </div>''',
+'''        <TileTooltipVillageResources villageId={tile.village.id} />
+        <TileTooltipDefenders tile={tile} />
+        <TileTooltipWorldItem tile={tile} />
+      </div>''')
+defender_component = r'''
+const TileTooltipDefenders = ({ tile }: { tile: OccupiedOccupiableTile }) => {
+  const { t } = useTranslation();
+  const { tileTroops, isLoading } = useTileTroops(tile.id);
+  const visibleTroops = tileTroops.filter(({ amount }) => amount > 0);
+
+  if (isLoading || visibleTroops.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="mt-2 flex flex-col gap-1">
+      <Text className="font-semibold">Scout intel</Text>
+      <div className="flex flex-wrap gap-2">
+        {visibleTroops.map(({ unitId, amount }) => (
+          <span className="flex items-center gap-1 rounded bg-background/20 px-1" key={unitId} title={t(`UNITS.${unitId}.NAME`)}>
+            <Icon className="size-3" type={unitIdToUnitIconMapper(unitId)} />
+            <span>{amount}</span>
+            <span className="text-xs">{t(`UNITS.${unitId}.NAME`)}</span>
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+'''
+if 'const TileTooltipDefenders' not in tile_tooltip:
+    tile_tooltip = tile_tooltip.replace('const TileTooltipAnimals = ({ tile }: { tile: OccupiedOasisTile }) => {', defender_component + 'const TileTooltipAnimals = ({ tile }: { tile: OccupiedOasisTile }) => {', 1)
+tile_tooltip = tile_tooltip.replace(
+'''  return <Text>{t(`ITEMS.${worldItem.itemId}.NAME`)} x {worldItem.amount}</Text>;''',
+'''  return (
+    <div className="mt-1">
+      <Text>{t(`ITEMS.${worldItem.itemId}.NAME`)} x {worldItem.amount}</Text>
+      <Text className="text-xs text-muted-foreground">Send a surviving Hero raid to collect treasure.</Text>
+    </div>
+  );''')
+tile_tooltip_path.write_text(tile_tooltip)
+
+# 8) Turn the rally-point simulator from placeholder text into a lightweight LAN-combat calculator.
+simulator_path = root / 'apps/web/app/(game)/(village-slug)/components/rally-point-simulator.tsx'
+simulator_path.write_text('''import { useMemo, useState } from 'react';
+
+import { Bookmark } from 'lucide-react';
+
+import { Section } from 'app/(game)/(village-slug)/components/section';
+import { Button } from 'app/components/buttons/button';
+import { Input } from 'app/components/input';
+import { Label } from 'app/components/label';
+import { Text } from 'app/components/text';
+
+const numberOrZero = (value: string) => Number.isFinite(Number(value)) ? Math.max(0, Number(value)) : 0;
+
+export const RallyPointSimulator = () => {
+  const [attackPower, setAttackPower] = useState('1000');
+  const [defencePower, setDefencePower] = useState('700');
+  const [attackerCount, setAttackerCount] = useState('100');
+  const [defenderCount, setDefenderCount] = useState('60');
+  const [mode, setMode] = useState<'raid' | 'attack'>('raid');
+
+  const result = useMemo(() => {
+    const attack = numberOrZero(attackPower);
+    const defence = numberOrZero(defencePower);
+    const attackers = numberOrZero(attackerCount);
+    const defenders = numberOrZero(defenderCount);
+    const total = Math.max(1, attack + defence);
+    const attackerLossRatio = mode === 'raid'
+      ? Math.min(1, Math.max(0, defence / total) * 0.65)
+      : Math.min(1, Math.max(0, defence / total) * 1.1);
+    const defenderLossRatio = mode === 'raid'
+      ? Math.min(1, Math.max(0, attack / total) * 0.45)
+      : Math.min(1, Math.max(0, attack / total) * 1.15);
+    const attackerLosses = Math.min(attackers, Math.ceil(attackers * attackerLossRatio));
+    const defenderLosses = Math.min(defenders, Math.ceil(defenders * defenderLossRatio));
+    const survivingAttackers = Math.max(0, attackers - attackerLosses);
+    const survivingDefenders = Math.max(0, defenders - defenderLosses);
+
+    return { attackerLosses, defenderLosses, survivingAttackers, survivingDefenders };
+  }, [attackPower, defencePower, attackerCount, defenderCount, mode]);
+
+  return (
+    <Section>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <Text as="h2">Simulator</Text>
+          <Text>Estimate LAN Arcade combat before sending a raid or normal attack. Actual results still depend on the exact unit stats and surviving carry capacity.</Text>
+        </div>
+        <Button aria-label="Bookmark simulator" size="icon" variant="outline">
+          <Bookmark className="size-5" />
+        </Button>
+      </div>
+
+      <div className="mt-4 grid gap-4 md:grid-cols-2">
+        <Label className="flex flex-col gap-2">Attack power
+          <Input inputMode="numeric" value={attackPower} onChange={(event) => setAttackPower(event.target.value)} />
+        </Label>
+        <Label className="flex flex-col gap-2">Defence power
+          <Input inputMode="numeric" value={defencePower} onChange={(event) => setDefencePower(event.target.value)} />
+        </Label>
+        <Label className="flex flex-col gap-2">Attackers sent
+          <Input inputMode="numeric" value={attackerCount} onChange={(event) => setAttackerCount(event.target.value)} />
+        </Label>
+        <Label className="flex flex-col gap-2">Defenders present
+          <Input inputMode="numeric" value={defenderCount} onChange={(event) => setDefenderCount(event.target.value)} />
+        </Label>
+      </div>
+
+      <div className="mt-4 flex gap-2">
+        <Button size="small" variant={mode === 'raid' ? 'default' : 'outline'} onClick={() => setMode('raid')}>Raid</Button>
+        <Button size="small" variant={mode === 'attack' ? 'default' : 'outline'} onClick={() => setMode('attack')}>Normal attack</Button>
+      </div>
+
+      <div className="mt-4 grid gap-3 md:grid-cols-4">
+        <div className="rounded border p-3"><Text className="text-sm text-muted-foreground">Attacker losses</Text><Text className="font-semibold">{result.attackerLosses}</Text></div>
+        <div className="rounded border p-3"><Text className="text-sm text-muted-foreground">Defender losses</Text><Text className="font-semibold">{result.defenderLosses}</Text></div>
+        <div className="rounded border p-3"><Text className="text-sm text-muted-foreground">Attackers return</Text><Text className="font-semibold">{result.survivingAttackers}</Text></div>
+        <div className="rounded border p-3"><Text className="text-sm text-muted-foreground">Defenders remain</Text><Text className="font-semibold">{result.survivingDefenders}</Text></div>
+      </div>
+
+      <Text className="mt-4 text-sm text-muted-foreground">
+        Raids can return with loot if attackers survive. Normal attacks are harsher and are intended for clearing defenders rather than farming resources.
+      </Text>
+    </Section>
+  );
+};
+''')
+PY
+
+# LAN Arcade phase upgrade patch 2026-06-22 phase 2: scout-only intel missions and clearer briefing hints.
+python3 - <<'PY'
+from pathlib import Path
+
+root = Path('.')
+resolver_path = root / 'packages/api/src/http/events/resolvers/troop-movement-resolver.ts'
+resolver = resolver_path.read_text()
+resolver = resolver.replace(
+    "type: 'attack' | 'raid';",
+    "type: 'attack' | 'raid' | 'scout-attack' | 'scout-defence';",
+    1,
+)
+helper_marker = "const calculateRaidCarryCapacity = (troops: GameEvent<'troopMovementRaid'>['troops']) => {"
+helper = r'''
+const isLanArcadeScoutUnit = (unitId: CombatTroop['unitId']) => {
+  return unitId.endsWith('_SCOUT');
+};
+
+const isLanArcadeScoutOnlyMovement = (troops: CombatTroop[]) => {
+  return troops.length > 0 && troops.every(({ unitId }) => isLanArcadeScoutUnit(unitId));
+};
+
+const selectLanArcadeTargetResources = (
+  database: Parameters<Resolver<GameEvent<'troopMovementRaid'>>>[0],
+  targetTileId: number,
+  timestamp: number,
+): RaidResourceBundle | null => {
+  const target = database.selectObject({
+    sql: `
+      SELECT
+        v.id AS villageId,
+        rs.wood,
+        rs.clay,
+        rs.iron,
+        rs.wheat
+      FROM
+        villages v
+          JOIN resource_sites rs ON rs.tile_id = v.tile_id
+      WHERE
+        v.tile_id = $target_tile_id;
+    `,
+    bind: { $target_tile_id: targetTileId },
+    schema: raidTargetResourcesSchema,
+  });
+
+  if (!target) {
+    return null;
+  }
+
+  updateVillageResourcesAt(database, target.villageId, timestamp);
+
+  const refreshed = database.selectObject({
+    sql: `
+      SELECT
+        v.id AS villageId,
+        rs.wood,
+        rs.clay,
+        rs.iron,
+        rs.wheat
+      FROM
+        villages v
+          JOIN resource_sites rs ON rs.tile_id = v.tile_id
+      WHERE
+        v.id = $target_village_id;
+    `,
+    bind: { $target_village_id: target.villageId },
+    schema: raidTargetResourcesSchema,
+  })!;
+
+  return [refreshed.wood, refreshed.clay, refreshed.iron, refreshed.wheat];
+};
+
+const createLanArcadeScoutReport = (
+  database: Parameters<Resolver<GameEvent<'troopMovementRaid'>>>[0],
+  args: {
+    eventId: number;
+    villageId: number;
+    timestamp: number;
+    target: TargetIdentity;
+    scouts: CombatTroop[];
+    defenders: CombatTroop[];
+    resources: RaidResourceBundle | null;
+  },
+) => {
+  insertLanArcadeReport(database, {
+    id: `scout-${args.eventId}`,
+    villageId: args.villageId,
+    timestamp: args.timestamp,
+    type: 'scout-attack',
+    title: `Scouted ${describeTargetIdentity(args.target)}`,
+    body: [
+      `Target: ${describeTargetIdentity(args.target)}`,
+      `Scouts sent: ${summarizeTroops(args.scouts)}`,
+      `Defenders present: ${summarizeTroops(args.defenders)}`,
+      `Resources visible: ${args.resources ? formatRaidLoot(args.resources) : 'none'}`,
+      'Outcome: scouts returned with intel. Scout-only missions do not loot resources.',
+    ].join('\n'),
+  });
+};
+
+'''
+if 'const isLanArcadeScoutUnit' not in resolver:
+    if helper_marker not in resolver:
+        raise SystemExit('raid carry marker not found for scout helper insertion')
+    resolver = resolver.replace(helper_marker, helper + helper_marker, 1)
+old_attack = '''  const target = selectTargetIdentity(database, targetTileId);
+  const defenders = selectDefendersAtTile(database, targetTileId);
+  const combat = resolveLanArcadeCombat('attack', troops, defenders);
+'''
+new_attack = '''  const target = selectTargetIdentity(database, targetTileId);
+  const defenders = selectDefendersAtTile(database, targetTileId);
+
+  if (isLanArcadeScoutOnlyMovement(troops)) {
+    createLanArcadeScoutReport(database, {
+      eventId: id,
+      villageId,
+      timestamp: resolvesAt,
+      target,
+      scouts: troops,
+      defenders,
+      resources: selectLanArcadeTargetResources(database, targetTileId, resolvesAt),
+    });
+
+    createEvents<'troopMovementReturn'>(database, {
+      villageId,
+      troops,
+      targetTileId: originTileId,
+      originTileId: targetTileId,
+      startsAt: resolvesAt,
+      type: 'troopMovementReturn',
+      originalMovementType: 'troopMovementAttack',
+      originalMovementEventId: id,
+    } as never);
+
+    const targetVillageIds = database.selectValues({
+      sql: selectPlayerVillageIdByTileIdQuery,
+      bind: { $tile_id: targetTileId, $player_id: PLAYER_ID },
+      schema: z.number(),
+    });
+
+    return {
+      affectedVillageIds: [villageId, ...targetVillageIds],
+    };
+  }
+
+  const combat = resolveLanArcadeCombat('attack', troops, defenders);
+'''
+if old_attack not in resolver:
+    raise SystemExit('attack resolver insertion point not found')
+resolver = resolver.replace(old_attack, new_attack, 1)
+old_raid = '''  const target = selectTargetIdentity(database, targetTileId);
+  const defenders = selectDefendersAtTile(database, targetTileId);
+  const combat = resolveLanArcadeCombat('raid', troops, defenders);
+'''
+new_raid = '''  const target = selectTargetIdentity(database, targetTileId);
+  const defenders = selectDefendersAtTile(database, targetTileId);
+
+  if (isLanArcadeScoutOnlyMovement(troops)) {
+    createLanArcadeScoutReport(database, {
+      eventId: id,
+      villageId,
+      timestamp: resolvesAt,
+      target,
+      scouts: troops,
+      defenders,
+      resources: selectLanArcadeTargetResources(database, targetTileId, resolvesAt),
+    });
+
+    createEvents<'troopMovementReturn'>(database, {
+      villageId,
+      troops,
+      startsAt: resolvesAt,
+      targetTileId: originTileId,
+      originTileId: targetTileId,
+      type: 'troopMovementReturn',
+      originalMovementType: 'troopMovementRaid',
+      originalMovementEventId: id,
+    } as never);
+
+    const targetVillageIds = database.selectValues({
+      sql: selectPlayerVillageIdByTileIdQuery,
+      bind: { $tile_id: targetTileId, $player_id: PLAYER_ID },
+      schema: z.number(),
+    });
+
+    return {
+      affectedVillageIds: [villageId, ...targetVillageIds],
+    };
+  }
+
+  const combat = resolveLanArcadeCombat('raid', troops, defenders);
+'''
+if old_raid not in resolver:
+    raise SystemExit('raid resolver insertion point not found')
+resolver = resolver.replace(old_raid, new_raid, 1)
+resolver_path.write_text(resolver)
+
+# Add a clear hint in the attack/raid briefing when only scouts are selected.
+attack_form_path = root / 'apps/web/app/(game)/(village-slug)/components/send-troops/attack-raid-form.tsx'
+attack_form = attack_form_path.read_text()
+attack_form = attack_form.replace(
+'''  const selectedTroopCount = useMemo(() => {
+    return (units ?? []).reduce((total, unit) => total + unit.selected, 0);
+  }, [units]);
+''',
+'''  const selectedTroopCount = useMemo(() => {
+    return (units ?? []).reduce((total, unit) => total + unit.selected, 0);
+  }, [units]);
+  const selectedUnits = useMemo(() => (units ?? []).filter((unit) => unit.selected > 0), [units]);
+  const isScoutOnlyMission = selectedUnits.length > 0 && selectedUnits.every((unit) => unit.unitId.endsWith('_SCOUT'));
+''')
+attack_form = attack_form.replace(
+'''        <div>
+          <Text className="text-sm font-medium">{t('Scout intel')}</Text>
+''',
+'''        {isScoutOnlyMission ? (
+          <Text className="rounded-md border border-border bg-muted/40 p-2 text-sm text-muted-foreground">
+            {t('Scout-only missions return an intel report and do not loot resources.')}
+          </Text>
+        ) : null}
+        <div>
+          <Text className="text-sm font-medium">{t('Scout intel')}</Text>
+''')
+attack_form_path.write_text(attack_form)
+PY
+
+# LAN Arcade phase upgrade patch 2026-06-22 phase 3: lazy NPC recovery and hero treasure collection.
+python3 - <<'PY'
+from pathlib import Path
+
+root = Path('.')
+resolver_path = root / 'packages/api/src/http/events/resolvers/troop-movement-resolver.ts'
+resolver = resolver_path.read_text()
+if "getItemDefinition" not in resolver:
+    resolver = resolver.replace(
+        "import { getUnitDefinition } from '@pillage-first/game-assets/utils/units';",
+        "import { getUnitDefinition } from '@pillage-first/game-assets/utils/units';\nimport { getItemDefinition } from '@pillage-first/game-assets/utils/items';",
+        1,
+    )
+# Describe optional collected treasure in raid reports.
+resolver = resolver.replace(
+'''    loot?: RaidResourceBundle;
+  },''',
+'''    loot?: RaidResourceBundle;
+    treasures?: string[];
+  },''',
+1)
+resolver = resolver.replace(
+'''  if (details.loot) {
+    lines.push(`Loot: ${formatRaidLoot(details.loot)}`);
+  }
+
+  return lines.join('\n');
+};''',
+'''  if (details.loot) {
+    lines.push(`Loot: ${formatRaidLoot(details.loot)}`);
+  }
+  if (details.treasures && details.treasures.length > 0) {
+    lines.push(`Treasure: ${details.treasures.join(', ')}`);
+  }
+
+  return lines.join('\n');
+};''',
+1)
+resolver = resolver.replace(
+'''    combat: CombatResult;
+    carriedResources: RaidResourceBundle;
+  },''',
+'''    combat: CombatResult;
+    carriedResources: RaidResourceBundle;
+    collectedTreasures?: string[];
+  },''',
+1)
+resolver = resolver.replace(
+'''      combat: args.combat,
+      loot: args.carriedResources,
+    }),''',
+'''      combat: args.combat,
+      loot: args.carriedResources,
+      treasures: args.collectedTreasures,
+    }),''',
+1)
+helper_marker = "const calculateRaidCarryCapacity = (troops: GameEvent<'troopMovementRaid'>['troops']) => {"
+helper = r'''
+const lanArcadeNpcGrowthRowSchema = z.strictObject({
+  villageId: z.number(),
+  tileId: z.number(),
+  playerId: z.number(),
+  tribe: playableTribeSchema.or(z.literal('natars')),
+  population: z.number(),
+  defenderCount: z.number(),
+});
+
+const ensureLanArcadeNpcGrowthTable = (
+  database: Parameters<Resolver<GameEvent<'troopMovementRaid'>>>[0],
+) => {
+  database.exec({
+    sql: `
+      CREATE TABLE IF NOT EXISTS lan_arcade_npc_growth
+      (
+        tile_id INTEGER PRIMARY KEY,
+        last_reinforced_at INTEGER NOT NULL
+      ) STRICT;
+    `,
+  });
+};
+
+const getLanArcadeNpcDefenceUnits = (tribe: string): [CombatTroop['unitId'], CombatTroop['unitId']] => {
+  switch (tribe) {
+    case 'romans':
+      return ['LEGIONNAIRE', 'PRAETORIAN'];
+    case 'gauls':
+      return ['PHALANX', 'SWORDSMAN'];
+    case 'teutons':
+      return ['SPEARMAN', 'AXEMAN'];
+    case 'huns':
+      return ['MERCENARY', 'BOWMAN'];
+    case 'egyptians':
+      return ['SLAVE_MILITIA', 'KHOPESH_WARRIOR'];
+    case 'natars':
+      return ['PIKEMAN', 'THORNED_WARRIOR'];
+    default:
+      return ['PHALANX', 'SWORDSMAN'];
+  }
+};
+
+const refreshLanArcadeNpcVillage = (
+  database: Parameters<Resolver<GameEvent<'troopMovementRaid'>>>[0],
+  targetTileId: number,
+  timestamp: number,
+) => {
+  ensureLanArcadeNpcGrowthTable(database);
+
+  const target = database.selectObject({
+    sql: `
+      SELECT
+        v.id AS villageId,
+        v.tile_id AS tileId,
+        p.id AS playerId,
+        ti.tribe AS tribe,
+        CAST(COALESCE(ROUND(SUM(CASE WHEN ei.effect = 'wheatProduction' AND e.source = 'building' THEN -e.value ELSE 0 END)), 50) AS INTEGER) AS population,
+        CAST(COALESCE((
+          SELECT SUM(t.amount)
+          FROM troops t
+          WHERE t.tile_id = v.tile_id
+        ), 0) AS INTEGER) AS defenderCount
+      FROM villages v
+        JOIN players p ON p.id = v.player_id
+        JOIN tribe_ids ti ON ti.id = p.tribe_id
+        LEFT JOIN effects e ON e.village_id = v.id
+        LEFT JOIN effect_ids ei ON ei.id = e.effect_id
+      WHERE v.tile_id = $target_tile_id
+        AND p.id != $player_id
+      GROUP BY v.id, v.tile_id, p.id, ti.tribe;
+    `,
+    bind: { $target_tile_id: targetTileId, $player_id: PLAYER_ID },
+    schema: lanArcadeNpcGrowthRowSchema,
+  });
+
+  if (!target) {
+    return;
+  }
+
+  const lastReinforcedAtRow = database.selectObject({
+    sql: 'SELECT last_reinforced_at AS lastReinforcedAt FROM lan_arcade_npc_growth WHERE tile_id = $tile_id;',
+    bind: { $tile_id: targetTileId },
+    schema: z.strictObject({ lastReinforcedAt: z.number() }),
+  });
+  const lastReinforcedAt = lastReinforcedAtRow?.lastReinforcedAt ?? (timestamp - 4 * 60 * 60 * 1000);
+
+  const elapsedHours = Math.max(0, (timestamp - lastReinforcedAt) / (60 * 60 * 1000));
+  if (elapsedHours < 0.5) {
+    return;
+  }
+
+  const population = Math.max(25, target.population);
+  const maxDefenders = Math.max(12, Math.min(500, Math.round(population * 1.75)));
+  const missing = Math.max(0, maxDefenders - target.defenderCount);
+  const rebuildAmount = Math.min(missing, Math.floor(elapsedHours * Math.max(2, population / 12)));
+
+  if (rebuildAmount > 0) {
+    const [primary, secondary] = getLanArcadeNpcDefenceUnits(target.tribe);
+    const primaryAmount = Math.max(1, Math.ceil(rebuildAmount * 0.7));
+    const secondaryAmount = Math.max(0, rebuildAmount - primaryAmount);
+    addTroops(database, [
+      { unitId: primary, amount: primaryAmount, tileId: targetTileId, source: targetTileId },
+      ...(secondaryAmount > 0 ? [{ unitId: secondary, amount: secondaryAmount, tileId: targetTileId, source: targetTileId }] : []),
+    ]);
+  }
+
+  database.exec({
+    sql: `
+      INSERT INTO lan_arcade_npc_growth (tile_id, last_reinforced_at)
+      VALUES ($tile_id, $timestamp)
+      ON CONFLICT(tile_id) DO UPDATE SET last_reinforced_at = $timestamp;
+    `,
+    bind: { $tile_id: targetTileId, $timestamp: timestamp },
+  });
+};
+
+const hasSurvivingHero = (troops: CombatTroop[]) => {
+  return troops.some(({ unitId, amount }) => unitId === 'HERO' && amount > 0);
+};
+
+const worldItemRowSchema = z.strictObject({
+  itemId: z.number(),
+  amount: z.number(),
+});
+
+const collectLanArcadeWorldItemsWithHero = (
+  database: Parameters<Resolver<GameEvent<'troopMovementRaid'>>>[0],
+  villageId: number,
+  targetTileId: number,
+  survivors: CombatTroop[],
+) => {
+  if (!hasSurvivingHero(survivors)) {
+    return [];
+  }
+
+  const heroId = database.selectValue({
+    sql: 'SELECT h.id FROM heroes h JOIN villages v ON v.player_id = h.player_id WHERE v.id = $village_id LIMIT 1;',
+    bind: { $village_id: villageId },
+    schema: z.number(),
+  });
+
+  if (!heroId) {
+    return [];
+  }
+
+  const items = database.selectObjects({
+    sql: 'SELECT item_id AS itemId, amount FROM world_items WHERE tile_id = $tile_id;',
+    bind: { $tile_id: targetTileId },
+    schema: worldItemRowSchema,
+  });
+
+  if (items.length === 0) {
+    return [];
+  }
+
+  for (const item of items) {
+    database.exec({
+      sql: `
+        INSERT INTO hero_inventory (hero_id, item_id, amount)
+        VALUES ($hero_id, $item_id, $amount)
+        ON CONFLICT(hero_id, item_id) DO UPDATE SET amount = amount + EXCLUDED.amount;
+      `,
+      bind: { $hero_id: heroId, $item_id: item.itemId, $amount: item.amount },
+    });
+  }
+
+  database.exec({
+    sql: 'DELETE FROM world_items WHERE tile_id = $tile_id;',
+    bind: { $tile_id: targetTileId },
+  });
+
+  return items.map((item) => {
+    const definition = getItemDefinition(item.itemId);
+    const label = definition?.name ? definition.name.replaceAll('_', ' ') : `item ${item.itemId}`;
+    return `${item.amount} ${label}`;
+  });
+};
+
+'''
+if 'const refreshLanArcadeNpcVillage' not in resolver:
+    if helper_marker not in resolver:
+        raise SystemExit('raid carry marker not found for phase3 helper insertion')
+    resolver = resolver.replace(helper_marker, helper + helper_marker, 1)
+# Refresh NPC villages before scout/attack/raid defender selection.
+resolver = resolver.replace(
+'''  const target = selectTargetIdentity(database, targetTileId);
+  const defenders = selectDefendersAtTile(database, targetTileId);
+
+  if (isLanArcadeScoutOnlyMovement(troops)) {''',
+'''  refreshLanArcadeNpcVillage(database, targetTileId, resolvesAt);
+  const target = selectTargetIdentity(database, targetTileId);
+  const defenders = selectDefendersAtTile(database, targetTileId);
+
+  if (isLanArcadeScoutOnlyMovement(troops)) {''',
+1)
+resolver = resolver.replace(
+'''  const target = selectTargetIdentity(database, targetTileId);
+  const defenders = selectDefendersAtTile(database, targetTileId);
+
+  if (isLanArcadeScoutOnlyMovement(troops)) {''',
+'''  refreshLanArcadeNpcVillage(database, targetTileId, resolvesAt);
+  const target = selectTargetIdentity(database, targetTileId);
+  const defenders = selectDefendersAtTile(database, targetTileId);
+
+  if (isLanArcadeScoutOnlyMovement(troops)) {''',
+1)
+resolver = resolver.replace(
+'''  const carriedResources = raidVillageResources(
+    database,
+    targetTileId,
+    resolvesAt,
+    calculateRaidCarryCapacity(combat.attackerSurvivors),
+  );
+
+  createLanArcadeRaidReport(database, {
+''',
+'''  const carriedResources = raidVillageResources(
+    database,
+    targetTileId,
+    resolvesAt,
+    calculateRaidCarryCapacity(combat.attackerSurvivors),
+  );
+  const collectedTreasures = collectLanArcadeWorldItemsWithHero(
+    database,
+    villageId,
+    targetTileId,
+    combat.attackerSurvivors,
+  );
+
+  createLanArcadeRaidReport(database, {
+''',
+1)
+resolver = resolver.replace(
+'''    combat,
+    carriedResources,
+  });
+''',
+'''    combat,
+    carriedResources,
+    collectedTreasures,
+  });
+''',
+1)
+resolver = resolver.replace(
+'''      defenderLosses: combat.defenderLosses,
+    } as never);''',
+'''      defenderLosses: combat.defenderLosses,
+      collectedTreasures,
+    } as never);''',
+1)
+resolver_path.write_text(resolver)
+
+# Make tooltip wording a little clearer now that hero collection is implemented.
+tile_tooltip_path = root / 'apps/web/app/(game)/(village-slug)/(map)/components/tile-tooltip.tsx'
+tile_tooltip = tile_tooltip_path.read_text()
+tile_tooltip = tile_tooltip.replace(
+    'Send a surviving Hero raid to collect treasure.',
+    'Send a Hero raid; if the hero survives, this treasure is added to inventory.',
+)
+tile_tooltip_path.write_text(tile_tooltip)
+PY
+
+# LAN Arcade phase upgrade patch 2026-06-22 phase 3 fixes: final-source cleanup after NPC/treasure patch.
+python3 - <<'PY'
+from pathlib import Path
+root = Path('.')
+resolver_path = root / 'packages/api/src/http/events/resolvers/troop-movement-resolver.ts'
+resolver = resolver_path.read_text()
+# Ensure attack and raid both refresh NPC targets before selecting defenders.
+resolver = resolver.replace(
+'''  const { id, villageId, resolvesAt, originTileId, targetTileId, troops } = args;
+  const target = selectTargetIdentity(database, targetTileId);''',
+'''  const { id, villageId, resolvesAt, originTileId, targetTileId, troops } = args;
+  refreshLanArcadeNpcVillage(database, targetTileId, resolvesAt);
+  const target = selectTargetIdentity(database, targetTileId);''',
+1)
+resolver = resolver.replace(
+'''  const { id, villageId, resolvesAt, troops, originTileId, targetTileId } = args;
+  const target = selectTargetIdentity(database, targetTileId);''',
+'''  const { id, villageId, resolvesAt, troops, originTileId, targetTileId } = args;
+  refreshLanArcadeNpcVillage(database, targetTileId, resolvesAt);
+  const target = selectTargetIdentity(database, targetTileId);''',
+1)
+# A broad earlier replacement may have leaked collectedTreasures into attack return metadata; remove it before the raid resolver.
+raid_index = resolver.find("export const raidMovementResolver")
+if raid_index != -1:
+    before_raid = resolver[:raid_index].replace("      defenderLosses: combat.defenderLosses,\n      collectedTreasures,", "      defenderLosses: combat.defenderLosses,")
+    resolver = before_raid + resolver[raid_index:]
+# Add treasure rendering to the final report describer shape.
+resolver = resolver.replace(
+'''  loot?: RaidResourceBundle;
+}) => {''',
+'''  loot?: RaidResourceBundle;
+  treasures?: string[];
+}) => {''',
+1)
+resolver = resolver.replace(
+'''  if (args.loot) {
+    parts.push(`Loot: ${formatRaidLoot(args.loot)}.`);
+  }
+
+  parts.push(''',
+'''  if (args.loot) {
+    parts.push(`Loot: ${formatRaidLoot(args.loot)}.`);
+  }
+  if (args.treasures && args.treasures.length > 0) {
+    parts.push(`Treasure: ${args.treasures.join(', ')}.`);
+  }
+
+  parts.push(''',
+1)
+if 'refreshLanArcadeNpcVillage(database, targetTileId, resolvesAt);' not in resolver:
+    raise SystemExit('NPC refresh call missing after phase3 final-source cleanup')
+if 'Treasure: ${args.treasures.join' not in resolver:
+    raise SystemExit('Treasure report rendering missing after phase3 final-source cleanup')
+resolver_path.write_text(resolver)
+PY
+
+# LAN Arcade phase upgrade patch 2026-06-22 phase 4: map movement visibility and travel help.
+echo "Applying LAN Arcade phase upgrade patch 2026-06-22 phase 4..."
+python3 <<'PY'
+from pathlib import Path
+
+root = Path.cwd()
+
+def replace_once(path, old, new):
+    p = root / path
+    text = p.read_text()
+    if new in text:
+        return
+    if old not in text:
+        raise SystemExit(f'pattern not found in {path}: {old[:120]!r}')
+    p.write_text(text.replace(old, new, 1))
+
+schema_path = 'packages/api/src/http/controllers/schemas/troop-movement-schemas.ts'
+replace_once(
+    schema_path,
+    "    originating_tile_id: z.number(),\n    player_id: z.number(),",
+    "    originating_tile_id: z.number(),\n    originating_x: z.number(),\n    originating_y: z.number(),\n    player_id: z.number(),",
+)
+replace_once(
+    schema_path,
+    "    target_tile_id: z.number().nullable(),\n  })",
+    "    target_tile_id: z.number().nullable(),\n    target_x: z.number().nullable(),\n    target_y: z.number().nullable(),\n  })",
+)
+
+query_path = 'packages/api/src/queries/event-queries.ts'
+replace_once(
+    query_path,
+    "    t_orig.id AS originating_tile_id,\n    p_orig.id AS player_id,",
+    "    t_orig.id AS originating_tile_id,\n    t_orig.x AS originating_x,\n    t_orig.y AS originating_y,\n    p_orig.id AS player_id,",
+)
+replace_once(
+    query_path,
+    "    v_target.id AS target_village_id,\n    v_target.name AS target_village_name,\n    t_target.id AS target_tile_id",
+    "    v_target.id AS target_village_id,\n    v_target.name AS target_village_name,\n    t_target.id AS target_tile_id,\n    t_target.x AS target_x,\n    t_target.y AS target_y",
+)
+
+mapper_path = 'packages/api/src/http/controllers/mappers/troop-movement-mapper.ts'
+replace_once(
+    mapper_path,
+    "    originatingTileId: row.originating_tile_id,\n    playerName: row.player_name,",
+    "    originatingTileId: row.originating_tile_id,\n    originatingX: row.originating_x,\n    originatingY: row.originating_y,\n    playerName: row.player_name,",
+)
+replace_once(
+    mapper_path,
+    "          targetVillageName: row.target_village_name,\n          targetTileId: row.target_tile_id,",
+    "          targetVillageName: row.target_village_name,\n          targetTileId: row.target_tile_id,\n          targetX: row.target_x,\n          targetY: row.target_y,",
+)
+
+dto_path = 'packages/types/src/dtos/troop-movement.ts'
+replace_once(
+    dto_path,
+    "      originatingTileId: z.number(),\n      playerName: z.string(),",
+    "      originatingTileId: z.number(),\n      originatingX: z.number(),\n      originatingY: z.number(),\n      playerName: z.string(),",
+)
+replace_once(
+    dto_path,
+    "      targetVillageName: z.string().nullable(),\n      targetTileId: z.number().nullable(),",
+    "      targetVillageName: z.string().nullable(),\n      targetTileId: z.number().nullable(),\n      targetX: z.number().nullable(),\n      targetY: z.number().nullable(),",
+)
+
+component_path = root / 'apps/web/app/(game)/(village-slug)/(map)/components/map-active-movements.tsx'
+component_path.write_text("""import { useMemo } from 'react';
+import { Link } from 'react-router';
+import { Countdown } from 'app/(game)/(village-slug)/components/countdown';
+import { useCurrentVillage } from 'app/(game)/(village-slug)/hooks/current-village/use-current-village';
+import { useVillageTroopMovements } from 'app/(game)/(village-slug)/hooks/use-village-troop-movements';
+
+type Movement = ReturnType<typeof useVillageTroopMovements>['troopMovements'][number];
+
+const movementLabels: Record<Movement['type'], string> = {
+  troopMovementAdventure: 'Adventure',
+  troopMovementAttack: 'Attack',
+  troopMovementFindNewVillage: 'Settlers',
+  troopMovementOasisOccupation: 'Oasis',
+  troopMovementRaid: 'Raid',
+  troopMovementReinforcements: 'Reinforce',
+  troopMovementRelocation: 'Relocate',
+  troopMovementReturn: 'Return',
+};
+
+const offensiveTypes = new Set<Movement['type']>([
+  'troopMovementAttack',
+  'troopMovementRaid',
+  'troopMovementOasisOccupation',
+]);
+
+const formatCoords = (x: number | null | undefined, y: number | null | undefined) => {
+  if (typeof x !== 'number' || typeof y !== 'number') {
+    return null;
+  }
+
+  return `(${x}|${y})`;
+};
+
+const getMovementDirection = (movement: Movement, currentVillageId: number) => {
+  if (movement.type === 'troopMovementReturn') {
+    return 'Returning';
+  }
+
+  return movement.originatingVillageId === currentVillageId ? 'Outgoing' : 'Incoming';
+};
+
+const getMovementTarget = (movement: Movement) => {
+  if (movement.type === 'troopMovementAdventure') {
+    return 'Adventure site';
+  }
+
+  const coords = formatCoords(movement.targetX, movement.targetY);
+  const name = movement.targetVillageName ?? 'map tile';
+
+  return coords ? `${name} ${coords}` : name;
+};
+
+export const MapActiveMovements = () => {
+  const { currentVillage } = useCurrentVillage();
+  const { troopMovements } = useVillageTroopMovements();
+
+  const visibleMovements = useMemo(
+    () => troopMovements.slice(0, 6),
+    [troopMovements],
+  );
+
+  if (troopMovements.length === 0) {
+    return null;
+  }
+
+  return (
+    <aside className="absolute bottom-8 left-4 z-30 hidden w-[min(26rem,calc(100vw-2rem))] rounded-md border border-black/20 bg-white/95 p-3 text-sm shadow-lg lg:block dark:border-white/15 dark:bg-neutral-950/95">
+      <div className="mb-2 flex items-center justify-between gap-3">
+        <div>
+          <h2 className="font-semibold">Active movements</h2>
+          <p className="text-xs text-muted-foreground">
+            Raids, attacks, returns, and reinforcements currently travelling.
+          </p>
+        </div>
+        <Link
+          className="shrink-0 rounded border px-2 py-1 text-xs font-semibold hover:bg-muted"
+          to="../village/39?tab=troop-movements"
+          relative="path"
+        >
+          Rally Point
+        </Link>
+      </div>
+      <div className="space-y-1.5">
+        {visibleMovements.map((movement) => {
+          const isOffensive = offensiveTypes.has(movement.type);
+          const direction = getMovementDirection(movement, currentVillage.id);
+
+          return (
+            <div
+              className="grid grid-cols-[5.5rem_1fr_4.5rem] items-center gap-2 rounded border border-border/80 bg-background/90 px-2 py-1.5"
+              key={movement.id}
+            >
+              <div>
+                <div className="font-semibold leading-tight">
+                  {movementLabels[movement.type]}
+                </div>
+                <div className={isOffensive ? 'text-xs text-red-600' : 'text-xs text-muted-foreground'}>
+                  {direction}
+                </div>
+              </div>
+              <div className="min-w-0">
+                <div className="truncate font-medium">{getMovementTarget(movement)}</div>
+                <div className="truncate text-xs text-muted-foreground">
+                  From {movement.originatingVillageName} {formatCoords(movement.originatingX, movement.originatingY)}
+                </div>
+              </div>
+              <div className="text-right font-semibold tabular-nums">
+                <Countdown endsAt={movement.resolvesAt} />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      {troopMovements.length > visibleMovements.length && (
+        <p className="mt-2 text-xs text-muted-foreground">
+          {troopMovements.length - visibleMovements.length} more movement(s) in Rally Point.
+        </p>
+      )}
+    </aside>
+  );
+};
+""")
+
+page_path = 'apps/web/app/(game)/(village-slug)/(map)/page.tsx'
+replace_once(
+    page_path,
+    "import { MapControls } from 'app/(game)/(village-slug)/(map)/components/map-controls';",
+    "import { MapActiveMovements } from 'app/(game)/(village-slug)/(map)/components/map-active-movements';\nimport { MapControls } from 'app/(game)/(village-slug)/(map)/components/map-controls';",
+)
+replace_once(
+    page_path,
+    "      <MapControls />",
+    "      <MapActiveMovements />\n      <MapControls />",
+)
+PY
+
 uid=$(id -u)
 gid=$(id -g)
 docker run --rm \
