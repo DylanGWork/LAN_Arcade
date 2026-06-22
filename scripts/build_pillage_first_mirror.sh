@@ -3846,6 +3846,11 @@ replace_once(
 )
 replace_once(
     dto_path,
+    "      originatingTileId: z.number(),\n      playerName: z.string(),\n      playerId: z.number(),\n      playerTribe: tribeSchema,\n      resolvesAt: z.number(),\n      targetVillageId: z.number().nullable(),",
+    "      originatingTileId: z.number(),\n      originatingX: z.number(),\n      originatingY: z.number(),\n      playerName: z.string(),\n      playerId: z.number(),\n      playerTribe: tribeSchema,\n      resolvesAt: z.number(),\n      targetVillageId: z.number().nullable(),",
+)
+replace_once(
+    dto_path,
     "      targetVillageName: z.string().nullable(),\n      targetTileId: z.number().nullable(),",
     "      targetVillageName: z.string().nullable(),\n      targetTileId: z.number().nullable(),\n      targetX: z.number().nullable(),\n      targetY: z.number().nullable(),",
 )
