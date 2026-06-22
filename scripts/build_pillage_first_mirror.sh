@@ -4064,6 +4064,12 @@ replace_once(
 tile_modal_path = 'apps/web/app/(game)/(village-slug)/(map)/components/tile-modal.tsx'
 replace_once(
     tile_modal_path,
+    "import { useCurrentVillage } from 'app/(game)/(village-slug)/hooks/current-village/use-current-village';",
+    """import { useCurrentVillage } from 'app/(game)/(village-slug)/hooks/current-village/use-current-village';
+import { useFarmLists } from 'app/(game)/(village-slug)/hooks/use-farm-lists';""",
+)
+replace_once(
+    tile_modal_path,
     """const TileModalFarmListActions = ({ tile }: TileModalProps) => {
   const { farmLists, addTileToFarmList } = useFarmLists();
   const currentVillage = useCurrentVillage();""",
