@@ -1891,6 +1891,98 @@ if ensure_tail not in rc:
 rc = rc.replace(ensure_tail, ensure_replacement, 1)
 report_controllers.write_text(rc)
 
+# LAN Arcade hero state repair.
+# If a pre-patch browser save lost the HERO in combat, the troop can be gone while
+# heroes.health still says alive. Reconcile that narrow orphan state so the normal
+# revive UI can appear without resetting the world.
+hero_controllers = root / 'packages/api/src/http/controllers/hero-controllers.ts'
+hc = hero_controllers.read_text()
+hc = hc.replace(
+    "import { z } from 'zod';\n",
+    "import { z } from 'zod';\nimport type { DbFacade } from '@pillage-first/utils/facades/database';\n",
+    1,
+)
+hc = hc.replace(
+    "import { updateHeroResourceProductionEffects } from '../../utils/hero';\n",
+    "import { onHeroDeath, updateHeroResourceProductionEffects } from '../../utils/hero';\n",
+    1,
+)
+hero_repair_anchor = """import {
+  getHeroInventorySchema,
+  getHeroLoadoutSchema,
+  getHeroSchema,
+} from './schemas/hero-schemas';
+
+export const getHero = createController('/players/:playerId/hero', {
+"""
+hero_repair_block = """import {
+  getHeroInventorySchema,
+  getHeroLoadoutSchema,
+  getHeroSchema,
+} from './schemas/hero-schemas';
+
+const reconcileLanArcadeOrphanedHero = (
+  database: DbFacade,
+  playerId: number,
+): void => {
+  const isOrphanedAliveHero = database.selectValue({
+    sql: `
+      SELECT
+        EXISTS (
+          SELECT 1
+          FROM heroes h
+          WHERE
+            h.player_id = $player_id
+            AND h.health > 0
+            AND NOT EXISTS (
+              SELECT 1
+              FROM troops t
+                JOIN unit_ids ui ON ui.id = t.unit_id
+              WHERE ui.unit = 'HERO' AND t.amount > 0
+            )
+            AND NOT EXISTS (
+              SELECT 1
+              FROM events e
+              WHERE
+                e.meta IS NOT NULL
+                AND e.meta LIKE '%"unitId":"HERO"%'
+            )
+        ) AS is_orphaned_alive_hero;
+    `,
+    bind: { $player_id: playerId },
+    schema: z.coerce.boolean(),
+  });
+
+  if (!isOrphanedAliveHero) {
+    return;
+  }
+
+  const now = Date.now();
+  database.exec({
+    sql: 'UPDATE heroes SET health = 0 WHERE player_id = $player_id AND health > 0;',
+    bind: { $player_id: playerId },
+  });
+  onHeroDeath(database, now);
+};
+
+export const getHero = createController('/players/:playerId/hero', {
+"""
+if hero_repair_anchor not in hc:
+    raise SystemExit('Failed to find hero controller anchor')
+hc = hc.replace(hero_repair_anchor, hero_repair_block, 1)
+get_hero_handler = """})(({ database, path: { playerId } }) => {
+  const row = database.selectObject({
+"""
+get_hero_handler_replacement = """})(({ database, path: { playerId } }) => {
+  reconcileLanArcadeOrphanedHero(database, playerId);
+
+  const row = database.selectObject({
+"""
+if get_hero_handler not in hc:
+    raise SystemExit('Failed to find getHero handler anchor')
+hc = hc.replace(get_hero_handler, get_hero_handler_replacement, 1)
+hero_controllers.write_text(hc)
+
 # LAN Arcade raid combat patch.
 # Adds small Travian-like raid/attack casualty handling on top of the persistent
 # report patch without refactoring the upstream event system.
@@ -2178,6 +2270,30 @@ const removeCombatLosses = (
   }
 };
 
+const hasHeroLoss = (losses: CombatTroop[]) => {
+  return losses.some(({ unitId, amount }) => unitId === 'HERO' && amount > 0);
+};
+
+const markHeroDeadFromCombatLosses = (
+  database: Parameters<Resolver<GameEvent<'troopMovementRaid'>>>[0],
+  losses: CombatTroop[],
+  timestamp: number,
+) => {
+  if (!hasHeroLoss(losses)) {
+    return;
+  }
+
+  removeTroops(
+    database,
+    losses.filter(({ unitId, amount }) => unitId === 'HERO' && amount > 0),
+  );
+  database.exec({
+    sql: 'UPDATE heroes SET health = 0 WHERE player_id = $player_id AND health > 0;',
+    bind: { $player_id: PLAYER_ID },
+  });
+  onHeroDeath(database, timestamp);
+};
+
 const describeCombatReport = (args: {
   target: TargetIdentity;
   sentAttackers: CombatTroop[];
@@ -2339,6 +2455,7 @@ new_attack = """export const attackMovementResolver: Resolver<
   const combat = resolveLanArcadeCombat('attack', troops, defenders);
 
   removeCombatLosses(database, combat.defenderLosses);
+  markHeroDeadFromCombatLosses(database, combat.attackerLosses, resolvesAt);
 
   createLanArcadeAttackReport(database, {
     eventId: id,
@@ -2438,6 +2555,7 @@ new_raid = """export const raidMovementResolver: Resolver<GameEvent<'troopMoveme
   const combat = resolveLanArcadeCombat('raid', troops, defenders);
 
   removeCombatLosses(database, combat.defenderLosses);
+  markHeroDeadFromCombatLosses(database, combat.attackerLosses, resolvesAt);
 
   const carriedResources = raidVillageResources(
     database,
