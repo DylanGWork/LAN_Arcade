@@ -2841,7 +2841,8 @@ import { Bookmark, Pencil, Trash2 } from 'lucide-react';
 import { CreateFarmListModal } from 'app/(game)/(village-slug)/components/create-farm-list-modal';
 import { EditFarmListModal } from 'app/(game)/(village-slug)/components/edit-farm-list-modal';
 import { Section } from 'app/(game)/(village-slug)/components/section';
-import { farmListsCacheKey, useFarmLists } from 'app/(game)/(village-slug)/hooks/use-farm-lists';
+import { farmListsCacheKey } from 'app/(game)/constants/query-keys';
+import { useFarmLists } from 'app/(game)/(village-slug)/hooks/use-farm-lists';
 import { usePlayerVillageListing } from 'app/(game)/(village-slug)/hooks/use-player-village-listing';
 import { Button } from 'app/components/buttons/button';
 import { Text } from 'app/components/text';
@@ -3989,6 +3990,488 @@ replace_once(
     page_path,
     "      <MapControls />",
     "      <MapActiveMovements />\n      <MapControls />",
+)
+PY
+
+# LAN Arcade phase upgrade patch 2026-06-23 usability fixes: actual farm list tabs and scout affordances.
+echo "Applying LAN Arcade usability fix patch 2026-06-23..."
+python3 <<'PY'
+from pathlib import Path
+
+root = Path.cwd()
+
+def replace_once(path, old, new):
+    p = root / path
+    text = p.read_text()
+    if new in text:
+        return
+    if old not in text:
+        raise SystemExit(f'pattern not found in {path}: {old[:160]!r}')
+    p.write_text(text.replace(old, new, 1))
+
+# Farm-list mutations need to invalidate both the list and the details query.
+hook_path = 'apps/web/app/(game)/(village-slug)/hooks/use-farm-lists.ts'
+replace_once(
+    hook_path,
+    """    onSuccess: async (_data, _vars, _onMutateResult, context) => {
+      await invalidateQueries(context, [
+        [farmListsCacheKey, currentVillage.id],
+      ]);
+    },
+  });
+
+  const { mutate: removeTileFromFarmList } = useMutation({""",
+    """    onSuccess: async (_data, vars, _onMutateResult, context) => {
+      await invalidateQueries(context, [
+        [farmListsCacheKey],
+        [farmListsCacheKey, vars.farmListId],
+      ]);
+    },
+  });
+
+  const { mutate: removeTileFromFarmList } = useMutation({""",
+)
+replace_once(
+    hook_path,
+    """    onSuccess: async (_data, _vars, _onMutateResult, context) => {
+      await invalidateQueries(context, [
+        [farmListsCacheKey, currentVillage.id],
+      ]);
+    },
+  });
+
+  return {""",
+    """    onSuccess: async (_data, vars, _onMutateResult, context) => {
+      await invalidateQueries(context, [
+        [farmListsCacheKey],
+        [farmListsCacheKey, vars.farmListId],
+      ]);
+    },
+  });
+
+  return {""",
+)
+
+# The shared farm-list page had the right layout but called the mutation with positional args.
+shared_farm_path = 'apps/web/app/(game)/(village-slug)/components/rally-point-farm-list.tsx'
+replace_once(
+    shared_farm_path,
+    "onClick={() => removeTileFromFarmList(farmListId, target.tileId)}",
+    "onClick={() => removeTileFromFarmList({ farmListId, tileId: target.tileId })}",
+)
+
+# The map modal helper was defined but not rendered, and it used the current-village hook incorrectly.
+tile_modal_path = 'apps/web/app/(game)/(village-slug)/(map)/components/tile-modal.tsx'
+replace_once(
+    tile_modal_path,
+    """const TileModalFarmListActions = ({ tile }: TileModalProps) => {
+  const { farmLists, addTileToFarmList } = useFarmLists();
+  const currentVillage = useCurrentVillage();""",
+    """const TileModalFarmListActions = ({ tile }: TileModalProps) => {
+  const { farmLists, addTileToFarmList } = useFarmLists();
+  const { currentVillage } = useCurrentVillage();""",
+)
+replace_once(
+    tile_modal_path,
+    "onClick={() => addTileToFarmList(farmList.id, tile.id)}",
+    "onClick={() => addTileToFarmList({ farmListId: farmList.id, tileId: tile.id })}",
+)
+replace_once(
+    tile_modal_path,
+    """        {!isOwnedByPlayer && (
+          <Text variant=\"link\">
+            <Link
+              to={`${getVillageBasePath(currentVillage.slug)}/village/39?tab=send-troops&rally-point-send-troops-tab=attack-or-raid&x=${tile.coordinates.x}&y=${tile.coordinates.y}`}
+            >
+              {t('Attack or raid')}
+            </Link>
+          </Text>
+        )}""",
+    """        {!isOwnedByPlayer && (
+          <>
+            <Text variant=\"link\">
+              <Link
+                to={`${getVillageBasePath(currentVillage.slug)}/village/39?tab=send-troops&rally-point-send-troops-tab=attack-or-raid&x=${tile.coordinates.x}&y=${tile.coordinates.y}`}
+              >
+                {t('Attack or raid')}
+              </Link>
+            </Text>
+            <TileModalFarmListActions tile={tile} />
+          </>
+        )}""",
+)
+
+# The Rally Point route imports nested components; replace old placeholders with the working LAN components.
+(root / 'apps/web/app/(game)/(village-slug)/(village)/(...building-field-id)/components/components/rally-point/rally-point-farm-list.tsx').write_text(r"""import { useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { Link } from 'react-router';
+import { FaPen } from 'react-icons/fa6';
+import { LuTrash } from 'react-icons/lu';
+import { Bookmark } from 'app/(game)/(village-slug)/(village)/(...building-field-id)/components/components/bookmark';
+import { CreateFarmListModal } from 'app/(game)/(village-slug)/(village)/(...building-field-id)/components/components/rally-point/components/farm-list/create-farm-list-modal';
+import { EditFarmListModal } from 'app/(game)/(village-slug)/(village)/(...building-field-id)/components/components/rally-point/components/farm-list/edit-farm-list-modal';
+import {
+  Section,
+  SectionContent,
+} from 'app/(game)/(village-slug)/components/building-layout';
+import { farmListsCacheKey } from 'app/(game)/constants/query-keys';
+import { useFarmLists } from 'app/(game)/(village-slug)/hooks/use-farm-lists';
+import { usePlayerVillageListing } from 'app/(game)/(village-slug)/hooks/use-player-village-listing';
+import { Text } from 'app/components/text';
+import { Button } from 'app/components/ui/button';
+import { useDialog } from 'app/hooks/use-dialog';
+
+const FarmListTargets = ({ farmListId, targetCount }: { farmListId: number; targetCount: number }) => {
+  const { getFarmList, removeTileFromFarmList } = useFarmLists();
+  const { data: details, isLoading } = useQuery({
+    queryKey: [farmListsCacheKey, farmListId],
+    queryFn: () => getFarmList(farmListId),
+    enabled: targetCount > 0,
+  });
+
+  if (targetCount === 0) {
+    return (
+      <div className="border-t bg-muted/10 p-4 text-center text-sm text-muted-foreground">
+        No targets yet. Open another village on the map and click Add to farm list.
+      </div>
+    );
+  }
+
+  if (isLoading || !details) {
+    return <div className="border-t p-4 text-sm text-muted-foreground">Loading farm targets...</div>;
+  }
+
+  return (
+    <div className="divide-y border-t">
+      {details.targets.map((target) => {
+        const title = target.villageName ?? `Tile (${target.x}|${target.y})`;
+        const owner = target.playerName ? ` by ${target.playerName}` : '';
+        return (
+          <div className="flex flex-wrap items-center justify-between gap-3 p-3" key={target.tileId}>
+            <div className="min-w-48">
+              <Text className="font-semibold">{title} ({target.x}|{target.y})</Text>
+              <Text className="text-sm text-muted-foreground">
+                {target.tribe ? `${target.tribe} village${owner}` : `Map target${owner}`}
+                {typeof target.population === 'number' && target.population > 0 ? ` - pop ${target.population}` : ''}
+              </Text>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button size="sm" variant="outline" asChild>
+                <Link to={`?tab=send-troops&rally-point-send-troops-tab=attack-or-raid&x=${target.x}&y=${target.y}`}>Raid</Link>
+              </Button>
+              <Button
+                aria-label={`Remove ${title} from farm list`}
+                size="icon"
+                variant="ghost"
+                onClick={() => removeTileFromFarmList({ farmListId, tileId: target.tileId })}
+              >
+                <LuTrash className="size-4 text-destructive" />
+              </Button>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
+export const RallyPointFarmList = () => {
+  const {
+    isOpen: isCreateFarmListModalOpen,
+    openModal: openCreateFarmListModalOpen,
+    closeModal: closeCreateFarmListModal,
+  } = useDialog();
+  const {
+    isOpen: isEditFarmListModalOpen,
+    openModal: openEditFarmListModalOpen,
+    closeModal: closeEditFarmListModal,
+    modalArgs: editModalArgs,
+  } = useDialog<number>();
+  const { farmLists, deleteFarmList } = useFarmLists();
+  const { playerVillages } = usePlayerVillageListing();
+
+  const farmListsByVillage = useMemo(() => {
+    return playerVillages.map((village) => ({
+      ...village,
+      farmLists: farmLists.filter((farmList) => farmList.villageId === village.id),
+    }));
+  }, [farmLists, playerVillages]);
+
+  return (
+    <Section>
+      <SectionContent>
+        <Bookmark tab="farm-list" />
+        <Text as="h2">Farm List</Text>
+        <Text>Save repeat raid targets from the map, then return here to open pre-filled raid orders.</Text>
+        <Text className="font-medium">You currently have {farmLists.length} farm {farmLists.length === 1 ? 'list' : 'lists'}.</Text>
+      </SectionContent>
+      <SectionContent>
+        <div className="flex w-full justify-end">
+          <Button size="sm" onClick={() => openCreateFarmListModalOpen()}>
+            Create new list
+          </Button>
+        </div>
+      </SectionContent>
+      {farmListsByVillage.map((village) => (
+        <SectionContent key={village.id}>
+          <div className="flex w-full flex-col gap-2">
+            <Text className="font-semibold">{village.name}</Text>
+            {village.farmLists.length === 0 ? (
+              <div className="rounded border p-4 text-sm text-muted-foreground">No farm lists for this village yet.</div>
+            ) : (
+              <div className="flex flex-col gap-4">
+                {village.farmLists.map((list) => (
+                  <div className="overflow-hidden rounded border" key={list.id}>
+                    <div className="flex flex-wrap items-center justify-between gap-3 bg-muted/40 p-3">
+                      <div>
+                        <Text className="font-medium">{list.name}</Text>
+                        <Text className="text-sm text-muted-foreground">{list.targetCount}/100 targets</Text>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Button variant="ghost" size="icon" onClick={() => openEditFarmListModalOpen(list.id)}>
+                          <FaPen className="size-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" onClick={() => deleteFarmList(list.id)}>
+                          <LuTrash className="size-4 text-destructive" />
+                        </Button>
+                      </div>
+                    </div>
+                    <FarmListTargets farmListId={list.id} targetCount={list.targetCount} />
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </SectionContent>
+      ))}
+      <CreateFarmListModal isOpen={isCreateFarmListModalOpen} onClose={closeCreateFarmListModal} />
+      <EditFarmListModal isOpen={isEditFarmListModalOpen} id={editModalArgs.current!} onClose={closeEditFarmListModal} />
+    </Section>
+  );
+};
+""")
+(root / 'apps/web/app/(game)/(village-slug)/(village)/(...building-field-id)/components/components/rally-point/rally-point-simulator.tsx').write_text(r"""import { useMemo, useState } from 'react';
+import { Bookmark } from 'app/(game)/(village-slug)/(village)/(...building-field-id)/components/components/bookmark';
+import {
+  Section,
+  SectionContent,
+} from 'app/(game)/(village-slug)/components/building-layout';
+import { Text } from 'app/components/text';
+import { Button } from 'app/components/ui/button';
+import { Input } from 'app/components/ui/input';
+import { Label } from 'app/components/ui/label';
+
+const numberOrZero = (value: string) => Number.isFinite(Number(value)) ? Math.max(0, Number(value)) : 0;
+
+export const RallyPointSimulator = () => {
+  const [attackPower, setAttackPower] = useState('1000');
+  const [defencePower, setDefencePower] = useState('700');
+  const [attackerCount, setAttackerCount] = useState('100');
+  const [defenderCount, setDefenderCount] = useState('60');
+  const [mode, setMode] = useState<'raid' | 'attack'>('raid');
+
+  const result = useMemo(() => {
+    const attack = numberOrZero(attackPower);
+    const defence = numberOrZero(defencePower);
+    const attackers = numberOrZero(attackerCount);
+    const defenders = numberOrZero(defenderCount);
+    const total = Math.max(1, attack + defence);
+    const attackerLossRatio = mode === 'raid'
+      ? Math.min(1, Math.max(0, defence / total) * 0.65)
+      : Math.min(1, Math.max(0, defence / total) * 1.1);
+    const defenderLossRatio = mode === 'raid'
+      ? Math.min(1, Math.max(0, attack / total) * 0.45)
+      : Math.min(1, Math.max(0, attack / total) * 1.15);
+    const attackerLosses = Math.min(attackers, Math.ceil(attackers * attackerLossRatio));
+    const defenderLosses = Math.min(defenders, Math.ceil(defenders * defenderLossRatio));
+    return {
+      attackerLosses,
+      defenderLosses,
+      survivingAttackers: Math.max(0, attackers - attackerLosses),
+      survivingDefenders: Math.max(0, defenders - defenderLosses),
+    };
+  }, [attackPower, defencePower, attackerCount, defenderCount, mode]);
+
+  return (
+    <Section>
+      <SectionContent>
+        <Bookmark tab="simulator" />
+        <Text as="h2">Simulator</Text>
+        <Text>Estimate LAN Arcade combat before sending a raid or normal attack. Actual results still depend on exact unit stats and surviving carry capacity.</Text>
+      </SectionContent>
+      <SectionContent>
+        <div className="grid w-full gap-4 md:grid-cols-2">
+          <Label className="flex flex-col gap-2">Attack power
+            <Input inputMode="numeric" value={attackPower} onChange={(event) => setAttackPower(event.target.value)} />
+          </Label>
+          <Label className="flex flex-col gap-2">Defence power
+            <Input inputMode="numeric" value={defencePower} onChange={(event) => setDefencePower(event.target.value)} />
+          </Label>
+          <Label className="flex flex-col gap-2">Attackers sent
+            <Input inputMode="numeric" value={attackerCount} onChange={(event) => setAttackerCount(event.target.value)} />
+          </Label>
+          <Label className="flex flex-col gap-2">Defenders present
+            <Input inputMode="numeric" value={defenderCount} onChange={(event) => setDefenderCount(event.target.value)} />
+          </Label>
+        </div>
+        <div className="flex gap-2">
+          <Button size="sm" variant={mode === 'raid' ? 'default' : 'outline'} onClick={() => setMode('raid')}>Raid</Button>
+          <Button size="sm" variant={mode === 'attack' ? 'default' : 'outline'} onClick={() => setMode('attack')}>Normal attack</Button>
+        </div>
+        <Text className="font-medium">Estimated result</Text>
+        <div className="grid w-full gap-3 md:grid-cols-4">
+          <div className="rounded border p-3"><Text className="text-sm text-muted-foreground">Attacker losses</Text><Text className="font-semibold">{result.attackerLosses}</Text></div>
+          <div className="rounded border p-3"><Text className="text-sm text-muted-foreground">Defender losses</Text><Text className="font-semibold">{result.defenderLosses}</Text></div>
+          <div className="rounded border p-3"><Text className="text-sm text-muted-foreground">Attackers return</Text><Text className="font-semibold">{result.survivingAttackers}</Text></div>
+          <div className="rounded border p-3"><Text className="text-sm text-muted-foreground">Defenders remain</Text><Text className="font-semibold">{result.survivingDefenders}</Text></div>
+        </div>
+      </SectionContent>
+    </Section>
+  );
+};
+""")
+(root / 'apps/web/app/(game)/(village-slug)/(village)/(...building-field-id)/components/components/rally-point/rally-point-troop-movements.tsx').write_text("""import { Link } from 'react-router';
+import { Bookmark } from 'app/(game)/(village-slug)/(village)/(...building-field-id)/components/components/bookmark';
+import { Countdown } from 'app/(game)/(village-slug)/components/countdown';
+import {
+  Section,
+  SectionContent,
+} from 'app/(game)/(village-slug)/components/building-layout';
+import { useCurrentVillage } from 'app/(game)/(village-slug)/hooks/current-village/use-current-village';
+import { useVillageTroopMovements } from 'app/(game)/(village-slug)/hooks/use-village-troop-movements';
+import { Text } from 'app/components/text';
+
+const movementLabels = {
+  troopMovementAdventure: 'Adventure',
+  troopMovementAttack: 'Attack',
+  troopMovementFindNewVillage: 'Settlers',
+  troopMovementOasisOccupation: 'Oasis',
+  troopMovementRaid: 'Raid',
+  troopMovementReinforcements: 'Reinforce',
+  troopMovementRelocation: 'Relocate',
+  troopMovementReturn: 'Return',
+} as const;
+
+const formatCoords = (x: number | null | undefined, y: number | null | undefined) => {
+  if (typeof x !== 'number' || typeof y !== 'number') return null;
+  return `(${x}|${y})`;
+};
+
+export const RallyPointTroopMovements = () => {
+  const { currentVillage } = useCurrentVillage();
+  const { troopMovements } = useVillageTroopMovements();
+
+  return (
+    <Section>
+      <SectionContent>
+        <Bookmark tab="troop-movements" />
+        <Text as="h2">Troop movements</Text>
+        <Text>Active raids, attacks, reinforcements, settlers, adventures, and returning troops related to this village.</Text>
+      </SectionContent>
+      <SectionContent>
+        {troopMovements.length === 0 ? (
+          <div className="rounded border p-4 text-sm text-muted-foreground">
+            No active troop movements for this village.
+          </div>
+        ) : (
+          <div className="flex w-full flex-col gap-2">
+            {troopMovements.map((movement) => {
+              const targetCoords = movement.type === 'troopMovementAdventure'
+                ? null
+                : formatCoords(movement.targetX, movement.targetY);
+              const targetName = movement.type === 'troopMovementAdventure'
+                ? 'Adventure site'
+                : movement.targetVillageName ?? 'map tile';
+              const originCoords = formatCoords(movement.originatingX, movement.originatingY);
+              const direction = movement.type === 'troopMovementReturn'
+                ? 'Returning'
+                : movement.originatingVillageId === currentVillage.id ? 'Outgoing' : 'Incoming';
+
+              return (
+                <div className="grid gap-2 rounded border p-3 md:grid-cols-[8rem_1fr_7rem] md:items-center" key={movement.id}>
+                  <div>
+                    <Text className="font-semibold">{movementLabels[movement.type]}</Text>
+                    <Text className="text-sm text-muted-foreground">{direction}</Text>
+                  </div>
+                  <div className="min-w-0">
+                    <Text className="font-medium">{targetName}{targetCoords ? ` ${targetCoords}` : ''}</Text>
+                    <Text className="text-sm text-muted-foreground">
+                      From {movement.originatingVillageName}{originCoords ? ` ${originCoords}` : ''}
+                    </Text>
+                  </div>
+                  <div className="text-left font-semibold tabular-nums md:text-right">
+                    <Countdown endsAt={movement.resolvesAt} />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+        <Text className="text-sm text-muted-foreground">
+          Want to send another raid? Open a saved target in Farm List or choose a tile on the map.
+        </Text>
+        <Text variant="link">
+          <Link to="../map" relative="path">Back to map</Link>
+        </Text>
+      </SectionContent>
+    </Section>
+  );
+};
+""")
+
+# Make scouting discoverable instead of an invisible rule.
+attack_path = 'apps/web/app/(game)/(village-slug)/components/send-troops/attack-raid-form.tsx'
+replace_once(
+    attack_path,
+    "const { control } = useFormContext<AttackRaidFormValues>();",
+    "const { control, setValue } = useFormContext<AttackRaidFormValues>();",
+)
+replace_once(
+    attack_path,
+    """  const selectedUnits = useMemo(() => (units ?? []).filter((unit) => unit.selected > 0), [units]);
+  const isScoutOnlyMission = selectedUnits.length > 0 && selectedUnits.every((unit) => unit.unitId.endsWith('_SCOUT'));""",
+    """  const selectedUnits = useMemo(() => (units ?? []).filter((unit) => unit.selected > 0), [units]);
+  const scoutUnits = useMemo(() => (units ?? []).filter((unit) => unit.unitId.endsWith('_SCOUT') && unit.available > 0), [units]);
+  const isScoutOnlyMission = selectedUnits.length > 0 && selectedUnits.every((unit) => unit.unitId.endsWith('_SCOUT'));
+  const isMixedScoutMission = selectedUnits.some((unit) => unit.unitId.endsWith('_SCOUT')) && selectedUnits.some((unit) => !unit.unitId.endsWith('_SCOUT'));
+  const selectScoutMission = () => {
+    (units ?? []).forEach((unit, index) => {
+      setValue(`units.${index}.selected`, unit.unitId.endsWith('_SCOUT') ? unit.available : 0, {
+        shouldDirty: true,
+        shouldValidate: true,
+      });
+    });
+    setValue('action', 'attack_raid', { shouldDirty: true, shouldValidate: true });
+  };""",
+)
+replace_once(
+    attack_path,
+    """        {isScoutOnlyMission ? (
+          <Text className=\"rounded-md border border-border bg-muted/40 p-2 text-sm text-muted-foreground\">
+            {t('Scout-only missions return an intel report and do not loot resources.')}
+          </Text>
+        ) : null}""",
+    """        <div className="rounded-md border border-border bg-muted/40 p-2 text-sm text-muted-foreground">
+          <Text className="font-medium">{t('Scouting')}</Text>
+          <Text>{t('To scout, send only scout/pathfinder units. Mixed groups become intel missions; raids and attacks use fighting troops.')}</Text>
+          {scoutUnits.length > 0 ? (
+            <Button className="mt-2" size="sm" type="button" variant="outline" onClick={selectScoutMission}>
+              {t('Scout with all scouts')}
+            </Button>
+          ) : (
+            <Text className="mt-2 text-sm text-muted-foreground">{t('No scouts are stationed here. Train scouts or move them into this village before sending an intel mission.')}</Text>
+          )}
+        </div>
+        {isScoutOnlyMission ? (
+          <Text className="rounded-md border border-border bg-muted/40 p-2 text-sm text-muted-foreground">
+            {t('Scout mission ready: this returns an intel report and does not loot resources.')}
+          </Text>
+        ) : null}
+        {isMixedScoutMission ? (
+          <Text className="rounded-md border border-warning/40 bg-warning/10 p-2 text-sm text-warning">
+            {t('Scouts mixed with fighting units will travel as part of the raid; select only scouts for an intel mission.')}
+          </Text>
+        ) : null}""",
 )
 PY
 
