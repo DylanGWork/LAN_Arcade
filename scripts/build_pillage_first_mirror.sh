@@ -3787,6 +3787,499 @@ if 'Treasure: ${args.treasures.join' not in resolver:
 resolver_path.write_text(resolver)
 PY
 
+
+# LAN Arcade phase upgrade patch 2026-06-22 phase 3b: resource-first NPC development and regional skirmishes.
+echo "Applying LAN Arcade phase upgrade patch 2026-06-22 phase 3b..."
+python3 - <<'PY'
+from pathlib import Path
+
+root = Path('.')
+resolver_path = root / 'packages/api/src/http/events/resolvers/troop-movement-resolver.ts'
+resolver = resolver_path.read_text()
+
+if "@pillage-first/game-assets/utils/buildings" not in resolver:
+    resolver = resolver.replace(
+        "import { getItemDefinition } from '@pillage-first/game-assets/utils/items';",
+        "import { getItemDefinition } from '@pillage-first/game-assets/utils/items';\nimport {\n  calculatePopulationDifference,\n  getBuildingDefinition,\n} from '@pillage-first/game-assets/utils/buildings';",
+        1,
+    )
+
+before_effect_import = resolver.split("from '../../../queries/effect-queries';", 1)[0]
+if "updateBuildingEffectQuery" not in before_effect_import:
+    resolver = resolver.replace(
+        "  insertEffectByEffectNameQuery,\n  insertEffectQuery,\n  selectWheatProductionEffectIdQuery,",
+        "  insertEffectByEffectNameQuery,\n  insertEffectQuery,\n  selectWheatProductionEffectIdQuery,\n  updateBuildingEffectQuery,\n  updatePopulationEffectQuery,",
+        1,
+    )
+
+start = resolver.find('const lanArcadeNpcGrowthRowSchema = z.strictObject({')
+end = resolver.find('const hasSurvivingHero = (troops: CombatTroop[]) => {')
+if start == -1 or end == -1:
+    raise SystemExit('NPC growth helper block not found')
+
+helper = r'''const lanArcadeNpcGrowthRowSchema = z.strictObject({
+  villageId: z.number(),
+  tileId: z.number(),
+  playerId: z.number(),
+  tribe: playableTribeSchema.or(z.literal('natars')),
+  population: z.number(),
+  defenderCount: z.number(),
+});
+
+const lanArcadeNpcGrowthStateSchema = z.strictObject({
+  lastReinforcedAt: z.number(),
+  lastDevelopedAt: z.number().nullable(),
+  lastConflictAt: z.number().nullable(),
+});
+
+const lanArcadeNpcBuildingRowSchema = z.strictObject({
+  fieldId: z.number(),
+  buildingId: buildingIdSchema,
+  level: z.number(),
+});
+
+const lanArcadeNpcRivalRowSchema = z.strictObject({
+  villageId: z.number(),
+  tileId: z.number(),
+  population: z.number(),
+  defenderCount: z.number(),
+});
+
+const lanArcadeNpcTroopRowSchema = z.strictObject({
+  unitId: unitIdSchema,
+  amount: z.number(),
+});
+
+const ensureLanArcadeNpcGrowthTable = (
+  database: Parameters<Resolver<GameEvent<'troopMovementRaid'>>>[0],
+) => {
+  database.exec({
+    sql: `
+      CREATE TABLE IF NOT EXISTS lan_arcade_npc_growth
+      (
+        tile_id INTEGER PRIMARY KEY,
+        last_reinforced_at INTEGER NOT NULL,
+        last_developed_at INTEGER,
+        last_conflict_at INTEGER
+      ) STRICT;
+    `,
+  });
+
+  try {
+    database.exec({ sql: 'ALTER TABLE lan_arcade_npc_growth ADD COLUMN last_developed_at INTEGER;' });
+  } catch {
+    // Existing LAN saves may already have this column.
+  }
+  try {
+    database.exec({ sql: 'ALTER TABLE lan_arcade_npc_growth ADD COLUMN last_conflict_at INTEGER;' });
+  } catch {
+    // Existing LAN saves may already have this column.
+  }
+};
+
+const getLanArcadeNpcDefenceUnits = (tribe: string): [CombatTroop['unitId'], CombatTroop['unitId']] => {
+  switch (tribe) {
+    case 'romans':
+      return ['LEGIONNAIRE', 'PRAETORIAN'];
+    case 'gauls':
+      return ['PHALANX', 'SWORDSMAN'];
+    case 'teutons':
+      return ['SPEARMAN', 'AXEMAN'];
+    case 'huns':
+      return ['MERCENARY', 'BOWMAN'];
+    case 'egyptians':
+      return ['SLAVE_MILITIA', 'KHOPESH_WARRIOR'];
+    case 'natars':
+      return ['PIKEMAN', 'THORNED_WARRIOR'];
+    default:
+      return ['PHALANX', 'SWORDSMAN'];
+  }
+};
+
+const selectLanArcadeNpcPopulation = (
+  database: Parameters<Resolver<GameEvent<'troopMovementRaid'>>>[0],
+  villageId: number,
+) => database.selectValue({
+  sql: `
+    SELECT CAST(COALESCE(ROUND(SUM(CASE WHEN ei.effect = 'wheatProduction' AND e.source = 'building' THEN -e.value ELSE 0 END)), 50) AS INTEGER)
+    FROM effects e
+      JOIN effect_ids ei ON ei.id = e.effect_id
+    WHERE e.village_id = $village_id;
+  `,
+  bind: { $village_id: villageId },
+  schema: z.number(),
+}) ?? 50;
+
+const selectLanArcadeNpcDefenderCount = (
+  database: Parameters<Resolver<GameEvent<'troopMovementRaid'>>>[0],
+  tileId: number,
+) => database.selectValue({
+  sql: 'SELECT CAST(COALESCE(SUM(amount), 0) AS INTEGER) FROM troops WHERE tile_id = $tile_id;',
+  bind: { $tile_id: tileId },
+  schema: z.number(),
+}) ?? 0;
+
+const getLanArcadeNpcDevelopmentPriority = (row: z.infer<typeof lanArcadeNpcBuildingRowSchema>) => {
+  const building = getBuildingDefinition(row.buildingId);
+
+  if (building.category === 'resource-production') {
+    return 0;
+  }
+  if (row.buildingId === 'WAREHOUSE' || row.buildingId === 'GRANARY') {
+    return 1;
+  }
+  if (building.category === 'resource-booster') {
+    return 2;
+  }
+  if (row.buildingId === 'MAIN_BUILDING') {
+    return 3;
+  }
+  if (row.buildingId === 'RALLY_POINT' || row.buildingId.endsWith('_WALL')) {
+    return 4;
+  }
+  if (['BARRACKS', 'STABLE', 'ACADEMY', 'SMITHY'].includes(row.buildingId)) {
+    return 5;
+  }
+
+  return building.category === 'military' ? 7 : 6;
+};
+
+const getLanArcadeNpcDevelopmentCap = (
+  row: z.infer<typeof lanArcadeNpcBuildingRowSchema>,
+  population: number,
+) => {
+  const building = getBuildingDefinition(row.buildingId);
+  const economyCap = Math.min(20, Math.max(4, Math.floor(Math.sqrt(Math.max(25, population))) + 2));
+
+  if (building.category === 'resource-production') {
+    return Math.min(building.maxLevel, economyCap);
+  }
+  if (row.buildingId === 'WAREHOUSE' || row.buildingId === 'GRANARY') {
+    return Math.min(building.maxLevel, Math.max(3, economyCap - 1));
+  }
+  if (building.category === 'resource-booster') {
+    return Math.min(building.maxLevel, Math.max(1, Math.floor((economyCap - 5) / 2)));
+  }
+  if (row.buildingId === 'MAIN_BUILDING') {
+    return Math.min(building.maxLevel, Math.max(3, Math.floor(economyCap / 2)));
+  }
+
+  // Keep NPC economy ahead of army infrastructure. Defenders still recover from population.
+  return Math.min(building.maxLevel, Math.max(1, Math.floor(economyCap / 3)));
+};
+
+const upgradeLanArcadeNpcBuilding = (
+  database: Parameters<Resolver<GameEvent<'troopMovementRaid'>>>[0],
+  villageId: number,
+  row: z.infer<typeof lanArcadeNpcBuildingRowSchema>,
+  nextLevel: number,
+) => {
+  database.exec({
+    sql: `
+      UPDATE building_fields
+      SET level = $level
+      WHERE village_id = $village_id
+        AND field_id = $field_id;
+    `,
+    bind: {
+      $village_id: villageId,
+      $field_id: row.fieldId,
+      $level: nextLevel,
+    },
+  });
+
+  const populationDifference = calculatePopulationDifference(row.buildingId, row.level, nextLevel);
+  if (populationDifference !== 0) {
+    database.exec({
+      sql: updatePopulationEffectQuery,
+      bind: {
+        $village_id: villageId,
+        $value: populationDifference,
+      },
+    });
+  }
+
+  const { effects } = getBuildingDefinition(row.buildingId);
+  for (const { effectId, valuesPerLevel, type } of effects) {
+    database.exec({
+      sql: updateBuildingEffectQuery,
+      bind: {
+        $effect_id: effectId,
+        $value: valuesPerLevel[nextLevel],
+        $type: type,
+        $village_id: villageId,
+        $source_specifier: row.fieldId,
+      },
+    });
+  }
+};
+
+const developLanArcadeNpcVillage = (
+  database: Parameters<Resolver<GameEvent<'troopMovementRaid'>>>[0],
+  target: z.infer<typeof lanArcadeNpcGrowthRowSchema>,
+  timestamp: number,
+  elapsedHours: number,
+) => {
+  const upgradeBudget = Math.min(8, Math.floor(elapsedHours / 2));
+  if (upgradeBudget <= 0) {
+    return { upgradesApplied: 0, population: target.population };
+  }
+
+  updateVillageResourcesAt(database, target.villageId, timestamp);
+
+  const buildingRows = database.selectObjects({
+    sql: `
+      SELECT
+        bf.field_id AS fieldId,
+        bi.building AS buildingId,
+        bf.level AS level
+      FROM building_fields bf
+        JOIN building_ids bi ON bi.id = bf.building_id
+      WHERE bf.village_id = $village_id;
+    `,
+    bind: { $village_id: target.villageId },
+    schema: lanArcadeNpcBuildingRowSchema,
+  });
+
+  const candidates = buildingRows
+    .filter((row) => row.level < getLanArcadeNpcDevelopmentCap(row, target.population))
+    .sort((a, b) => (
+      getLanArcadeNpcDevelopmentPriority(a) - getLanArcadeNpcDevelopmentPriority(b)
+      || a.level - b.level
+      || a.fieldId - b.fieldId
+    ));
+
+  let upgradesApplied = 0;
+  for (const row of candidates.slice(0, upgradeBudget)) {
+    upgradeLanArcadeNpcBuilding(database, target.villageId, row, row.level + 1);
+    upgradesApplied += 1;
+  }
+
+  if (upgradesApplied > 0) {
+    // Newly developed farms should not feel empty immediately after storage/production catches up.
+    const reserve = Math.floor(Math.max(200, Math.min(2500, target.population * 4)) * upgradesApplied);
+    addVillageResourcesAt(database, target.villageId, timestamp, [reserve, reserve, reserve, reserve]);
+  }
+
+  updateVillageResourcesAt(database, target.villageId, timestamp);
+
+  return {
+    upgradesApplied,
+    population: selectLanArcadeNpcPopulation(database, target.villageId),
+  };
+};
+
+const removeLanArcadeNpcDefenders = (
+  database: Parameters<Resolver<GameEvent<'troopMovementRaid'>>>[0],
+  tileId: number,
+  losses: number,
+) => {
+  let remainingLosses = Math.max(0, Math.floor(losses));
+  if (remainingLosses <= 0) {
+    return;
+  }
+
+  const troops = database.selectObjects({
+    sql: `
+      SELECT ui.unit AS unitId, t.amount AS amount
+      FROM troops t
+        JOIN unit_ids ui ON ui.id = t.unit_id
+      WHERE t.tile_id = $tile_id
+        AND t.source_tile_id = $tile_id
+      ORDER BY t.amount DESC;
+    `,
+    bind: { $tile_id: tileId },
+    schema: lanArcadeNpcTroopRowSchema,
+  });
+
+  for (const troop of troops) {
+    if (remainingLosses <= 0) {
+      return;
+    }
+    const amount = Math.min(troop.amount, remainingLosses);
+    removeTroops(database, [{ unitId: troop.unitId, amount, tileId, source: tileId }]);
+    remainingLosses -= amount;
+  }
+};
+
+const simulateLanArcadeNpcRegionalConflict = (
+  database: Parameters<Resolver<GameEvent<'troopMovementRaid'>>>[0],
+  target: z.infer<typeof lanArcadeNpcGrowthRowSchema>,
+  population: number,
+  timestamp: number,
+  elapsedHours: number,
+) => {
+  const conflictRounds = Math.min(3, Math.floor(elapsedHours / 4));
+  if (conflictRounds <= 0) {
+    return false;
+  }
+
+  const rival = database.selectObject({
+    sql: `
+      SELECT
+        rv.id AS villageId,
+        rv.tile_id AS tileId,
+        CAST(COALESCE(ROUND(SUM(CASE WHEN ei.effect = 'wheatProduction' AND e.source = 'building' THEN -e.value ELSE 0 END)), 50) AS INTEGER) AS population,
+        CAST(COALESCE((
+          SELECT SUM(t.amount)
+          FROM troops t
+          WHERE t.tile_id = rv.tile_id
+        ), 0) AS INTEGER) AS defenderCount
+      FROM villages cv
+        JOIN tiles ct ON ct.id = cv.tile_id
+        JOIN tiles rt ON ABS(rt.x - ct.x) + ABS(rt.y - ct.y) BETWEEN 1 AND 8
+        JOIN villages rv ON rv.tile_id = rt.id
+        JOIN players rp ON rp.id = rv.player_id
+        LEFT JOIN effects e ON e.village_id = rv.id
+        LEFT JOIN effect_ids ei ON ei.id = e.effect_id
+      WHERE cv.id = $village_id
+        AND rv.id != cv.id
+        AND rp.id != $player_id
+      GROUP BY rv.id, rv.tile_id
+      ORDER BY ABS(rt.x - ct.x) + ABS(rt.y - ct.y), rv.id
+      LIMIT 1;
+    `,
+    bind: { $village_id: target.villageId, $player_id: PLAYER_ID },
+    schema: lanArcadeNpcRivalRowSchema,
+  });
+
+  if (!rival) {
+    return false;
+  }
+
+  updateVillageResourcesAt(database, target.villageId, timestamp);
+  updateVillageResourcesAt(database, rival.villageId, timestamp);
+
+  const currentDefenders = selectLanArcadeNpcDefenderCount(database, target.tileId);
+  const rivalDefenders = selectLanArcadeNpcDefenderCount(database, rival.tileId);
+  const seed = ((target.tileId * 31 + rival.tileId * 17 + Math.floor(timestamp / (60 * 60 * 1000))) % 100) / 100;
+  const ownPower = currentDefenders + population * (0.22 + seed * 0.08);
+  const rivalPower = rivalDefenders + rival.population * (0.26 - seed * 0.08);
+  const losses = Math.max(1, Math.floor(Math.min(currentDefenders || 1, rivalDefenders || 1) * 0.025 * conflictRounds));
+  const raidPressure = Math.floor(Math.max(100, Math.min(1800, Math.max(population, rival.population) * 3)) * conflictRounds);
+
+  if (ownPower >= rivalPower) {
+    removeLanArcadeNpcDefenders(database, rival.tileId, losses);
+    subtractVillageResourcesAt(database, rival.villageId, timestamp, [raidPressure, raidPressure, raidPressure, raidPressure]);
+    addVillageResourcesAt(database, target.villageId, timestamp, [raidPressure, raidPressure, raidPressure, raidPressure]);
+  } else {
+    removeLanArcadeNpcDefenders(database, target.tileId, losses);
+    subtractVillageResourcesAt(database, target.villageId, timestamp, [raidPressure, raidPressure, raidPressure, raidPressure]);
+    addVillageResourcesAt(database, rival.villageId, timestamp, [raidPressure, raidPressure, raidPressure, raidPressure]);
+  }
+
+  return true;
+};
+
+const refreshLanArcadeNpcVillage = (
+  database: Parameters<Resolver<GameEvent<'troopMovementRaid'>>>[0],
+  targetTileId: number,
+  timestamp: number,
+) => {
+  ensureLanArcadeNpcGrowthTable(database);
+
+  const target = database.selectObject({
+    sql: `
+      SELECT
+        v.id AS villageId,
+        v.tile_id AS tileId,
+        p.id AS playerId,
+        ti.tribe AS tribe,
+        CAST(COALESCE(ROUND(SUM(CASE WHEN ei.effect = 'wheatProduction' AND e.source = 'building' THEN -e.value ELSE 0 END)), 50) AS INTEGER) AS population,
+        CAST(COALESCE((
+          SELECT SUM(t.amount)
+          FROM troops t
+          WHERE t.tile_id = v.tile_id
+        ), 0) AS INTEGER) AS defenderCount
+      FROM villages v
+        JOIN players p ON p.id = v.player_id
+        JOIN tribe_ids ti ON ti.id = p.tribe_id
+        LEFT JOIN effects e ON e.village_id = v.id
+        LEFT JOIN effect_ids ei ON ei.id = e.effect_id
+      WHERE v.tile_id = $target_tile_id
+        AND p.id != $player_id
+      GROUP BY v.id, v.tile_id, p.id, ti.tribe;
+    `,
+    bind: { $target_tile_id: targetTileId, $player_id: PLAYER_ID },
+    schema: lanArcadeNpcGrowthRowSchema,
+  });
+
+  if (!target) {
+    return;
+  }
+
+  const growthState = database.selectObject({
+    sql: `
+      SELECT
+        last_reinforced_at AS lastReinforcedAt,
+        last_developed_at AS lastDevelopedAt,
+        last_conflict_at AS lastConflictAt
+      FROM lan_arcade_npc_growth
+      WHERE tile_id = $tile_id;
+    `,
+    bind: { $tile_id: targetTileId },
+    schema: lanArcadeNpcGrowthStateSchema,
+  });
+  const defaultPast = timestamp - 8 * 60 * 60 * 1000;
+  const lastReinforcedAt = growthState?.lastReinforcedAt ?? (timestamp - 4 * 60 * 60 * 1000);
+  const lastDevelopedAt = growthState ? (growthState.lastDevelopedAt ?? growthState.lastReinforcedAt) : defaultPast;
+  const lastConflictAt = growthState ? (growthState.lastConflictAt ?? growthState.lastReinforcedAt) : defaultPast;
+
+  updateVillageResourcesAt(database, target.villageId, timestamp);
+
+  const developmentElapsedHours = Math.max(0, (timestamp - lastDevelopedAt) / (60 * 60 * 1000));
+  const { upgradesApplied, population } = developLanArcadeNpcVillage(database, target, timestamp, developmentElapsedHours);
+
+  const reinforcementElapsedHours = Math.max(0, (timestamp - lastReinforcedAt) / (60 * 60 * 1000));
+  const currentDefenderCount = selectLanArcadeNpcDefenderCount(database, targetTileId);
+  const maxDefenders = Math.max(12, Math.min(650, Math.round(Math.max(25, population) * 1.65)));
+  const missing = Math.max(0, maxDefenders - currentDefenderCount);
+  const rebuildAmount = reinforcementElapsedHours < 0.5
+    ? 0
+    : Math.min(missing, Math.floor(reinforcementElapsedHours * Math.max(2, Math.max(25, population) / 14)));
+
+  if (rebuildAmount > 0) {
+    const [primary, secondary] = getLanArcadeNpcDefenceUnits(target.tribe);
+    const primaryAmount = Math.max(1, Math.ceil(rebuildAmount * 0.7));
+    const secondaryAmount = Math.max(0, rebuildAmount - primaryAmount);
+    addTroops(database, [
+      { unitId: primary, amount: primaryAmount, tileId: targetTileId, source: targetTileId },
+      ...(secondaryAmount > 0 ? [{ unitId: secondary, amount: secondaryAmount, tileId: targetTileId, source: targetTileId }] : []),
+    ]);
+  }
+
+  const conflictElapsedHours = Math.max(0, (timestamp - lastConflictAt) / (60 * 60 * 1000));
+  const conflictApplied = simulateLanArcadeNpcRegionalConflict(database, target, population, timestamp, conflictElapsedHours);
+
+  database.exec({
+    sql: `
+      INSERT INTO lan_arcade_npc_growth (tile_id, last_reinforced_at, last_developed_at, last_conflict_at)
+      VALUES ($tile_id, $last_reinforced_at, $last_developed_at, $last_conflict_at)
+      ON CONFLICT(tile_id) DO UPDATE SET
+        last_reinforced_at = $last_reinforced_at,
+        last_developed_at = COALESCE($last_developed_at, lan_arcade_npc_growth.last_developed_at),
+        last_conflict_at = COALESCE($last_conflict_at, lan_arcade_npc_growth.last_conflict_at);
+    `,
+    bind: {
+      $tile_id: targetTileId,
+      $last_reinforced_at: rebuildAmount > 0 ? timestamp : lastReinforcedAt,
+      $last_developed_at: upgradesApplied > 0 ? timestamp : null,
+      $last_conflict_at: conflictApplied ? timestamp : null,
+    },
+  });
+};
+
+'''
+resolver = resolver[:start] + helper + resolver[end:]
+resolver = resolver.replace(
+    '  refreshLanArcadeNpcVillage(database, targetTileId, resolvesAt);\n  refreshLanArcadeNpcVillage(database, targetTileId, resolvesAt);',
+    '  refreshLanArcadeNpcVillage(database, targetTileId, resolvesAt);'
+)
+if "last_developed_at" not in resolver or "simulateLanArcadeNpcRegionalConflict" not in resolver:
+    raise SystemExit('phase 3b NPC development patch did not apply')
+resolver_path.write_text(resolver)
+PY
+
 # LAN Arcade phase upgrade patch 2026-06-22 phase 4: map movement visibility and travel help.
 echo "Applying LAN Arcade phase upgrade patch 2026-06-22 phase 4..."
 python3 <<'PY'

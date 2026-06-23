@@ -81,6 +81,13 @@ const countTargetDefenders = (database: DbFacade, tileId: number) =>
     schema: z.number(),
   })!;
 
+const getResourceFieldLevelSum = (database: DbFacade, villageId: number) =>
+  database.selectValue({
+    sql: 'SELECT CAST(COALESCE(SUM(level), 0) AS INTEGER) FROM building_fields WHERE village_id = $village_id AND field_id BETWEEN 1 AND 18;',
+    bind: { $village_id: villageId },
+    schema: z.number(),
+  })!;
+
 const getReport = (database: DbFacade, reportId: string) =>
   database.selectObject({
     sql: 'SELECT title, body FROM lan_arcade_reports WHERE id = $report_id;',
@@ -102,6 +109,52 @@ const getHeroInventoryAmount = (database: DbFacade, itemId: number) =>
   })!;
 
 describe('LAN Arcade NPC recovery and treasure', () => {
+  test('untouched NPC villages lazily prioritise resource field development', async () => {
+    const database = await prepareTestDatabase();
+    const originTileId = getVillageTileId(database, sourceVillageId);
+    const target = getTargetVillage(database);
+    resetTarget(database, target.tileId);
+    database.exec({
+      sql: 'UPDATE building_fields SET level = 1 WHERE village_id = $village_id AND field_id BETWEEN 1 AND 18;',
+      bind: { $village_id: target.villageId },
+    });
+    const beforeLevelSum = getResourceFieldLevelSum(database, target.villageId);
+
+    raidMovementResolver(database, createTroopMovementRaidEventMock({
+      id: 600,
+      startsAt: 8 * 60 * 60 * 1000,
+      duration: 200,
+      villageId: sourceVillageId,
+      originTileId,
+      targetTileId: target.tileId,
+      troops: [{ unitId: 'ROMAN_SCOUT', amount: 1, tileId: originTileId, source: originTileId }],
+    }));
+
+    expect(getResourceFieldLevelSum(database, target.villageId)).toBeGreaterThan(beforeLevelSum);
+  });
+
+  test('migrated NPC growth rows use reinforcement timestamp for development and skirmish clocks', async () => {
+    const database = await prepareTestDatabase();
+    const originTileId = getVillageTileId(database, sourceVillageId);
+    const target = getTargetVillage(database);
+    const timestamp = 8 * 60 * 60 * 1000;
+    resetTarget(database, target.tileId);
+    ensureNoNpcRefresh(database, target.tileId, 9999999999);
+    const beforeLevelSum = getResourceFieldLevelSum(database, target.villageId);
+
+    raidMovementResolver(database, createTroopMovementRaidEventMock({
+      id: 603,
+      startsAt: timestamp,
+      duration: 200,
+      villageId: sourceVillageId,
+      originTileId,
+      targetTileId: target.tileId,
+      troops: [{ unitId: 'ROMAN_SCOUT', amount: 1, tileId: originTileId, source: originTileId }],
+    }));
+
+    expect(getResourceFieldLevelSum(database, target.villageId)).toBe(beforeLevelSum);
+    expect(countTargetDefenders(database, target.tileId)).toBe(0);
+  });
   test('NPC villages lazily rebuild defenders when visited', async () => {
     const database = await prepareTestDatabase();
     const originTileId = getVillageTileId(database, sourceVillageId);
