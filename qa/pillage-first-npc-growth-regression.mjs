@@ -6,6 +6,8 @@ import process from 'node:process';
 
 const sourcePath = process.env.PILLAGE_FIRST_RESOLVER_SOURCE
   || '/tmp/lan-arcade-pillage-first-build/packages/api/src/http/events/resolvers/troop-movement-resolver.ts';
+const mapControllerPath = process.env.PILLAGE_FIRST_MAP_CONTROLLER_SOURCE
+  || '/tmp/lan-arcade-pillage-first-build/packages/api/src/http/controllers/map-controllers.ts';
 const reportDir = process.env.PILLAGE_FIRST_REPORT_DIR || 'qa/reports/pillage-first-npc-growth-source';
 
 const required = [
@@ -23,10 +25,18 @@ const required = [
   'simulateLanArcadeNpcRegionalConflict',
   'removeLanArcadeNpcDefenders',
   'addVillageResourcesAt(database, target.villageId',
+  'refreshLanArcadeNpcVillagesForMap(database, Date.now())',
+  'LIMIT 12',
+  'ABS(target_tile.x - player_tile.x) <= 12',
+  'export const refreshLanArcadeNpcVillagesForMap',
+  'growthHoursPerUpgrade',
 ];
 
 const source = fs.readFileSync(sourcePath, 'utf8');
-const missing = required.filter((needle) => !source.includes(needle));
+const mapControllerSource = fs.readFileSync(mapControllerPath, 'utf8');
+const combinedSource = `${source}
+${mapControllerSource}`;
+const missing = required.filter((needle) => !combinedSource.includes(needle));
 const duplicateRefresh = source.includes(
   'refreshLanArcadeNpcVillage(database, targetTileId, resolvesAt);\n  refreshLanArcadeNpcVillage(database, targetTileId, resolvesAt);',
 );
@@ -46,6 +56,7 @@ const report = {
   generatedAt: new Date().toISOString(),
   passed,
   sourcePath,
+  mapControllerPath,
   missing,
   duplicateRefresh,
   refreshCount,
@@ -64,5 +75,5 @@ if (!passed) {
 console.log(`Pillage First NPC growth regression passed. Report: ${reportDir}`);
 
 function renderMarkdown(report) {
-  return `# Pillage First NPC Growth Regression\n\nGenerated: ${report.generatedAt}\nResult: ${report.passed ? 'pass' : 'fail'}\nSource: ${report.sourcePath}\nRefresh hook count: ${report.refreshCount}\nResource priority before military: ${report.resourceBeforeMilitary}\nDuplicate refresh hook: ${report.duplicateRefresh}\nMissing required markers: ${report.missing.length ? report.missing.join(', ') : 'none'}\n`;
+  return `# Pillage First NPC Growth Regression\n\nGenerated: ${report.generatedAt}\nResult: ${report.passed ? 'pass' : 'fail'}\nSource: ${report.sourcePath}\nMap controller: ${report.mapControllerPath}\nRefresh hook count: ${report.refreshCount}\nResource priority before military: ${report.resourceBeforeMilitary}\nDuplicate refresh hook: ${report.duplicateRefresh}\nMissing required markers: ${report.missing.length ? report.missing.join(', ') : 'none'}\n`;
 }

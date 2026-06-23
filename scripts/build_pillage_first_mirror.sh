@@ -3511,7 +3511,7 @@ const getLanArcadeNpcDefenceUnits = (tribe: string): [CombatTroop['unitId'], Com
   }
 };
 
-const refreshLanArcadeNpcVillage = (
+export const refreshLanArcadeNpcVillage = (
   database: Parameters<Resolver<GameEvent<'troopMovementRaid'>>>[0],
   targetTileId: number,
   timestamp: number,
@@ -4028,7 +4028,8 @@ const developLanArcadeNpcVillage = (
   elapsedHours: number,
   resourceUpgradeStreak: number,
 ) => {
-  const upgradeBudget = Math.min(8, Math.floor(elapsedHours / 2));
+  const growthHoursPerUpgrade = Math.min(12, Math.max(0.75, Math.sqrt(Math.max(25, target.population)) / 10));
+  const upgradeBudget = Math.min(10, Math.floor(elapsedHours / growthHoursPerUpgrade));
   if (upgradeBudget <= 0) {
     return { upgradesApplied: 0, population: target.population, resourceUpgradeStreak };
   }
@@ -4205,7 +4206,7 @@ const simulateLanArcadeNpcRegionalConflict = (
   return true;
 };
 
-const refreshLanArcadeNpcVillage = (
+export const refreshLanArcadeNpcVillage = (
   database: Parameters<Resolver<GameEvent<'troopMovementRaid'>>>[0],
   targetTileId: number,
   timestamp: number,
@@ -4313,6 +4314,53 @@ const refreshLanArcadeNpcVillage = (
   });
 };
 
+export const refreshLanArcadeNpcVillagesForMap = (
+  database: Parameters<Resolver<GameEvent<'troopMovementRaid'>>>[0],
+  timestamp: number,
+) => {
+  ensureLanArcadeNpcGrowthTable(database);
+
+  const developmentCutoff = timestamp - 45 * 60 * 1000;
+  const reinforcementCutoff = timestamp - 45 * 60 * 1000;
+  const targetTileIds = database.selectObjects({
+    sql: `
+      SELECT v.tile_id AS tileId
+      FROM villages v
+        JOIN players p ON p.id = v.player_id
+        JOIN tiles target_tile ON target_tile.id = v.tile_id
+        JOIN villages player_village ON player_village.player_id = $player_id
+        JOIN tiles player_tile ON player_tile.id = player_village.tile_id
+        LEFT JOIN lan_arcade_npc_growth g ON g.tile_id = v.tile_id
+      WHERE p.id != $player_id
+        AND ABS(target_tile.x - player_tile.x) <= 12
+        AND ABS(target_tile.y - player_tile.y) <= 12
+        AND (
+          g.tile_id IS NULL
+          OR g.last_developed_at IS NULL
+          OR g.last_developed_at <= $development_cutoff
+          OR g.last_reinforced_at <= $reinforcement_cutoff
+        )
+      GROUP BY v.tile_id
+      ORDER BY
+        CASE WHEN g.tile_id IS NULL THEN 0 ELSE 1 END,
+        MIN(ABS(target_tile.x - player_tile.x) + ABS(target_tile.y - player_tile.y)),
+        COALESCE(g.last_developed_at, 0),
+        v.id
+      LIMIT 12;
+    `,
+    bind: {
+      $player_id: PLAYER_ID,
+      $development_cutoff: developmentCutoff,
+      $reinforcement_cutoff: reinforcementCutoff,
+    },
+    schema: z.strictObject({ tileId: z.number() }),
+  });
+
+  for (const { tileId } of targetTileIds) {
+    refreshLanArcadeNpcVillage(database, tileId, timestamp);
+  }
+};
+
 '''
 resolver = resolver[:start] + helper + resolver[end:]
 resolver = resolver.replace(
@@ -4322,6 +4370,44 @@ resolver = resolver.replace(
 if "last_developed_at" not in resolver or "simulateLanArcadeNpcRegionalConflict" not in resolver:
     raise SystemExit('phase 3b NPC development patch did not apply')
 resolver_path.write_text(resolver)
+PY
+
+
+# LAN Arcade phase upgrade patch 2026-06-24 phase 3c: map-load NPC catch-up.
+echo "Applying LAN Arcade phase upgrade patch 2026-06-24 phase 3c..."
+python3 - <<'PY'
+from pathlib import Path
+
+root = Path('.')
+controller_path = root / 'packages/api/src/http/controllers/map-controllers.ts'
+controller = controller_path.read_text()
+
+import_line = "import { refreshLanArcadeNpcVillagesForMap } from '../events/resolvers/troop-movement-resolver';\n"
+if import_line not in controller:
+    marker = "import { selectServerMapSizeQuery } from '../../queries/server-queries';\n"
+    if marker not in controller:
+        raise SystemExit('map controller server-query import marker not found')
+    controller = controller.replace(marker, marker + import_line, 1)
+
+old = ")(({ database }) => {\n  const parsedTiles = database.selectObjects({"
+new = ")(({ database }) => {\n  refreshLanArcadeNpcVillagesForMap(database, Date.now());\n\n  const parsedTiles = database.selectObjects({"
+if new not in controller:
+    if old not in controller:
+        raise SystemExit('map controller getTiles body marker not found')
+    controller = controller.replace(old, new, 1)
+
+controller_path.write_text(controller)
+
+resolver_path = root / 'packages/api/src/http/events/resolvers/troop-movement-resolver.ts'
+resolver = resolver_path.read_text()
+required = [
+    'export const refreshLanArcadeNpcVillage',
+    'export const refreshLanArcadeNpcVillagesForMap',
+    'growthHoursPerUpgrade',
+]
+missing = [item for item in required if item not in resolver]
+if missing:
+    raise SystemExit(f'map NPC catch-up resolver markers missing: {missing}')
 PY
 
 # LAN Arcade phase upgrade patch 2026-06-22 phase 4: map movement visibility and travel help.
