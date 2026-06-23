@@ -4491,6 +4491,398 @@ replace_once(
     "{t('No current scout intel for this tile. Send a scout-only mission for reliable defender numbers.')}",
 )
 
+# Player combat/economy statistics tab for LAN Arcade backfilled stats.
+(root / 'apps/web/app/(game)/(village-slug)/(statistics)/components/my-statistics.tsx').write_text(r"""import { use, useMemo } from 'react';
+import { useSuspenseQueries } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
+import type { Troop } from '@pillage-first/types/models/troop';
+import { Section, SectionContent } from 'app/(game)/(village-slug)/components/building-layout';
+import { useEventsHistory } from 'app/(game)/(village-slug)/hooks/use-events-history';
+import { usePlayerVillageListing } from 'app/(game)/(village-slug)/hooks/use-player-village-listing';
+import { useReports } from 'app/(game)/(village-slug)/hooks/use-reports';
+import { villageTroopsCacheKey } from 'app/(game)/constants/query-keys';
+import { ApiContext } from 'app/(game)/providers/api-provider';
+import { Text } from 'app/components/text';
+
+type CountMap = Record<string, number>;
+type ResourceTotals = {
+  wood: number;
+  clay: number;
+  iron: number;
+  wheat: number;
+  unknown: number;
+};
+
+const numberFormatter = new Intl.NumberFormat();
+const combatReportTypes = new Set(['attack', 'raid', 'defence', 'scout-attack', 'scout-defence']);
+
+const emptyResources = (): ResourceTotals => ({
+  wood: 0,
+  clay: 0,
+  iron: 0,
+  wheat: 0,
+  unknown: 0,
+});
+
+const addCount = (target: CountMap, unitId: string, amount: number) => {
+  if (!Number.isFinite(amount) || amount <= 0) {
+    return;
+  }
+
+  target[unitId] = (target[unitId] ?? 0) + amount;
+};
+
+const totalCount = (values: CountMap) => {
+  return Object.values(values).reduce((sum, amount) => sum + amount, 0);
+};
+
+const formatNumber = (value: number) => numberFormatter.format(Math.max(0, Math.floor(value)));
+
+const normalizeUnitId = (value: string) => {
+  return value
+    .trim()
+    .replace(/[.:;]+$/g, '')
+    .replace(/['?]/g, '')
+    .replace(/[^a-zA-Z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '')
+    .toUpperCase();
+};
+
+const titleCaseUnitId = (unitId: string) => {
+  return unitId
+    .toLowerCase()
+    .replaceAll('_', ' ')
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+};
+
+const escapeRegExp = (value: string) => {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+};
+
+const extractReportField = (body: string, label: string) => {
+  const match = body.match(new RegExp(`${escapeRegExp(label)}:\\s*([^.]*)`, 'i'));
+  return match?.[1]?.trim() ?? '';
+};
+
+const parseTroopList = (value: string) => {
+  if (!value || /^(none|no defenders detected|no current scout intel)$/i.test(value.trim())) {
+    return [] as { unitId: string; amount: number }[];
+  }
+
+  return value
+    .split(',')
+    .map((part) => part.trim())
+    .flatMap((part) => {
+      const match = part.match(/^([0-9][0-9,]*)\s+(.+)$/);
+      if (!match) {
+        return [];
+      }
+
+      const amount = Number(match[1].replaceAll(',', ''));
+      const unitId = normalizeUnitId(match[2]);
+      return Number.isFinite(amount) && unitId ? [{ unitId, amount }] : [];
+    });
+};
+
+const parseResourceBundle = (value: string) => {
+  const match = value.match(
+    /([0-9][0-9,]*)\s+wood,\s*([0-9][0-9,]*)\s+clay,\s*([0-9][0-9,]*)\s+iron,\s*([0-9][0-9,]*)\s+wheat/i,
+  );
+
+  if (!match) {
+    return null;
+  }
+
+  return {
+    wood: Number(match[1].replaceAll(',', '')),
+    clay: Number(match[2].replaceAll(',', '')),
+    iron: Number(match[3].replaceAll(',', '')),
+    wheat: Number(match[4].replaceAll(',', '')),
+  };
+};
+
+const parseTitleLoot = (title: string) => {
+  const match = title.match(/raid gained\s+([0-9][0-9,]*)\s+resources/i);
+  return match ? Number(match[1].replaceAll(',', '')) : 0;
+};
+
+const usePlayerCurrentTroopTotals = () => {
+  const { apiClient } = use(ApiContext);
+  const { playerVillages } = usePlayerVillageListing();
+  const playerTileIds = useMemo(
+    () => new Set(playerVillages.map(({ tileId }) => tileId)),
+    [playerVillages],
+  );
+  const troopQueries = useSuspenseQueries({
+    queries: playerVillages.map((village) => ({
+      queryKey: [villageTroopsCacheKey, village.id, 'statistics'],
+      queryFn: async () => {
+        const { data } = await apiClient.get('/tiles/:tileId/stationed-troops', {
+          path: { tileId: village.tileId },
+        });
+        return data as Troop[];
+      },
+    })),
+  });
+
+  return useMemo(() => {
+    const totals: CountMap = {};
+
+    for (const { data } of troopQueries) {
+      for (const troop of data as Troop[]) {
+        if (playerTileIds.has(troop.tileId) && playerTileIds.has(troop.source)) {
+          addCount(totals, troop.unitId, troop.amount);
+        }
+      }
+    }
+
+    return totals;
+  }, [playerTileIds, troopQueries]);
+};
+
+const useMyStatistics = () => {
+  const { reports } = useReports();
+  const { events } = useEventsHistory('global', ['training']);
+  const currentTroops = usePlayerCurrentTroopTotals();
+
+  return useMemo(() => {
+    const loot = emptyResources();
+    const attackerLosses: CountMap = {};
+    const defenderLosses: CountMap = {};
+    const defendersFaced: CountMap = {};
+    const training: CountMap = {};
+    const reportCounts: CountMap = {};
+    let reportsBackfilled = 0;
+    let bestLootReport = { title: '', total: 0 };
+
+    for (const event of events) {
+      if (event.type === 'training') {
+        addCount(training, event.data.unit, event.data.amount);
+      }
+    }
+
+    for (const report of reports) {
+      if (!combatReportTypes.has(report.type)) {
+        continue;
+      }
+
+      reportsBackfilled += 1;
+      addCount(reportCounts, report.type, 1);
+
+      const parsedLoot = parseResourceBundle(extractReportField(report.body, 'Loot') || report.body);
+      if (parsedLoot) {
+        loot.wood += parsedLoot.wood;
+        loot.clay += parsedLoot.clay;
+        loot.iron += parsedLoot.iron;
+        loot.wheat += parsedLoot.wheat;
+        const total = parsedLoot.wood + parsedLoot.clay + parsedLoot.iron + parsedLoot.wheat;
+        if (total > bestLootReport.total) {
+          bestLootReport = { title: report.title, total };
+        }
+      } else {
+        const titleLoot = parseTitleLoot(report.title);
+        loot.unknown += titleLoot;
+        if (titleLoot > bestLootReport.total) {
+          bestLootReport = { title: report.title, total: titleLoot };
+        }
+      }
+
+      for (const troop of parseTroopList(extractReportField(report.body, 'Attacker losses'))) {
+        addCount(attackerLosses, troop.unitId, troop.amount);
+      }
+      for (const troop of parseTroopList(extractReportField(report.body, 'Defender losses'))) {
+        addCount(defenderLosses, troop.unitId, troop.amount);
+      }
+      for (const troop of parseTroopList(extractReportField(report.body, 'Defenders present'))) {
+        addCount(defendersFaced, troop.unitId, troop.amount);
+      }
+    }
+
+    const minimumAccountedTroops: CountMap = {};
+    const allUnitIds = new Set([
+      ...Object.keys(training),
+      ...Object.keys(currentTroops),
+      ...Object.keys(attackerLosses),
+    ]);
+
+    for (const unitId of allUnitIds) {
+      minimumAccountedTroops[unitId] = Math.max(
+        training[unitId] ?? 0,
+        (currentTroops[unitId] ?? 0) + (attackerLosses[unitId] ?? 0),
+      );
+    }
+
+    return {
+      loot,
+      attackerLosses,
+      defenderLosses,
+      defendersFaced,
+      training,
+      currentTroops,
+      minimumAccountedTroops,
+      reportCounts,
+      reportsBackfilled,
+      bestLootReport,
+    };
+  }, [currentTroops, events, reports]);
+};
+
+type StatCardProps = {
+  label: string;
+  value: string;
+  caption?: string;
+};
+
+const StatCard = ({ label, value, caption }: StatCardProps) => (
+  <div className="rounded-md border border-border bg-card/70 p-3">
+    <Text className="text-sm text-muted-foreground">{label}</Text>
+    <Text className="text-2xl font-semibold tabular-nums">{value}</Text>
+    {caption ? <Text className="text-xs text-muted-foreground">{caption}</Text> : null}
+  </div>
+);
+
+type BreakdownListProps = {
+  title: string;
+  values: CountMap;
+  emptyText: string;
+  unitLabel: (unitId: string, count: number) => string;
+};
+
+const sortedEntries = (values: CountMap) => {
+  return Object.entries(values).sort(([, a], [, b]) => b - a);
+};
+
+const BreakdownList = ({ title, values, emptyText, unitLabel }: BreakdownListProps) => {
+  const entries = sortedEntries(values);
+
+  return (
+    <div className="rounded-md border border-border bg-background/60 p-3">
+      <Text as="h3" className="font-semibold">{title}</Text>
+      {entries.length === 0 ? (
+        <Text className="text-sm text-muted-foreground">{emptyText}</Text>
+      ) : (
+        <div className="mt-2 flex flex-col gap-1">
+          {entries.map(([unitId, count]) => (
+            <div className="flex items-center justify-between gap-3 text-sm" key={unitId}>
+              <span className="min-w-0 break-words">{unitLabel(unitId, count)}</span>
+              <span className="font-semibold tabular-nums">{formatNumber(count)}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+export const MyStatistics = () => {
+  const { t } = useTranslation();
+  const stats = useMyStatistics();
+  const knownLootTotal = stats.loot.wood + stats.loot.clay + stats.loot.iron + stats.loot.wheat;
+  const totalLoot = knownLootTotal + stats.loot.unknown;
+  const trainingTotal = totalCount(stats.training);
+  const minimumAccountedTotal = totalCount(stats.minimumAccountedTroops);
+  const lossesTotal = totalCount(stats.attackerLosses);
+  const killsTotal = totalCount(stats.defenderLosses);
+
+  const unitLabel = (unitId: string, count: number) => {
+    const translationKey = `UNITS.${unitId}.NAME`;
+    const translated = t(translationKey, { count });
+    return translated === translationKey ? titleCaseUnitId(unitId) : translated;
+  };
+
+  const unitRows = Array.from(
+    new Set([
+      ...Object.keys(stats.minimumAccountedTroops),
+      ...Object.keys(stats.training),
+      ...Object.keys(stats.currentTroops),
+      ...Object.keys(stats.attackerLosses),
+    ]),
+  ).sort((a, b) => (stats.minimumAccountedTroops[b] ?? 0) - (stats.minimumAccountedTroops[a] ?? 0));
+
+  return (
+    <Section>
+      <SectionContent>
+        <Text as="h2">{t('My stats')}</Text>
+        <Text className="text-sm text-muted-foreground">
+          {t('Backfilled from attack, raid, scout, and defence reports plus training history. Older saves may have partial history, so minimum accounted troops uses current troops plus report losses when that is higher than recorded training.')}
+        </Text>
+      </SectionContent>
+
+      <SectionContent>
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+          <StatCard label={t('Total loot')} value={formatNumber(totalLoot)} caption={`${formatNumber(stats.loot.wood)} wood, ${formatNumber(stats.loot.clay)} clay, ${formatNumber(stats.loot.iron)} iron, ${formatNumber(stats.loot.wheat)} wheat${stats.loot.unknown > 0 ? `, ${formatNumber(stats.loot.unknown)} legacy total` : ''}`} />
+          <StatCard label={t('Enemies killed')} value={formatNumber(killsTotal)} caption={t('From defender losses in reports')} />
+          <StatCard label={t('Troops lost')} value={formatNumber(lossesTotal)} caption={t('From attacker losses in reports')} />
+          <StatCard label={t('Troops trained')} value={formatNumber(trainingTotal)} caption={t('Recorded training history')} />
+        </div>
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+          <StatCard label={t('Minimum accounted troops')} value={formatNumber(minimumAccountedTotal)} caption={t('Training history or current troops plus losses')} />
+          <StatCard label={t('Combat reports parsed')} value={formatNumber(stats.reportsBackfilled)} caption={sortedEntries(stats.reportCounts).map(([type, count]) => `${type}: ${formatNumber(count)}`).join(', ') || t('No reports yet')} />
+          <StatCard label={t('Best loot run')} value={formatNumber(stats.bestLootReport.total)} caption={stats.bestLootReport.title || t('No loot reports yet')} />
+          <StatCard label={t('Current troops')} value={formatNumber(totalCount(stats.currentTroops))} caption={t('Player-owned troops stationed in your villages')} />
+        </div>
+      </SectionContent>
+
+      <SectionContent>
+        <div className="grid gap-3 lg:grid-cols-3">
+          <BreakdownList title={t('Kills by enemy type')} values={stats.defenderLosses} emptyText={t('No defender losses found in reports yet.')} unitLabel={unitLabel} />
+          <BreakdownList title={t('Losses by unit type')} values={stats.attackerLosses} emptyText={t('No attacker losses found in reports yet.')} unitLabel={unitLabel} />
+          <BreakdownList title={t('Defenders faced')} values={stats.defendersFaced} emptyText={t('No defender detail found in reports yet.')} unitLabel={unitLabel} />
+        </div>
+      </SectionContent>
+
+      <SectionContent>
+        <Text as="h3">{t('Troop accounting')}</Text>
+        <div className="grid gap-2">
+          {unitRows.length === 0 ? (
+            <div className="rounded-md border border-border bg-background/60 p-3 text-sm text-muted-foreground">
+              {t('No troop history found yet.')}
+            </div>
+          ) : (
+            unitRows.map((unitId) => (
+              <div className="grid gap-2 rounded-md border border-border bg-background/60 p-3 text-sm md:grid-cols-[1.3fr_repeat(4,minmax(0,1fr))] md:items-center" key={unitId}>
+                <Text className="font-semibold">{unitLabel(unitId, stats.minimumAccountedTroops[unitId] ?? 0)}</Text>
+                <div><span className="text-muted-foreground">{t('trained')}</span> <span className="font-semibold tabular-nums">{formatNumber(stats.training[unitId] ?? 0)}</span></div>
+                <div><span className="text-muted-foreground">{t('current')}</span> <span className="font-semibold tabular-nums">{formatNumber(stats.currentTroops[unitId] ?? 0)}</span></div>
+                <div><span className="text-muted-foreground">{t('lost')}</span> <span className="font-semibold tabular-nums">{formatNumber(stats.attackerLosses[unitId] ?? 0)}</span></div>
+                <div><span className="text-muted-foreground">{t('minimum')}</span> <span className="font-semibold tabular-nums">{formatNumber(stats.minimumAccountedTroops[unitId] ?? 0)}</span></div>
+              </div>
+            ))
+          )}
+        </div>
+      </SectionContent>
+    </Section>
+  );
+};
+""")
+
+statistics_page = 'apps/web/app/(game)/(village-slug)/(statistics)/page.tsx'
+replace_once(
+    statistics_page,
+    "import { VillageRankings } from 'app/(game)/(village-slug)/(statistics)/components/village-rankings';",
+    "import { MyStatistics } from 'app/(game)/(village-slug)/(statistics)/components/my-statistics';\nimport { VillageRankings } from 'app/(game)/(village-slug)/(statistics)/components/village-rankings';",
+)
+replace_once(
+    statistics_page,
+    "const tabs = ['population', 'villages', 'overview'];",
+    "const tabs = ['my-stats', 'population', 'villages', 'overview'];",
+)
+replace_once(
+    statistics_page,
+    "value={tabs[tabIndex] ?? 'population'}",
+    "value={tabs[tabIndex] ?? 'my-stats'}",
+)
+replace_once(
+    statistics_page,
+    "          <Tab value=\"population\">{t('Population')}</Tab>",
+    "          <Tab value=\"my-stats\">{t('My stats')}</Tab>\n          <Tab value=\"population\">{t('Population')}</Tab>",
+)
+replace_once(
+    statistics_page,
+    "        <TabPanel value=\"population\">\n          <PopulationRankings />\n        </TabPanel>",
+    "        <TabPanel value=\"my-stats\">\n          <MyStatistics />\n        </TabPanel>\n        <TabPanel value=\"population\">\n          <PopulationRankings />\n        </TabPanel>",
+)
+
 PY
 
 uid=$(id -u)
