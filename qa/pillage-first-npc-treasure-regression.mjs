@@ -88,6 +88,13 @@ const getResourceFieldLevelSum = (database: DbFacade, villageId: number) =>
     schema: z.number(),
   })!;
 
+const getStorageLevelSum = (database: DbFacade, villageId: number) =>
+  database.selectValue({
+    sql: "SELECT CAST(COALESCE(SUM(bf.level), 0) AS INTEGER) FROM building_fields bf JOIN building_ids bi ON bi.id = bf.building_id WHERE bf.village_id = $village_id AND bi.building IN ('WAREHOUSE', 'GRANARY');",
+    bind: { $village_id: villageId },
+    schema: z.number(),
+  })!;
+
 const getReport = (database: DbFacade, reportId: string) =>
   database.selectObject({
     sql: 'SELECT title, body FROM lan_arcade_reports WHERE id = $report_id;',
@@ -109,7 +116,7 @@ const getHeroInventoryAmount = (database: DbFacade, itemId: number) =>
   })!;
 
 describe('LAN Arcade NPC recovery and treasure', () => {
-  test('untouched NPC villages lazily prioritise resource field development', async () => {
+  test('untouched NPC villages lazily grow resources and storage on a 3-to-1 cadence', async () => {
     const database = await prepareTestDatabase();
     const originTileId = getVillageTileId(database, sourceVillageId);
     const target = getTargetVillage(database);
@@ -118,7 +125,12 @@ describe('LAN Arcade NPC recovery and treasure', () => {
       sql: 'UPDATE building_fields SET level = 1 WHERE village_id = $village_id AND field_id BETWEEN 1 AND 18;',
       bind: { $village_id: target.villageId },
     });
+    database.exec({
+      sql: "UPDATE building_fields SET level = 1 WHERE village_id = $village_id AND building_id IN (SELECT id FROM building_ids WHERE building IN ('WAREHOUSE', 'GRANARY'));",
+      bind: { $village_id: target.villageId },
+    });
     const beforeLevelSum = getResourceFieldLevelSum(database, target.villageId);
+    const beforeStorageLevelSum = getStorageLevelSum(database, target.villageId);
 
     raidMovementResolver(database, createTroopMovementRaidEventMock({
       id: 600,
@@ -131,6 +143,7 @@ describe('LAN Arcade NPC recovery and treasure', () => {
     }));
 
     expect(getResourceFieldLevelSum(database, target.villageId)).toBeGreaterThan(beforeLevelSum);
+    expect(getStorageLevelSum(database, target.villageId)).toBeGreaterThan(beforeStorageLevelSum);
   });
 
   test('migrated NPC growth rows use reinforcement timestamp for development and skirmish clocks', async () => {

@@ -3830,6 +3830,7 @@ const lanArcadeNpcGrowthStateSchema = z.strictObject({
   lastReinforcedAt: z.number(),
   lastDevelopedAt: z.number().nullable(),
   lastConflictAt: z.number().nullable(),
+  resourceUpgradeStreak: z.number().nullable(),
 });
 
 const lanArcadeNpcBuildingRowSchema = z.strictObject({
@@ -3860,7 +3861,8 @@ const ensureLanArcadeNpcGrowthTable = (
         tile_id INTEGER PRIMARY KEY,
         last_reinforced_at INTEGER NOT NULL,
         last_developed_at INTEGER,
-        last_conflict_at INTEGER
+        last_conflict_at INTEGER,
+        resource_upgrade_streak INTEGER NOT NULL DEFAULT 0
       ) STRICT;
     `,
   });
@@ -3872,6 +3874,11 @@ const ensureLanArcadeNpcGrowthTable = (
   }
   try {
     database.exec({ sql: 'ALTER TABLE lan_arcade_npc_growth ADD COLUMN last_conflict_at INTEGER;' });
+  } catch {
+    // Existing LAN saves may already have this column.
+  }
+  try {
+    database.exec({ sql: 'ALTER TABLE lan_arcade_npc_growth ADD COLUMN resource_upgrade_streak INTEGER NOT NULL DEFAULT 0;' });
   } catch {
     // Existing LAN saves may already have this column.
   }
@@ -4019,10 +4026,11 @@ const developLanArcadeNpcVillage = (
   target: z.infer<typeof lanArcadeNpcGrowthRowSchema>,
   timestamp: number,
   elapsedHours: number,
+  resourceUpgradeStreak: number,
 ) => {
   const upgradeBudget = Math.min(8, Math.floor(elapsedHours / 2));
   if (upgradeBudget <= 0) {
-    return { upgradesApplied: 0, population: target.population };
+    return { upgradesApplied: 0, population: target.population, resourceUpgradeStreak };
   }
 
   updateVillageResourcesAt(database, target.villageId, timestamp);
@@ -4048,9 +4056,34 @@ const developLanArcadeNpcVillage = (
       || a.level - b.level
       || a.fieldId - b.fieldId
     ));
+  const resourceCandidates = candidates.filter((row) => getBuildingDefinition(row.buildingId).category === 'resource-production');
+  const storageCandidates = candidates.filter((row) => row.buildingId === 'WAREHOUSE' || row.buildingId === 'GRANARY');
+  const otherCandidates = candidates.filter((row) => (
+    getBuildingDefinition(row.buildingId).category !== 'resource-production'
+    && row.buildingId !== 'WAREHOUSE'
+    && row.buildingId !== 'GRANARY'
+  ));
 
   let upgradesApplied = 0;
-  for (const row of candidates.slice(0, upgradeBudget)) {
+  let currentResourceUpgradeStreak = resourceUpgradeStreak;
+  const selectedRows: z.infer<typeof lanArcadeNpcBuildingRowSchema>[] = [];
+  while (selectedRows.length < upgradeBudget) {
+    const shouldUpgradeStorage = currentResourceUpgradeStreak >= 3 && storageCandidates.length > 0;
+    const row = shouldUpgradeStorage
+      ? storageCandidates.shift()
+      : (resourceCandidates.shift() ?? storageCandidates.shift() ?? otherCandidates.shift());
+    if (!row) {
+      break;
+    }
+    selectedRows.push(row);
+    if (row.buildingId === 'WAREHOUSE' || row.buildingId === 'GRANARY') {
+      currentResourceUpgradeStreak = 0;
+    } else if (getBuildingDefinition(row.buildingId).category === 'resource-production') {
+      currentResourceUpgradeStreak += 1;
+    }
+  }
+
+  for (const row of selectedRows) {
     upgradeLanArcadeNpcBuilding(database, target.villageId, row, row.level + 1);
     upgradesApplied += 1;
   }
@@ -4066,6 +4099,7 @@ const developLanArcadeNpcVillage = (
   return {
     upgradesApplied,
     population: selectLanArcadeNpcPopulation(database, target.villageId),
+    resourceUpgradeStreak: currentResourceUpgradeStreak,
   };
 };
 
@@ -4213,7 +4247,8 @@ const refreshLanArcadeNpcVillage = (
       SELECT
         last_reinforced_at AS lastReinforcedAt,
         last_developed_at AS lastDevelopedAt,
-        last_conflict_at AS lastConflictAt
+        last_conflict_at AS lastConflictAt,
+        resource_upgrade_streak AS resourceUpgradeStreak
       FROM lan_arcade_npc_growth
       WHERE tile_id = $tile_id;
     `,
@@ -4224,11 +4259,18 @@ const refreshLanArcadeNpcVillage = (
   const lastReinforcedAt = growthState?.lastReinforcedAt ?? (timestamp - 4 * 60 * 60 * 1000);
   const lastDevelopedAt = growthState ? (growthState.lastDevelopedAt ?? growthState.lastReinforcedAt) : defaultPast;
   const lastConflictAt = growthState ? (growthState.lastConflictAt ?? growthState.lastReinforcedAt) : defaultPast;
+  const resourceUpgradeStreak = growthState?.resourceUpgradeStreak ?? 0;
 
   updateVillageResourcesAt(database, target.villageId, timestamp);
 
   const developmentElapsedHours = Math.max(0, (timestamp - lastDevelopedAt) / (60 * 60 * 1000));
-  const { upgradesApplied, population } = developLanArcadeNpcVillage(database, target, timestamp, developmentElapsedHours);
+  const { upgradesApplied, population, resourceUpgradeStreak: nextResourceUpgradeStreak } = developLanArcadeNpcVillage(
+    database,
+    target,
+    timestamp,
+    developmentElapsedHours,
+    resourceUpgradeStreak,
+  );
 
   const reinforcementElapsedHours = Math.max(0, (timestamp - lastReinforcedAt) / (60 * 60 * 1000));
   const currentDefenderCount = selectLanArcadeNpcDefenderCount(database, targetTileId);
@@ -4253,18 +4295,20 @@ const refreshLanArcadeNpcVillage = (
 
   database.exec({
     sql: `
-      INSERT INTO lan_arcade_npc_growth (tile_id, last_reinforced_at, last_developed_at, last_conflict_at)
-      VALUES ($tile_id, $last_reinforced_at, $last_developed_at, $last_conflict_at)
+      INSERT INTO lan_arcade_npc_growth (tile_id, last_reinforced_at, last_developed_at, last_conflict_at, resource_upgrade_streak)
+      VALUES ($tile_id, $last_reinforced_at, $last_developed_at, $last_conflict_at, $resource_upgrade_streak)
       ON CONFLICT(tile_id) DO UPDATE SET
         last_reinforced_at = $last_reinforced_at,
         last_developed_at = COALESCE($last_developed_at, lan_arcade_npc_growth.last_developed_at),
-        last_conflict_at = COALESCE($last_conflict_at, lan_arcade_npc_growth.last_conflict_at);
+        last_conflict_at = COALESCE($last_conflict_at, lan_arcade_npc_growth.last_conflict_at),
+        resource_upgrade_streak = $resource_upgrade_streak;
     `,
     bind: {
       $tile_id: targetTileId,
       $last_reinforced_at: rebuildAmount > 0 ? timestamp : lastReinforcedAt,
       $last_developed_at: upgradesApplied > 0 ? timestamp : null,
       $last_conflict_at: conflictApplied ? timestamp : null,
+      $resource_upgrade_streak: nextResourceUpgradeStreak,
     },
   });
 };

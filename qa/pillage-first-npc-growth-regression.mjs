@@ -11,6 +11,9 @@ const reportDir = process.env.PILLAGE_FIRST_REPORT_DIR || 'qa/reports/pillage-fi
 const required = [
   'last_developed_at INTEGER',
   'last_conflict_at INTEGER',
+  'resource_upgrade_streak INTEGER',
+  'currentResourceUpgradeStreak >= 3',
+  'const storageCandidates = candidates.filter',
   'calculatePopulationDifference',
   'updatePopulationEffectQuery',
   'updateBuildingEffectQuery',
