@@ -30,6 +30,10 @@ const required = [
   'ABS(target_tile.x - player_tile.x) <= 12',
   'export const refreshLanArcadeNpcVillagesForMap',
   'growthHoursPerUpgrade',
+  'farmGuardCap',
+  'standingArmyCap',
+  'guardRebuild',
+  'reserveRebuild',
 ];
 
 const source = fs.readFileSync(sourcePath, 'utf8');

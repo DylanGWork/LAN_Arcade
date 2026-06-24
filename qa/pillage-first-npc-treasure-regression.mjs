@@ -191,6 +191,30 @@ describe('LAN Arcade NPC recovery and treasure', () => {
     expect(report.body).not.toContain('Defenders present: none');
   });
 
+
+  test('farmed NPC villages rebuild only a light daily guard after being cleared', async () => {
+    const database = await prepareTestDatabase();
+    const originTileId = getVillageTileId(database, sourceVillageId);
+    const target = getTargetVillage(database);
+    const timestamp = 24 * 60 * 60 * 1000;
+    resetTarget(database, target.tileId);
+    ensureNoNpcRefresh(database, target.tileId, timestamp - 24 * 60 * 60 * 1000);
+
+    raidMovementResolver(database, createTroopMovementRaidEventMock({
+      id: 604,
+      startsAt: timestamp,
+      duration: 200,
+      villageId: sourceVillageId,
+      originTileId,
+      targetTileId: target.tileId,
+      troops: [{ unitId: 'ROMAN_SCOUT', amount: 1, tileId: originTileId, source: originTileId }],
+    }));
+
+    const rebuiltDefenders = countTargetDefenders(database, target.tileId);
+    expect(rebuiltDefenders).toBeGreaterThan(0);
+    expect(rebuiltDefenders).toBeLessThanOrEqual(18);
+  });
+
   test('surviving hero raid collects world item into inventory and report', async () => {
     const database = await prepareTestDatabase();
     const originTileId = getVillageTileId(database, sourceVillageId);

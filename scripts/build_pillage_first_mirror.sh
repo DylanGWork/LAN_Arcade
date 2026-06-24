@@ -4275,11 +4275,18 @@ export const refreshLanArcadeNpcVillage = (
 
   const reinforcementElapsedHours = Math.max(0, (timestamp - lastReinforcedAt) / (60 * 60 * 1000));
   const currentDefenderCount = selectLanArcadeNpcDefenderCount(database, targetTileId);
-  const maxDefenders = Math.max(12, Math.min(650, Math.round(Math.max(25, population) * 1.65)));
-  const missing = Math.max(0, maxDefenders - currentDefenderCount);
-  const rebuildAmount = reinforcementElapsedHours < 0.5
+  const populationForDefence = Math.max(25, population);
+  const farmGuardCap = Math.max(6, Math.min(18, Math.round(Math.sqrt(populationForDefence) * 1.8)));
+  const standingArmyCap = Math.max(farmGuardCap, Math.min(420, Math.round(populationForDefence * 0.9)));
+  const localGuardMissing = Math.max(0, farmGuardCap - currentDefenderCount);
+  const standingArmyMissing = Math.max(0, standingArmyCap - Math.max(currentDefenderCount, farmGuardCap));
+  const guardRebuild = reinforcementElapsedHours < 1
     ? 0
-    : Math.min(missing, Math.floor(reinforcementElapsedHours * Math.max(2, Math.max(25, population) / 14)));
+    : Math.min(localGuardMissing, Math.floor(reinforcementElapsedHours * Math.max(0.5, populationForDefence / 90)));
+  const reserveRebuild = localGuardMissing > 0 || reinforcementElapsedHours < 8
+    ? 0
+    : Math.min(standingArmyMissing, Math.floor(reinforcementElapsedHours / 8));
+  const rebuildAmount = guardRebuild + reserveRebuild;
 
   if (rebuildAmount > 0) {
     const [primary, secondary] = getLanArcadeNpcDefenceUnits(target.tribe);
