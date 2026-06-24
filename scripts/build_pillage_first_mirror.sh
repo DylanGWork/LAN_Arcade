@@ -5742,6 +5742,631 @@ elif 'No troops recorded for this movement.' not in movement:
 movement_path.write_text(movement)
 PY
 
+
+# LAN Arcade hospital wounded troops patch 2026-06-24
+printf 'Applying LAN Arcade hospital wounded troops patch 2026-06-24...\n'
+python3 - <<'PY'
+from pathlib import Path
+
+root = Path.cwd()
+
+hospital_controller = r'''import { z } from 'zod';
+import { PLAYER_ID } from '@pillage-first/game-assets/player';
+import { getUnitDefinition } from '@pillage-first/game-assets/utils/units';
+import { unitIdSchema } from '@pillage-first/types/models/unit';
+import type { Unit } from '@pillage-first/types/models/unit';
+import type { DbFacade } from '@pillage-first/utils/facades/database';
+import { updateVillageWheatProductionByTroopsAndVillageIdEffectQuery } from '../../queries/effect-queries';
+import { addTroops } from '../../utils/troops';
+import {
+  calculateVillageResourcesAt,
+  subtractVillageResourcesAt,
+  updateVillageResourcesAt,
+} from '../../utils/village';
+import { createController } from '../controller';
+
+const resourceBundleSchema = z.tuple([
+  z.number(),
+  z.number(),
+  z.number(),
+  z.number(),
+]);
+
+const hospitalWoundedTroopDtoSchema = z.strictObject({
+  unitId: unitIdSchema,
+  amount: z.number(),
+  healCost: resourceBundleSchema,
+  unitWheatConsumption: z.number(),
+});
+
+const woundedTroopRowSchema = z.strictObject({
+  unitId: unitIdSchema,
+  amount: z.number(),
+});
+
+const villageTileRowSchema = z.strictObject({
+  tileId: z.number(),
+});
+
+const ensureLanArcadeWoundedTroopsTable = (database: DbFacade) => {
+  database.exec({
+    sql: `
+      CREATE TABLE IF NOT EXISTS lan_arcade_wounded_troops
+      (
+        village_id INTEGER NOT NULL,
+        unit_id INTEGER NOT NULL,
+        amount INTEGER NOT NULL CHECK (amount > 0),
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL,
+        PRIMARY KEY (village_id, unit_id)
+      ) STRICT;
+    `,
+  });
+};
+
+const assertPlayerVillage = (database: DbFacade, villageId: number) => {
+  const row = database.selectObject({
+    sql: `
+      SELECT tile_id AS tileId
+      FROM villages
+      WHERE id = $village_id
+        AND player_id = $player_id;
+    `,
+    bind: { $village_id: villageId, $player_id: PLAYER_ID },
+    schema: villageTileRowSchema,
+  });
+
+  if (!row) {
+    throw new Error('Village not found');
+  }
+
+  return row;
+};
+
+const getHospitalLevel = (database: DbFacade, villageId: number) =>
+  database.selectValue({
+    sql: `
+      SELECT COALESCE(MAX(bf.level), 0)
+      FROM building_fields bf
+        JOIN building_ids bi ON bi.id = bf.building_id
+      WHERE bf.village_id = $village_id
+        AND bi.building = 'HOSPITAL';
+    `,
+    bind: { $village_id: villageId },
+    schema: z.number(),
+  }) ?? 0;
+
+const assertHospitalExists = (database: DbFacade, villageId: number) => {
+  if (getHospitalLevel(database, villageId) <= 0) {
+    throw new Error('Hospital does not exist');
+  }
+};
+
+const getHealCost = (unitId: Unit['id'], amount: number) => {
+  const { baseRecruitmentCost } = getUnitDefinition(unitId);
+  return baseRecruitmentCost.map((cost) => cost * amount) as [number, number, number, number];
+};
+
+const mapWoundedTroopRow = (row: z.infer<typeof woundedTroopRowSchema>) => {
+  const unit = getUnitDefinition(row.unitId);
+  return {
+    unitId: row.unitId,
+    amount: row.amount,
+    healCost: getHealCost(row.unitId, row.amount),
+    unitWheatConsumption: unit.unitWheatConsumption,
+  };
+};
+
+const selectHospitalWoundedTroops = (database: DbFacade, villageId: number) => {
+  ensureLanArcadeWoundedTroopsTable(database);
+
+  const rows = database.selectObjects({
+    sql: `
+      SELECT ui.unit AS unitId, wt.amount
+      FROM lan_arcade_wounded_troops wt
+        JOIN unit_ids ui ON ui.id = wt.unit_id
+      WHERE wt.village_id = $village_id
+      ORDER BY ui.unit;
+    `,
+    bind: { $village_id: villageId },
+    schema: woundedTroopRowSchema,
+  });
+
+  return rows.map(mapWoundedTroopRow);
+};
+
+export const getHospitalWoundedTroops = createController(
+  '/villages/:villageId/hospital/wounded-troops',
+  {
+    summary: 'Get wounded troops available in the hospital',
+    requestParams: {
+      path: z.strictObject({
+        villageId: z.coerce.number(),
+      }),
+    },
+    response: z.array(hospitalWoundedTroopDtoSchema),
+  },
+)(({ database, path: { villageId } }) => {
+  assertPlayerVillage(database, villageId);
+  ensureLanArcadeWoundedTroopsTable(database);
+  return selectHospitalWoundedTroops(database, villageId);
+});
+
+export const healHospitalWoundedTroops = createController(
+  '/villages/:villageId/hospital/heal',
+  'post',
+  {
+    summary: 'Heal wounded troops back into the village army',
+    requestParams: {
+      path: z.strictObject({
+        villageId: z.coerce.number(),
+      }),
+    },
+    requestBody: z.strictObject({
+      unitId: unitIdSchema,
+      amount: z.number().int().positive(),
+    }),
+    response: z.array(hospitalWoundedTroopDtoSchema),
+  },
+)(({ database, path: { villageId }, body: { unitId, amount } }) => {
+  database.transaction((db) => {
+    const { tileId } = assertPlayerVillage(db, villageId);
+    assertHospitalExists(db, villageId);
+    ensureLanArcadeWoundedTroopsTable(db);
+
+    const available = db.selectValue({
+      sql: `
+        SELECT amount
+        FROM lan_arcade_wounded_troops
+        WHERE village_id = $village_id
+          AND unit_id = (SELECT id FROM unit_ids WHERE unit = $unit_id);
+      `,
+      bind: { $village_id: villageId, $unit_id: unitId },
+      schema: z.number(),
+    }) ?? 0;
+
+    if (amount > available) {
+      throw new Error('Not enough wounded troops available');
+    }
+
+    const unit = getUnitDefinition(unitId);
+    if (unit.id === 'HERO' || !['infantry', 'cavalry'].includes(unit.category)) {
+      throw new Error('This unit cannot be healed in the Hospital');
+    }
+
+    const now = Date.now();
+    const cost = getHealCost(unitId, amount);
+    updateVillageResourcesAt(db, villageId, now);
+    const resources = calculateVillageResourcesAt(db, villageId, now);
+
+    if (
+      resources.currentWood < cost[0]
+      || resources.currentClay < cost[1]
+      || resources.currentIron < cost[2]
+      || resources.currentWheat < cost[3]
+    ) {
+      throw new Error('Not enough resources to heal wounded troops');
+    }
+
+    subtractVillageResourcesAt(db, villageId, now, cost);
+
+    db.exec({
+      sql: `
+        DELETE FROM lan_arcade_wounded_troops
+        WHERE village_id = $village_id
+          AND unit_id = (SELECT id FROM unit_ids WHERE unit = $unit_id)
+          AND amount <= $amount;
+      `,
+      bind: { $village_id: villageId, $unit_id: unitId, $amount: amount },
+    });
+
+    db.exec({
+      sql: `
+        UPDATE lan_arcade_wounded_troops
+        SET amount = amount - $amount,
+            updated_at = $now
+        WHERE village_id = $village_id
+          AND unit_id = (SELECT id FROM unit_ids WHERE unit = $unit_id)
+          AND amount > $amount;
+      `,
+      bind: {
+        $village_id: villageId,
+        $unit_id: unitId,
+        $amount: amount,
+        $now: now,
+      },
+    });
+
+    addTroops(db, [{ unitId, amount, tileId, source: tileId }]);
+
+    db.exec({
+      sql: updateVillageWheatProductionByTroopsAndVillageIdEffectQuery,
+      bind: {
+        $increase_amount: unit.unitWheatConsumption * amount,
+        $village_id: villageId,
+      },
+    });
+  });
+
+  return selectHospitalWoundedTroops(database, villageId);
+});
+'''
+(root / 'packages/api/src/http/controllers/hospital-controllers.ts').write_text(hospital_controller)
+
+api_routes_path = root / 'packages/api/src/http/api-routes.ts'
+api_routes = api_routes_path.read_text()
+if "hospital-controllers" not in api_routes:
+    api_routes = api_routes.replace(
+        "} from './controllers/hero-controllers';",
+        "} from './controllers/hero-controllers';\nimport {\n  getHospitalWoundedTroops,\n  healHospitalWoundedTroops,\n} from './controllers/hospital-controllers';",
+        1,
+    )
+    api_routes = api_routes.replace(
+        "  // Unit Improvements\n  createRoute(getUnitImprovements),",
+        "  // Unit Improvements\n  createRoute(getUnitImprovements),\n\n  // Hospital\n  createRoute(getHospitalWoundedTroops),\n  createRoute(healHospitalWoundedTroops),",
+        1,
+    )
+api_routes_path.write_text(api_routes)
+
+resolver_path = root / 'packages/api/src/http/events/resolvers/troop-movement-resolver.ts'
+resolver = resolver_path.read_text()
+if 'ensureLanArcadeWoundedTroopsTable' not in resolver:
+    wound_helpers = r'''
+const ensureLanArcadeWoundedTroopsTable = (
+  database: Parameters<Resolver<GameEvent<'troopMovementRaid'>>>[0],
+) => {
+  database.exec({
+    sql: `
+      CREATE TABLE IF NOT EXISTS lan_arcade_wounded_troops
+      (
+        village_id INTEGER NOT NULL,
+        unit_id INTEGER NOT NULL,
+        amount INTEGER NOT NULL CHECK (amount > 0),
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL,
+        PRIMARY KEY (village_id, unit_id)
+      ) STRICT;
+    `,
+  });
+};
+
+const isLanArcadeHospitalWoundEligibleUnit = (unitId: CombatTroop['unitId']) => {
+  if (unitId === 'HERO') {
+    return false;
+  }
+  const { category } = getUnitDefinition(unitId);
+  return category === 'infantry' || category === 'cavalry';
+};
+
+const hospitalVillageRowSchema = z.strictObject({
+  villageId: z.number(),
+  tileId: z.number(),
+});
+
+const recordLanArcadeHospitalWounded = (
+  database: Parameters<Resolver<GameEvent<'troopMovementRaid'>>>[0],
+  losses: CombatTroop[],
+  timestamp: number,
+): CombatTroop[] => {
+  if (losses.length === 0) {
+    return [];
+  }
+
+  ensureLanArcadeWoundedTroopsTable(database);
+  const wounded: CombatTroop[] = [];
+  const stmt = database.prepare({
+    sql: `
+      INSERT INTO lan_arcade_wounded_troops (village_id, unit_id, amount, created_at, updated_at)
+      VALUES (
+        $village_id,
+        (SELECT id FROM unit_ids WHERE unit = $unit_id),
+        $amount,
+        $timestamp,
+        $timestamp
+      )
+      ON CONFLICT(village_id, unit_id) DO UPDATE SET
+        amount = amount + excluded.amount,
+        updated_at = excluded.updated_at;
+    `,
+  });
+
+  for (const loss of losses) {
+    if (loss.amount <= 0 || !isLanArcadeHospitalWoundEligibleUnit(loss.unitId)) {
+      continue;
+    }
+
+    const hospitalVillage = database.selectObject({
+      sql: `
+        SELECT v.id AS villageId, v.tile_id AS tileId
+        FROM villages v
+          JOIN building_fields bf ON bf.village_id = v.id
+          JOIN building_ids bi ON bi.id = bf.building_id
+        WHERE v.tile_id = $source_tile_id
+          AND v.player_id = $player_id
+          AND bi.building = 'HOSPITAL'
+          AND bf.level > 0
+        LIMIT 1;
+      `,
+      bind: {
+        $source_tile_id: loss.source,
+        $player_id: PLAYER_ID,
+      },
+      schema: hospitalVillageRowSchema,
+    });
+
+    if (!hospitalVillage) {
+      continue;
+    }
+
+    const woundedAmount = Math.min(loss.amount, Math.max(1, Math.round(loss.amount * 0.4)));
+    stmt.bind({
+      $village_id: hospitalVillage.villageId,
+      $unit_id: loss.unitId,
+      $amount: woundedAmount,
+      $timestamp: timestamp,
+    }).stepReset();
+
+    wounded.push({
+      ...loss,
+      amount: woundedAmount,
+      tileId: hospitalVillage.tileId,
+      source: hospitalVillage.tileId,
+    });
+  }
+
+  return wounded;
+};
+
+'''
+    resolver = resolver.replace(
+        "const describeCombatReport = (args: {",
+        wound_helpers + "const describeCombatReport = (args: {",
+        1,
+    )
+    resolver = resolver.replace(
+        "  combat: CombatResult;\n  loot?: RaidResourceBundle;",
+        "  combat: CombatResult;\n  attackerWounded?: CombatTroop[];\n  defenderWounded?: CombatTroop[];\n  loot?: RaidResourceBundle;",
+        1,
+    )
+    resolver = resolver.replace(
+        "    `Defenders remaining: ${summarizeTroops(args.combat.defenderSurvivors)}.`,\n  ];",
+        "    `Defenders remaining: ${summarizeTroops(args.combat.defenderSurvivors)}.`,\n  ];\n\n  if (args.attackerWounded && args.attackerWounded.length > 0) {\n    parts.push(`Attackers wounded in hospital: ${summarizeTroops(args.attackerWounded)}.`);\n  }\n  if (args.defenderWounded && args.defenderWounded.length > 0) {\n    parts.push(`Defenders wounded in hospital: ${summarizeTroops(args.defenderWounded)}.`);\n  }",
+        1,
+    )
+    resolver = resolver.replace(
+        "    combat: CombatResult;\n    carriedResources: RaidResourceBundle;",
+        "    combat: CombatResult;\n    attackerWounded?: CombatTroop[];\n    defenderWounded?: CombatTroop[];\n    carriedResources: RaidResourceBundle;",
+        1,
+    )
+    resolver = resolver.replace(
+        "      combat: args.combat,\n      loot: args.carriedResources,",
+        "      combat: args.combat,\n      attackerWounded: args.attackerWounded,\n      defenderWounded: args.defenderWounded,\n      loot: args.carriedResources,",
+        1,
+    )
+    resolver = resolver.replace(
+        "    combat: CombatResult;\n  },\n) => {",
+        "    combat: CombatResult;\n    attackerWounded?: CombatTroop[];\n    defenderWounded?: CombatTroop[];\n  },\n) => {",
+        1,
+    )
+    resolver = resolver.replace(
+        "      combat: args.combat,\n    }),",
+        "      combat: args.combat,\n      attackerWounded: args.attackerWounded,\n      defenderWounded: args.defenderWounded,\n    }),",
+        1,
+    )
+    resolver = resolver.replace(
+        "  const combat = resolveLanArcadeCombat('attack', troops, defenders);\n\n  removeCombatLosses(database, combat.defenderLosses);",
+        "  const combat = resolveLanArcadeCombat('attack', troops, defenders);\n  const attackerWounded = recordLanArcadeHospitalWounded(database, combat.attackerLosses, resolvesAt);\n  const defenderWounded = recordLanArcadeHospitalWounded(database, combat.defenderLosses, resolvesAt);\n\n  removeCombatLosses(database, combat.defenderLosses);",
+        1,
+    )
+    resolver = resolver.replace(
+        "    defenders,\n    combat,\n  });",
+        "    defenders,\n    combat,\n    attackerWounded,\n    defenderWounded,\n  });",
+        1,
+    )
+    resolver = resolver.replace(
+        "  const combat = resolveLanArcadeCombat('raid', troops, defenders);\n\n  removeCombatLosses(database, combat.defenderLosses);",
+        "  const combat = resolveLanArcadeCombat('raid', troops, defenders);\n  const attackerWounded = recordLanArcadeHospitalWounded(database, combat.attackerLosses, resolvesAt);\n  const defenderWounded = recordLanArcadeHospitalWounded(database, combat.defenderLosses, resolvesAt);\n\n  removeCombatLosses(database, combat.defenderLosses);",
+        1,
+    )
+    resolver = resolver.replace(
+        "    combat,\n    carriedResources,",
+        "    combat,\n    attackerWounded,\n    defenderWounded,\n    carriedResources,",
+        1,
+    )
+resolver_path.write_text(resolver)
+
+query_keys_path = root / 'apps/web/app/(game)/constants/query-keys.ts'
+query_keys = query_keys_path.read_text()
+if "hospitalWoundedTroopsCacheKey" not in query_keys:
+    query_keys = query_keys.replace(
+        "export const troopMovementsCacheKey = 'troop-movements';",
+        "export const troopMovementsCacheKey = 'troop-movements';\nexport const hospitalWoundedTroopsCacheKey = 'hospital-wounded-troops';",
+        1,
+    )
+query_keys_path.write_text(query_keys)
+
+hospital_ui = r'''import { use, useMemo } from 'react';
+import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
+import { getUnitDefinition } from '@pillage-first/game-assets/utils/units';
+import { Bookmark } from 'app/(game)/(village-slug)/(village)/(...building-field-id)/components/components/bookmark';
+import { useCurrentVillage } from 'app/(game)/(village-slug)/hooks/current-village/use-current-village';
+import {
+  Section,
+  SectionContent,
+} from 'app/(game)/(village-slug)/components/building-layout';
+import {
+  effectsCacheKey,
+  hospitalWoundedTroopsCacheKey,
+  villageTroopsCacheKey,
+} from 'app/(game)/constants/query-keys';
+import { ApiContext } from 'app/(game)/providers/api-provider';
+import { Icon } from 'app/components/icon';
+import { unitIdToUnitIconMapper } from 'app/components/icons/icons';
+import { Text } from 'app/components/text';
+import { Alert } from 'app/components/ui/alert';
+import { Button } from 'app/components/ui/button';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHeader,
+  TableHeaderCell,
+  TableRow,
+} from 'app/components/ui/table';
+import { invalidateQueries } from 'app/utils/react-query';
+
+const formatResources = (resources: number[]) => {
+  const labels = ['wood', 'clay', 'iron', 'wheat'];
+  return resources
+    .map((amount, index) => `${Math.round(amount)} ${labels[index]}`)
+    .join(', ');
+};
+
+export const HospitalTroopTraining = () => {
+  const { t } = useTranslation();
+  const { apiClient } = use(ApiContext);
+  const { currentVillage } = useCurrentVillage();
+
+  const { data: woundedTroops } = useSuspenseQuery({
+    queryKey: [hospitalWoundedTroopsCacheKey, currentVillage.id],
+    queryFn: async () => {
+      const { data } = await apiClient.get(
+        '/villages/:villageId/hospital/wounded-troops',
+        { path: { villageId: currentVillage.id } },
+      );
+      return data;
+    },
+  });
+
+  const totalWounded = useMemo(
+    () => woundedTroops.reduce((sum, troop) => sum + troop.amount, 0),
+    [woundedTroops],
+  );
+
+  const { mutate: healWoundedTroops, isPending, error } = useMutation({
+    mutationFn: async ({ unitId, amount }: { unitId: string; amount: number }) => {
+      await apiClient.post('/villages/:villageId/hospital/heal', {
+        path: { villageId: currentVillage.id },
+        body: { unitId, amount } as never,
+      });
+    },
+    onSuccess: async (_data, _vars, _onMutateResult, context) => {
+      await invalidateQueries(context, [
+        [hospitalWoundedTroopsCacheKey, currentVillage.id],
+        [villageTroopsCacheKey, currentVillage.id],
+        [effectsCacheKey, currentVillage.id],
+      ]);
+    },
+  });
+
+  return (
+    <Section>
+      <SectionContent>
+        <Bookmark tab="train" />
+        <Text as="h2">{t('Hospital')}</Text>
+        <Text>
+          {t(
+            'A village with a Hospital recovers roughly 40% of eligible infantry and cavalry losses from battle as wounded troops. Healing costs the same resources as training and returns units immediately in this LAN build.',
+          )}
+        </Text>
+        <Text as="h3">{t('Wounded troops')}</Text>
+        {totalWounded > 0 ? (
+          <Text>
+            {t('{{count}} wounded troops can be healed in this village.', {
+              count: totalWounded,
+            })}
+          </Text>
+        ) : (
+          <Alert variant="warning">
+            {t(
+              'No wounded troops are waiting here. Only losses from this village while it has a Hospital become wounded.',
+            )}
+          </Alert>
+        )}
+        {error ? (
+          <Alert variant="destructive">{error.message}</Alert>
+        ) : null}
+      </SectionContent>
+
+      <SectionContent>
+        <div className="scrollbar-hidden overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHeaderCell>{t('Unit')}</TableHeaderCell>
+                <TableHeaderCell>{t('Wounded')}</TableHeaderCell>
+                <TableHeaderCell>{t('Heal all cost')}</TableHeaderCell>
+                <TableHeaderCell>{t('Actions')}</TableHeaderCell>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {woundedTroops.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={4}>
+                    <Text>{t('No units are currently wounded.')}</Text>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                woundedTroops.map((troop) => {
+                  const unit = getUnitDefinition(troop.unitId);
+                  return (
+                    <TableRow key={troop.unitId}>
+                      <TableCell>
+                        <span className="inline-flex items-center gap-2">
+                          <Icon
+                            className="size-5"
+                            type={unitIdToUnitIconMapper(troop.unitId)}
+                          />
+                          {t(`UNITS.${troop.unitId}.NAME`, { count: troop.amount })}
+                        </span>
+                      </TableCell>
+                      <TableCell>{troop.amount}</TableCell>
+                      <TableCell>{formatResources(troop.healCost)}</TableCell>
+                      <TableCell>
+                        <div className="flex flex-wrap gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={isPending}
+                            onClick={() => healWoundedTroops({ unitId: troop.unitId, amount: 1 })}
+                          >
+                            {t('Heal 1')}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="confirm"
+                            disabled={isPending}
+                            onClick={() => healWoundedTroops({ unitId: troop.unitId, amount: troop.amount })}
+                          >
+                            {t('Heal all')}
+                          </Button>
+                        </div>
+                        <Text className="mt-1 text-xs text-muted-foreground">
+                          {t('{{crop}} crop upkeep restored when healed.', {
+                            crop: unit.unitWheatConsumption,
+                          })}
+                        </Text>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
+              )}
+            </TableBody>
+          </Table>
+        </div>
+        <Text className="text-sm text-muted-foreground">
+          {t('Siege engines, settlers, chiefs and heroes cannot become wounded.')}
+        </Text>
+      </SectionContent>
+    </Section>
+  );
+};
+'''
+ui_path = next(root.glob('apps/web/app/**/hospital-troop-training.tsx'))
+ui_path.write_text(hospital_ui)
+PY
+
 uid=$(id -u)
 gid=$(id -g)
 docker run --rm \
