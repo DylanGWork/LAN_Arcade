@@ -5515,6 +5515,233 @@ replace_once(
 
 PY
 
+
+# LAN Arcade usability fix patch 2026-06-24: troop movement manifests and send guards.
+echo "Applying LAN Arcade usability fix patch 2026-06-24 troop movement manifests..."
+python3 - <<'PY'
+from pathlib import Path
+
+root = Path('.')
+
+def replace_once(path, old, new):
+    p = root / path
+    text = p.read_text()
+    if new in text:
+        return
+    if old not in text:
+        raise SystemExit(f'marker not found in {path}: {old[:120]}')
+    p.write_text(text.replace(old, new, 1))
+
+# Expose troop manifests in the movement DTO.
+dto_path = root / 'packages/types/src/dtos/troop-movement.ts'
+dto = dto_path.read_text()
+if "../models/unit" not in dto:
+    dto = dto.replace(
+        "import { tribeSchema } from '../models/tribe';",
+        "import { tribeSchema } from '../models/tribe';\nimport { unitIdSchema } from '../models/unit';",
+        1,
+    )
+if 'troopMovementTroopDtoSchema' not in dto:
+    dto = dto.replace(
+        "const villageTargetTroopMovementTypeSchema = gameEventTypeSchema.extract([",
+        "const troopMovementTroopDtoSchema = z.strictObject({\n  unitId: unitIdSchema,\n  amount: z.number(),\n});\n\nconst villageTargetTroopMovementTypeSchema = gameEventTypeSchema.extract([",
+        1,
+    )
+if "      troops: z.array(troopMovementTroopDtoSchema)," not in dto:
+    dto = dto.replace(
+        "      resolvesAt: z.number(),\n    }),",
+        "      resolvesAt: z.number(),\n      troops: z.array(troopMovementTroopDtoSchema),\n      totalTroops: z.number(),\n    }),",
+        1,
+    )
+    dto = dto.replace(
+        "      resolvesAt: z.number(),\n      targetVillageId: z.number().nullable(),",
+        "      resolvesAt: z.number(),\n      troops: z.array(troopMovementTroopDtoSchema),\n      totalTroops: z.number(),\n      targetVillageId: z.number().nullable(),",
+        1,
+    )
+dto_path.write_text(dto)
+
+# Parse movement metadata troops into the DTO.
+mapper_path = root / 'packages/api/src/http/controllers/mappers/troop-movement-mapper.ts'
+mapper = mapper_path.read_text()
+if "import type { z } from 'zod';" in mapper:
+    mapper = mapper.replace("import type { z } from 'zod';", "import { z } from 'zod';", 1)
+if "@pillage-first/types/models/unit" not in mapper:
+    mapper = mapper.replace(
+        "} from '@pillage-first/types/dtos/troop-movement';",
+        "} from '@pillage-first/types/dtos/troop-movement';\nimport { unitIdSchema } from '@pillage-first/types/models/unit';",
+        1,
+    )
+if 'troopMovementMetaSchema' not in mapper:
+    mapper = mapper.replace(
+        "import type {\n  getVillageTroopMovementStatsRowSchema,\n  getVillageTroopMovementsRowSchema,\n} from '../schemas/troop-movement-schemas';\n",
+        "import type {\n  getVillageTroopMovementStatsRowSchema,\n  getVillageTroopMovementsRowSchema,\n} from '../schemas/troop-movement-schemas';\n\nconst troopMovementMetaSchema = z.looseObject({\n  troops: z.array(z.looseObject({\n    unitId: unitIdSchema,\n    amount: z.number(),\n  })).catch([]),\n});\n\nconst parseMovementTroops = (meta: string) => {\n  try {\n    const parsed = troopMovementMetaSchema.parse(JSON.parse(meta || '{}'));\n    return parsed.troops\n      .filter(({ amount }) => Number.isFinite(amount) && amount > 0)\n      .map(({ unitId, amount }) => ({ unitId, amount }));\n  } catch {\n    return [];\n  }\n};\n",
+        1,
+    )
+if 'const troops = parseMovementTroops(row.meta);' not in mapper:
+    mapper = mapper.replace(
+        "  const isAdventure = row.type === 'troopMovementAdventure';\n  return troopMovementItemDtoSchema.parse({",
+        "  const isAdventure = row.type === 'troopMovementAdventure';\n  const troops = parseMovementTroops(row.meta);\n  const totalTroops = troops.reduce((total, troop) => total + troop.amount, 0);\n  return troopMovementItemDtoSchema.parse({",
+        1,
+    )
+    mapper = mapper.replace(
+        "    resolvesAt: row.resolves_at,",
+        "    resolvesAt: row.resolves_at,\n    troops,\n    totalTroops,",
+        1,
+    )
+mapper_path.write_text(mapper)
+
+# Validate empty, invalid, and unavailable troop movements server-side.
+troops_path = root / 'packages/api/src/utils/troops.ts'
+troops = troops_path.read_text()
+validation_block = r'''  const movementTroops = troopMovementEvent.troops;
+  const fallbackOriginTileId = troopMovementEvent.originTileId ?? database.selectValue({
+    sql: 'SELECT tile_id FROM villages WHERE id = $village_id;',
+    bind: { $village_id: troopMovementEvent.villageId },
+    schema: z.number().nullable(),
+  });
+
+  if (!Array.isArray(movementTroops) || movementTroops.length === 0) {
+    errors.push('At least one troop must be selected');
+  } else {
+    const requestedTroops = new Map<string, { unitId: string; amount: number; tileId: number; source: number }>();
+
+    for (const rawTroop of movementTroops) {
+      const troop = rawTroop as Partial<Troop>;
+      const tileId = troop.tileId ?? fallbackOriginTileId;
+      const source = troop.source ?? fallbackOriginTileId;
+
+      if (!Number.isInteger(troop.amount) || (troop.amount ?? 0) <= 0) {
+        errors.push('Troop amount must be positive');
+        continue;
+      }
+      if (!troop.unitId || !Number.isInteger(tileId) || !Number.isInteger(source)) {
+        errors.push('Troop source tile is invalid');
+        continue;
+      }
+
+      const key = `${troop.unitId}:${tileId}:${source}`;
+      const existing = requestedTroops.get(key);
+      requestedTroops.set(key, {
+        unitId: troop.unitId,
+        amount: (existing?.amount ?? 0) + troop.amount,
+        tileId: tileId as number,
+        source: source as number,
+      });
+    }
+
+    for (const troop of requestedTroops.values()) {
+      const available = database.selectValue({
+        sql: `
+          SELECT CAST(COALESCE(SUM(t.amount), 0) AS INTEGER)
+          FROM troops t
+            JOIN unit_ids ui ON ui.id = t.unit_id
+          WHERE ui.unit = $unit_id
+            AND t.tile_id = $tile_id
+            AND t.source_tile_id = $source_tile_id;
+        `,
+        bind: {
+          $unit_id: troop.unitId,
+          $tile_id: troop.tileId,
+          $source_tile_id: troop.source,
+        },
+        schema: z.number(),
+      }) ?? 0;
+
+      if (troop.amount > available) {
+        errors.push(`Not enough ${troop.unitId} available`);
+      }
+    }
+  }
+
+'''
+if 'const movementTroops = troopMovementEvent.troops;' not in troops:
+    troops = troops.replace(
+        "  if (isAdventureTroopMovementEvent(troopMovementEvent)) {",
+        validation_block + "  if (isAdventureTroopMovementEvent(troopMovementEvent)) {",
+        1,
+    )
+troops_path.write_text(troops)
+
+# Render troop manifests on the Rally Point movement list.
+movement_path = next(root.glob('apps/web/app/**/rally-point-troop-movements.tsx'))
+movement = movement_path.read_text()
+if "app/components/icon" not in movement:
+    movement = movement.replace(
+        "import { useVillageTroopMovements } from 'app/(game)/(village-slug)/hooks/use-village-troop-movements';",
+        "import { useVillageTroopMovements } from 'app/(game)/(village-slug)/hooks/use-village-troop-movements';\nimport { Icon } from 'app/components/icon';\nimport { unitIdToUnitIconMapper } from 'app/components/icons/icons';",
+        1,
+    )
+if 'const formatUnitLabel' not in movement:
+    movement = movement.replace(
+        "const formatCoords = (x: number | null | undefined, y: number | null | undefined) => {\n  if (typeof x !== 'number' || typeof y !== 'number') return null;\n  return `(${x}|${y})`;\n};",
+        "const formatCoords = (x: number | null | undefined, y: number | null | undefined) => {\n  if (typeof x !== 'number' || typeof y !== 'number') return null;\n  return `(${x}|${y})`;\n};\n\nconst formatUnitLabel = (unitId: string) =>\n  unitId\n    .toLowerCase()\n    .replaceAll('_', ' ')\n    .replace(/\\b\\w/g, (letter) => letter.toUpperCase());",
+        1,
+    )
+old_card = '''              return (
+                <div className="grid gap-2 rounded border p-3 md:grid-cols-[8rem_1fr_7rem] md:items-center" key={movement.id}>
+                  <div>
+                    <Text className="font-semibold">{movementLabels[movement.type]}</Text>
+                    <Text className="text-sm text-muted-foreground">{direction}</Text>
+                  </div>
+                  <div className="min-w-0">
+                    <Text className="font-medium">{targetName}{targetCoords ? ` ${targetCoords}` : ''}</Text>
+                    <Text className="text-sm text-muted-foreground">
+                      From {movement.originatingVillageName}{originCoords ? ` ${originCoords}` : ''}
+                    </Text>
+                  </div>
+                  <div className="text-left font-semibold tabular-nums md:text-right">
+                    <Countdown endsAt={movement.resolvesAt} />
+                  </div>
+                </div>
+              );'''
+new_card = '''              const troops = movement.troops.filter(({ amount }) => amount > 0);
+              const totalTroops = movement.totalTroops ?? troops.reduce((total, troop) => total + troop.amount, 0);
+
+              return (
+                <div className="grid gap-3 rounded border p-3 md:grid-cols-[8rem_1fr_7rem] md:items-start" key={movement.id}>
+                  <div>
+                    <Text className="font-semibold">{movementLabels[movement.type]}</Text>
+                    <Text className="text-sm text-muted-foreground">{direction}</Text>
+                  </div>
+                  <div className="min-w-0 space-y-2">
+                    <div>
+                      <Text className="font-medium">{targetName}{targetCoords ? ` ${targetCoords}` : ''}</Text>
+                      <Text className="text-sm text-muted-foreground">
+                        From {movement.originatingVillageName}{originCoords ? ` ${originCoords}` : ''}
+                      </Text>
+                    </div>
+                    {totalTroops > 0 ? (
+                      <div className="flex flex-wrap items-center gap-2 text-sm">
+                        <span className="font-semibold tabular-nums">{totalTroops} troops</span>
+                        {troops.map(({ unitId, amount }) => (
+                          <span
+                            key={unitId}
+                            className="inline-flex items-center gap-1 rounded-xs border border-border bg-background/70 px-2 py-1 tabular-nums"
+                            title={formatUnitLabel(unitId)}
+                          >
+                            <Icon className="size-4" type={unitIdToUnitIconMapper(unitId)} />
+                            {amount}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <Text className="text-sm text-warning">
+                        No troops recorded for this movement.
+                      </Text>
+                    )}
+                  </div>
+                  <div className="text-left font-semibold tabular-nums md:text-right">
+                    <Countdown endsAt={movement.resolvesAt} />
+                  </div>
+                </div>
+              );'''
+if old_card in movement:
+    movement = movement.replace(old_card, new_card, 1)
+elif 'No troops recorded for this movement.' not in movement:
+    raise SystemExit('movement card marker not found')
+movement_path.write_text(movement)
+PY
+
 uid=$(id -u)
 gid=$(id -g)
 docker run --rm \
