@@ -6367,6 +6367,133 @@ ui_path = next(root.glob('apps/web/app/**/hospital-troop-training.tsx'))
 ui_path.write_text(hospital_ui)
 PY
 
+python3 - <<'PY'
+from pathlib import Path
+root = Path('.')
+
+# LAN Arcade map usability patch: show the newest saved raid/attack report for
+# occupied village tiles directly in the map hover tooltip. This uses existing
+# persistent reports, so older player saves keep their history.
+tile_tooltip = root / 'apps/web/app/(game)/(village-slug)/(map)/components/tile-tooltip.tsx'
+s = tile_tooltip.read_text()
+if 'TileTooltipLastPlayerAction' not in s:
+    s = s.replace(
+        "import { Suspense } from 'react';\n",
+        "import { Suspense, useMemo } from 'react';\n",
+        1,
+    )
+    s = s.replace(
+        "import type { MapMarker } from '@pillage-first/types/models/map-marker';\n",
+        "import type { MapMarker } from '@pillage-first/types/models/map-marker';\n"
+        "import type { Report } from '@pillage-first/types/models/report';\n",
+        1,
+    )
+    s = s.replace(
+        "import { useReputations } from 'app/(game)/(village-slug)/hooks/use-reputations';\n",
+        "import { useReputations } from 'app/(game)/(village-slug)/hooks/use-reputations';\n"
+        "import { useReports } from 'app/(game)/(village-slug)/hooks/use-reports';\n",
+        1,
+    )
+    s = s.replace(
+        """const TileTooltipResources = ({ tile }: TileTooltipResourcesProps) => {
+  const resources = parseResourcesFromRFC(
+    tile.attributes.resourceFieldComposition,
+  );
+
+  return (
+    <div className=\"flex gap-2\">
+      <Resources
+        iconClassName=\"size-4\"
+        resources={resources}
+      />
+    </div>
+  );
+};
+""",
+        """const TileTooltipResources = ({ tile }: TileTooltipResourcesProps) => {
+  const resources = parseResourcesFromRFC(
+    tile.attributes.resourceFieldComposition,
+  );
+
+  return (
+    <div className=\"flex gap-2\">
+      <Resources
+        iconClassName=\"size-4\"
+        resources={resources}
+      />
+    </div>
+  );
+};
+
+const formatLastActionTimestamp = (timestamp: number) => {
+  return new Date(timestamp * 1000).toLocaleString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+};
+
+const isVillageActionReport = (report: Report) => {
+  return report.type === 'raid' || report.type === 'attack';
+};
+
+const isReportForTile = (report: Report, coordinates: string) => {
+  return (
+    isVillageActionReport(report) &&
+    (report.title.includes(coordinates) || report.body.includes(coordinates))
+  );
+};
+
+const TileTooltipLastPlayerAction = ({
+  tile,
+}: {
+  tile: OccupiedOccupiableTile;
+}) => {
+  const { t } = useTranslation();
+  const { reports } = useReports();
+  const coordinates = `(${tile.coordinates.x}|${tile.coordinates.y})`;
+  const report = useMemo(
+    () => reports.find((report) => isReportForTile(report, coordinates)),
+    [coordinates, reports],
+  );
+
+  if (!report) {
+    return null;
+  }
+
+  const label = report.type === 'raid' ? t('Last raid') : t('Last attack');
+
+  return (
+    <div className=\"flex flex-col gap-0.5 border-t border-border py-1 text-xs\">
+      <span>
+        <span className=\"text-gray-300\">{label}</span> -{' '}
+        {formatLastActionTimestamp(report.timestamp)}
+      </span>
+      <span className=\"text-gray-300\">{report.title}</span>
+    </div>
+  );
+};
+""",
+        1,
+    )
+    s = s.replace(
+        """      <TileTooltipResources tile={tile} />
+      <TileTooltipPlayerInfo tile={tile} />
+      {!!worldItem && (
+""",
+        """      <TileTooltipResources tile={tile} />
+      <TileTooltipPlayerInfo tile={tile} />
+      <TileTooltipLastPlayerAction tile={tile} />
+      {!!worldItem && (
+""",
+        1,
+    )
+    if 'TileTooltipLastPlayerAction' not in s or 'Last raid' not in s:
+        raise SystemExit('Failed to patch last raid/attack tooltip')
+    tile_tooltip.write_text(s)
+PY
+
 uid=$(id -u)
 gid=$(id -g)
 docker run --rm \
