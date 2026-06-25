@@ -26,11 +26,28 @@ SWEEP_FILES = [
     ROOT / 'game-intake/tycoon-downloadability-sweep-2026-06-19.csv',
 ]
 DOS_RUNTIME_MARKERS = ('dosbox', 'emulatorjs', 'win3x')
+STATUS_KEYS = ['smoke-pass', 'source-ready', 'partial', 'blocked', 'candidate']
 STATUS_LABELS = {
     'smoke-pass': 'Play-tested',
+    'source-ready': 'Ready to try',
     'partial': 'Partly tested',
     'blocked': 'Not ready',
     'candidate': 'Planned game',
+}
+
+PACKAGE_CONFIGS = {
+    'a-train-dos-ma': dict(cmd='AT.EXE', root='work/start-dosroot-*', status='source-ready'),
+    'black-gold-dos-ma': dict(cmd='BLKGOLD.EXE', root='work/start-dosroot-*', status='source-ready'),
+    'incredible-machine-1-ma': dict(cmd='TIM.EXE', root='work/start-dosroot-*', status='source-ready'),
+    'oregon-trail-deluxe-ma': dict(cmd='OREGON.EXE', root='work/start-dosroot-*', status='source-ready'),
+    'prince-of-persia-ma': dict(cmd='PRINCE.EXE', root='work/start-dosroot-*', status='source-ready'),
+    'lemmings-ma': dict(cmd='LEMMINGS.BAT', root='work/start-dosroot-*', status='source-ready'),
+    'dune-ii-ma': dict(cmd='DUNE2.EXE', root='work/start-dosroot-*', status='source-ready'),
+    'simant-ma': dict(cmd='SIMANT.EXE', root='work/start-dosroot-*', status='source-ready'),
+    'rogue-ma': dict(cmd='ROGUE.EXE', root='work/start-dosroot-*', status='source-ready'),
+    'gta-london-1961-ma': dict(cmd='LONDON61.BAT', root='work/start-dosroot-*', status='source-ready'),
+    'railroad-tycoon-dos-ma': dict(cmd='RAILS.BAT', root='work/start-dosroot-*', status='source-ready'),
+    'railroad-empire-dos-ma': dict(status='blocked'),
 }
 
 def sha(path):
@@ -93,7 +110,13 @@ def load_sweep_candidates():
     return out
 
 def all_games():
-    return GAMES + load_sweep_candidates()
+    out = []
+    for game in GAMES + load_sweep_candidates():
+        merged = dict(game)
+        if merged['id'] in PACKAGE_CONFIGS:
+            merged.update(PACKAGE_CONFIGS[merged['id']])
+        out.append(merged)
+    return out
 
 def cp_contents(src, dst):
     for item in src.iterdir():
@@ -190,8 +213,10 @@ def build(dest):
             status = row.get('intake_status') or g.get('status', 'candidate')
             if status == 'restore-needed' and g.get('status'):
                 status = g['status']
-            entry=dict(id=g['id'], title=g['title'], platform='DOS', genre=row.get('genre') or g.get('genre', 'DOS classic'), status=status, sourceUrl=row.get('source_url') or g.get('source',''), summary=g.get('summary', 'Planned game found in intake; game package is not cached yet.'), qaReport=report, controls=g.get('controls') or ['Click inside the emulator first', 'If a DOSBox menu appears, choose PLAY.BAT'], manuals=[], screenshots=[], packageUrl='', packageSha256='', packageBytes=0, browserCore='dosbox_pure' if 'cmd' in g else '', runtime=g.get('runtime','DOSBox'), availability=g.get('availability',''), downloadEvidence=g.get('evidence',''), sourceState='source-missing')
             root=stage_game(g, stage)
+            if root and status == 'candidate':
+                status = 'source-ready'
+            entry=dict(id=g['id'], title=g['title'], platform='DOS', genre=row.get('genre') or g.get('genre', 'DOS classic'), status=status, sourceUrl=row.get('source_url') or g.get('source',''), summary=g.get('summary', 'Planned game found in intake; game package is not cached yet.'), qaReport=report, controls=g.get('controls') or ['Click inside the emulator first', 'If a DOSBox menu appears, choose PLAY.BAT'], manuals=[], screenshots=[], packageUrl='', packageSha256='', packageBytes=0, browserCore='dosbox_pure' if 'cmd' in g else '', runtime=g.get('runtime','DOSBox'), availability=g.get('availability',''), downloadEvidence=g.get('evidence',''), sourceState='source-missing')
             if root:
                 target=dest/'packages'/f'{g["id"]}.zip'; zip_root(root,target)
                 entry.update(packageUrl=f'packages/{target.name}', packageSha256=sha(target), packageBytes=target.stat().st_size, sourceState='packaged')
@@ -220,11 +245,11 @@ def write_index(dest, games):
 <div class="actions">{play}{source}</div>
 <div class="manuals">{manuals}</div>
 </article>''')
-    stats = {k:sum(1 for g in games if g['status']==k) for k in ['smoke-pass','partial','blocked','candidate']}
+    stats = {k:sum(1 for g in games if g['status']==k) for k in STATUS_KEYS}
     packaged = sum(1 for g in games if g.get('packageUrl'))
     page = f'''<!doctype html><html lang="en"><head><meta charset="utf-8"><meta http-equiv="Cache-Control" content="no-store, max-age=0"><meta http-equiv="Pragma" content="no-cache"><meta http-equiv="Expires" content="0"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Classic PC Games</title><style>
-:root{{color-scheme:dark;--bg:#080d12;--panel:#121922;--line:#314357;--text:#eef6ff;--muted:#a8b8cc;--green:#35d07f;--amber:#ffca55;--red:#ff7468}}*{{box-sizing:border-box}}body{{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,sans-serif}}main{{width:min(1220px,94vw);margin:auto;padding:24px 0 44px}}.top{{display:flex;justify-content:space-between;gap:12px;align-items:start}}h1{{font-size:clamp(30px,5vw,56px);margin:0}}p{{color:var(--muted);line-height:1.45}}a,.disabled,button{{border:1px solid var(--line);border-radius:7px;background:#182230;color:var(--text);text-decoration:none;font-weight:800;padding:8px 10px;display:inline-flex;align-items:center;min-height:38px}}.primary,button.active{{background:#1d7d4e;border-color:#35d07f}}.disabled{{opacity:.62}}.notice{{border-left:4px solid var(--amber);background:#18150b;border-radius:7px;padding:11px 12px;color:#f2ddb7;margin:14px 0}}.stats{{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:12px 0}}.stat,.card{{border:1px solid var(--line);background:var(--panel);border-radius:8px}}.stat{{padding:12px}}.stat strong{{display:block;font-size:26px}}.toolbar{{display:grid;grid-template-columns:1fr auto;gap:10px;margin:14px 0}}input{{background:#0e151f;color:var(--text);border:1px solid var(--line);border-radius:7px;padding:11px;font:inherit}}.filters{{display:flex;gap:8px;flex-wrap:wrap}}.grid{{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}}.card{{overflow:hidden;padding:0 14px 14px}}.media{{position:relative;aspect-ratio:16/9;background:#05080c;margin:0 -14px 12px;display:grid;place-items:center}}.media img{{width:100%;height:100%;object-fit:cover}}.placeholder{{font-size:42px;color:#304457;font-weight:900}}.media b{{position:absolute;top:10px;left:10px;border-radius:999px;padding:6px 10px;background:#233145}}.media b.smoke-pass{{background:#11351f;color:#b9ffd2}}.media b.partial{{background:#37290c;color:#ffe0a1}}.media b.blocked{{background:#3b1414;color:#ffd0cc}}.media b.candidate{{background:#1b2d43;color:#c7ddff}}h2{{font-size:20px;margin:0}}.meta{{text-transform:uppercase;font-size:12px;letter-spacing:.08em}}.actions,.manuals{{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}}.manuals{{border-top:1px solid var(--line);padding-top:10px}}.manuals a,.manuals span{{font-size:13px}}@media(max-width:900px){{.grid{{grid-template-columns:repeat(2,1fr)}}.stats{{grid-template-columns:repeat(2,1fr)}}}}@media(max-width:650px){{main{{width:96vw}}.top,.toolbar{{display:block}}.top a{{width:100%;justify-content:center;margin-top:10px}}.grid{{grid-template-columns:1fr}}.filters{{margin-top:8px}}}}
-</style></head><body><main><div class="top"><div><h1>Classic PC Games</h1><p>Old computer games from the DOS era run here through DOSBox in the browser. If a game says Game files needed, the arcade has notes or screenshots but not the local ZIP/package yet.</p></div><a href="../games/">Back to Arcade</a></div><div class="notice">Games with Play now are ready in the browser. Games marked Game files needed are waiting for a local copy of the game files before they can be launched offline.</div><section class="stats"><div class="stat"><strong>{len(games)}</strong><span>games listed</span></div><div class="stat"><strong>{packaged}</strong><span>playable here</span></div><div class="stat"><strong>{stats['smoke-pass']}</strong><span>tested before</span></div><div class="stat"><strong>{stats['candidate']}</strong><span>planned games</span></div></section><section class="toolbar"><input id="q" type="search" placeholder="Search old PC games"><div class="filters"><button class="active" data-f="all">All</button><button data-f="smoke-pass">Play-tested</button><button data-f="partial">Partly tested</button><button data-f="blocked">Not ready</button><button data-f="candidate">Planned game</button></div></section><section class="grid">{''.join(cards)}</section></main><script>
+:root{{color-scheme:dark;--bg:#080d12;--panel:#121922;--line:#314357;--text:#eef6ff;--muted:#a8b8cc;--green:#35d07f;--amber:#ffca55;--red:#ff7468}}*{{box-sizing:border-box}}body{{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,sans-serif}}main{{width:min(1220px,94vw);margin:auto;padding:24px 0 44px}}.top{{display:flex;justify-content:space-between;gap:12px;align-items:start}}h1{{font-size:clamp(30px,5vw,56px);margin:0}}p{{color:var(--muted);line-height:1.45}}a,.disabled,button{{border:1px solid var(--line);border-radius:7px;background:#182230;color:var(--text);text-decoration:none;font-weight:800;padding:8px 10px;display:inline-flex;align-items:center;min-height:38px}}.primary,button.active{{background:#1d7d4e;border-color:#35d07f}}.disabled{{opacity:.62}}.notice{{border-left:4px solid var(--amber);background:#18150b;border-radius:7px;padding:11px 12px;color:#f2ddb7;margin:14px 0}}.stats{{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:12px 0}}.stat,.card{{border:1px solid var(--line);background:var(--panel);border-radius:8px}}.stat{{padding:12px}}.stat strong{{display:block;font-size:26px}}.toolbar{{display:grid;grid-template-columns:1fr auto;gap:10px;margin:14px 0}}input{{background:#0e151f;color:var(--text);border:1px solid var(--line);border-radius:7px;padding:11px;font:inherit}}.filters{{display:flex;gap:8px;flex-wrap:wrap}}.grid{{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}}.card{{overflow:hidden;padding:0 14px 14px}}.media{{position:relative;aspect-ratio:16/9;background:#05080c;margin:0 -14px 12px;display:grid;place-items:center}}.media img{{width:100%;height:100%;object-fit:cover}}.placeholder{{font-size:42px;color:#304457;font-weight:900}}.media b{{position:absolute;top:10px;left:10px;border-radius:999px;padding:6px 10px;background:#233145}}.media b.smoke-pass{{background:#11351f;color:#b9ffd2}}.media b.source-ready{{background:#123652;color:#c8ecff}}.media b.partial{{background:#37290c;color:#ffe0a1}}.media b.blocked{{background:#3b1414;color:#ffd0cc}}.media b.candidate{{background:#1b2d43;color:#c7ddff}}h2{{font-size:20px;margin:0}}.meta{{text-transform:uppercase;font-size:12px;letter-spacing:.08em}}.actions,.manuals{{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}}.manuals{{border-top:1px solid var(--line);padding-top:10px}}.manuals a,.manuals span{{font-size:13px}}@media(max-width:900px){{.grid{{grid-template-columns:repeat(2,1fr)}}.stats{{grid-template-columns:repeat(2,1fr)}}}}@media(max-width:650px){{main{{width:96vw}}.top,.toolbar{{display:block}}.top a{{width:100%;justify-content:center;margin-top:10px}}.grid{{grid-template-columns:1fr}}.filters{{margin-top:8px}}}}
+</style></head><body><main><div class="top"><div><h1>Classic PC Games</h1><p>Old computer games from the DOS era run here through DOSBox in the browser. If a game says Game files needed, the arcade has notes or screenshots but not the local ZIP/package yet.</p></div><a href="../games/">Back to Arcade</a></div><div class="notice">Games with Play now are ready in the browser. Games marked Game files needed are waiting for a local copy of the game files before they can be launched offline.</div><section class="stats"><div class="stat"><strong>{len(games)}</strong><span>games listed</span></div><div class="stat"><strong>{packaged}</strong><span>playable here</span></div><div class="stat"><strong>{stats['source-ready']}</strong><span>ready to try</span></div><div class="stat"><strong>{stats['candidate']}</strong><span>planned games</span></div></section><section class="toolbar"><input id="q" type="search" placeholder="Search old PC games"><div class="filters"><button class="active" data-f="all">All</button><button data-f="smoke-pass">Play-tested</button><button data-f="source-ready">Ready to try</button><button data-f="partial">Partly tested</button><button data-f="blocked">Not ready</button><button data-f="candidate">Planned game</button></div></section><section class="grid">{''.join(cards)}</section></main><script>
 const q=document.querySelector('#q'),cards=[...document.querySelectorAll('.card')],buttons=[...document.querySelectorAll('button')];let f='all';function draw(){{const s=q.value.toLowerCase().trim();for(const c of cards)c.hidden=!((f==='all'||c.dataset.status===f)&&(!s||c.dataset.text.includes(s)))}}q.oninput=draw;buttons.forEach(b=>b.onclick=()=>{{f=b.dataset.f;buttons.forEach(x=>x.classList.toggle('active',x===b));draw()}});
 </script></body></html>'''
     (dest/'index.html').write_text(page, encoding='utf-8')
@@ -263,7 +288,7 @@ def main():
         staged.mkdir()
         games=build(staged)
         write_index(staged,games); write_play(staged)
-        manifest=dict(name='Classic PC Games', generatedAt=time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()), privateOnly=True, containsGameArchives=any(g.get('packageUrl') for g in games), runtime='EmulatorJS dosbox_pure', notes='Generated on GannanNet from private intake; do not commit generated packages. Planned game entries need game files before gameplay smoke.', counts={k:sum(1 for g in games if g.get('status')==k) for k in ['smoke-pass','partial','blocked','candidate']}, packagedCount=sum(1 for g in games if g.get('packageUrl')), games=games)
+        manifest=dict(name='Classic PC Games', generatedAt=time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()), privateOnly=True, containsGameArchives=any(g.get('packageUrl') for g in games), runtime='EmulatorJS dosbox_pure', notes='Generated on GannanNet from private intake; do not commit generated packages. Planned game entries need game files before gameplay smoke.', counts={k:sum(1 for g in games if g.get('status')==k) for k in STATUS_KEYS}, packagedCount=sum(1 for g in games if g.get('packageUrl')), games=games)
         (staged/'manifest.json').write_text(json.dumps(manifest, indent=2), encoding='utf-8')
         (staged/'.lan-arcade-ready').touch()
         publish(staged, args.dest)

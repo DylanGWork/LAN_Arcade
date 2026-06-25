@@ -5,11 +5,11 @@
   "vaultUrl": "../private-dos-vault/?v=dos28-20260622b",
   "manifestUrl": "../private-dos-vault/manifest.json?v=dos28-20260622b",
   "builder": "npm run dos:vault:build",
-  "currentStatus": "metadata-expanded-source-cache-missing",
+  "currentStatus": "15-browser-packages-live",
   "sourceCache": "/srv/lan-arcade/native-downloads/intake/private-tycoon",
   "trackedEntries": 28,
   "candidateEntries": 22,
-  "packagedEntries": 0,
+  "packagedEntries": 15,
   "sourceLists": [
     "game-intake/classic-downloadability-sweep-2026-06-19.csv",
     "game-intake/tycoon-downloadability-sweep-2026-06-19.csv"
