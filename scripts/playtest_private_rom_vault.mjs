@@ -218,9 +218,10 @@ async function testGame(browser, game, index, total) {
     const url = req.url();
     if (!url.includes('/favicon')) requestFailures.push({ url, failure: req.failure()?.errorText || 'failed' });
   });
+  const allowedHosts = new Set(['127.0.0.1', 'localhost', '192.168.1.106', new URL(baseUrl).hostname]);
   await page.route('**/*', async (route) => {
     const url = new URL(route.request().url());
-    const local = ['127.0.0.1', 'localhost', '192.168.1.106'].includes(url.hostname);
+    const local = allowedHosts.has(url.hostname);
     if (!local && url.protocol.startsWith('http')) {
       externalRequests.push(route.request().url());
       await route.abort();
@@ -270,6 +271,7 @@ async function testGame(browser, game, index, total) {
       title: document.title,
       canvasCount: document.querySelectorAll('canvas').length,
       ejsStarted: !!window.EJS_emulator,
+      jsDosStarted: !!window.Dos && !!document.querySelector('#game canvas'),
       playerText: document.querySelector('#game')?.innerText?.slice(0, 500) || '',
       bodyTextLength: document.body.innerText.length,
     }));
@@ -281,16 +283,17 @@ async function testGame(browser, game, index, total) {
     const visualBlank = Object.values(screenshots).every((s) => isBlankVisualStats(s.visual));
     const tinyStillScreenshots = Object.values(screenshots).every((s) => s.bytes < 8000) && !screenshotChanged;
     const blankRisk = visualBlank || tinyStillScreenshots;
-    const loadProblems = pageErrors.length || requestFailures.length || externalRequests.length || dom.canvasCount < 1 || !dom.ejsStarted;
+    const playerStarted = dom.ejsStarted || dom.jsDosStarted;
+    const loadProblems = pageErrors.length || requestFailures.length || externalRequests.length || dom.canvasCount < 1 || !playerStarted;
     const languageRisk = !(game.languages || []).includes('En') || (game.source || '').includes('translation') || (game.selectionReason || '').includes('translation');
     let verdict = 'playable-smoke';
-    let reason = 'Booted in EmulatorJS, stayed offline, no page crash, and screenshots changed after input.';
+    let reason = 'Booted in the browser player, stayed offline, no page crash, and screenshots changed after input.';
     if (loadProblems) {
       verdict = 'failed';
       reason = 'Load/runtime/network problem recorded.';
     } else if (blankRisk) {
       verdict = 'failed-black-screen';
-      reason = 'Emulator shell loaded, but the sampled game canvas stayed visually blank.';
+      reason = 'Browser player shell loaded, but the sampled game canvas stayed visually blank.';
     } else if (!screenshotChanged && !statsChanged) {
       verdict = 'needs-manual-input';
       reason = 'Booted cleanly but the generic start/play input did not visibly change the screenshots.';
