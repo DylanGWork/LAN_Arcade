@@ -1,5 +1,5 @@
 {
-  "name": "Private DOS Classics",
+  "name": "Classic PC Games",
   "kind": "vm-local-private-dos-wrapper",
   "containsGameArchives": false,
   "vaultUrl": "../private-dos-vault/?v=dos28-20260622b",

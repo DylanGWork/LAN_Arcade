@@ -1183,7 +1183,7 @@ write_public_index() {
         </label>
       </header>
       <div id="status" class="status-row" aria-live="polite"></div>
-      <p class="catalog-note">Top-level cards are launcher pages and shelves. Large collections open one level deeper: Game Boy has 743 playable vault links plus 201 curated Wave 1 links; Board Games Wave 1 has 200 research rows; DOS Classics has 28 tracked entries but no live packages until the private DOS source cache is restored.</p>
+      <p class="catalog-note">Top-level cards are launcher pages and shelves. Large collections open one level deeper: Game Boy has 743 playable vault links plus 201 curated Wave 1 links; Board Games Wave 1 has 200 research rows; Classic PC Games has 28 listed entries but no playable packages until local game files are restored.</p>
       <section class="shelf" id="featuredShelf">
         <div class="shelf-head"><h3>Featured</h3><span class="shelf-note">Ready picks, collections, and high-interest LAN services</span></div>
         <div id="featuredGrid" class="featured-grid"></div>
@@ -1213,7 +1213,7 @@ write_public_index() {
         { id: "game-boy-wave-1", label: "Game Boy Wave 1", note: "201 playable links", href: "../private-rom-wave-1/" },
         { id: "emulator-library", label: "Emulator Library", note: "All retro shelves", href: "../emulator-library/" },
         { id: "game-boy-vault", label: "Game Boy Vault", note: "743 playable links", href: "../private-rom-vault/" },
-        { id: "dos-classics", label: "DOS Classics", note: "28 tracked / 0 live", href: "../private-dos-vault/?v=dos28-20260622b" },
+        { id: "classic-pc-games", label: "Classic PC Games", note: "28 listed / 0 playable", href: "../private-dos-vault/?v=dos28-20260622b" },
         { id: "board-games-wave-1", label: "Board Games Wave 1", note: "200 research rows", href: "../board-games-wave-1/" },
         { id: "ready-shelf", label: "Ready-now cards", note: "Quick filter", action: "profile", value: "ready" },
         { id: "guest-shelf", label: "Guest-friendly cards", note: "Quick filter", action: "profile", value: "guest" },
@@ -1226,8 +1226,8 @@ write_public_index() {
         [743, "playable Game Boy vault links"],
         [201, "curated GB/GBC links"],
         [200, "board-game research rows"],
-        [28, "tracked DOS entries"],
-        [0, "live DOS packages"]
+        [28, "listed old PC game entries"],
+        [0, "playable old PC game packages"]
       ];
       var featuredIds = ["pillage-first-lan", "travianz-lan", "unciv-lan", "mindustry-lan", "evolab", "gene-garden", "zero-ad-lan", "wesnoth-lan", "openttd-lan", "life-engine", "apotris-gba"];
       var state = {
