@@ -1,7 +1,7 @@
 {
   "name": "Game Boy Wave 1",
   "kind": "private-rom-wave-1",
-  "generatedAt": "2026-06-20T16:54:45Z",
+  "generatedAt": "2026-06-25T08:48:07Z",
   "sourcePlan": "/home/dylan/LAN_Arcade/docs/BULK_IMPORT_WAVE_1_PLAN_2026-06-21.md",
   "sourceManifest": "/var/www/html/mirrors/private-rom-vault/manifest.json",
   "selectionPolicy": "Curated Wave 1 allowlist. One English-friendly selected private-vault version per title; no ROM files copied into Git.",

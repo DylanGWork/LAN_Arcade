@@ -1002,6 +1002,13 @@ write_public_index() {
       color: var(--muted);
     }
     .stat-pill strong { color: var(--text); }
+    .catalog-note {
+      margin: -4px 0 14px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+      max-width: 980px;
+    }
     .shelf { margin: 0 0 18px; }
     .shelf-head {
       display: flex;
@@ -1176,6 +1183,7 @@ write_public_index() {
         </label>
       </header>
       <div id="status" class="status-row" aria-live="polite"></div>
+      <p class="catalog-note">Top-level cards are launcher pages and shelves. Large collections open one level deeper: Game Boy has 743 playable vault links plus 201 curated Wave 1 links; Board Games Wave 1 has 200 research rows; DOS Classics has 28 tracked entries but no live packages until the private DOS source cache is restored.</p>
       <section class="shelf" id="featuredShelf">
         <div class="shelf-head"><h3>Featured</h3><span class="shelf-note">Ready picks, collections, and high-interest LAN services</span></div>
         <div id="featuredGrid" class="featured-grid"></div>
@@ -1202,11 +1210,11 @@ write_public_index() {
         { id: "research", label: "Research / QA", note: "Candidates, blockers, and entries needing promotion" }
       ];
       var shelves = [
-        { id: "game-boy-wave-1", label: "Game Boy Wave 1", note: "201 curated titles", href: "../private-rom-wave-1/" },
-        { id: "emulator-library", label: "Emulator Library", note: "GB, GBC, DOS", href: "../emulator-library/" },
-        { id: "game-boy-vault", label: "Game Boy Vault", note: "743 titles", href: "../private-rom-vault/" },
-        { id: "dos-classics", label: "DOS Classics", note: "28 tracked", href: "../private-dos-vault/?v=dos28-20260622b" },
-        { id: "board-games-wave-1", label: "Board Games Wave 1", note: "200 entries", href: "../board-games-wave-1/" },
+        { id: "game-boy-wave-1", label: "Game Boy Wave 1", note: "201 playable links", href: "../private-rom-wave-1/" },
+        { id: "emulator-library", label: "Emulator Library", note: "All retro shelves", href: "../emulator-library/" },
+        { id: "game-boy-vault", label: "Game Boy Vault", note: "743 playable links", href: "../private-rom-vault/" },
+        { id: "dos-classics", label: "DOS Classics", note: "28 tracked / 0 live", href: "../private-dos-vault/?v=dos28-20260622b" },
+        { id: "board-games-wave-1", label: "Board Games Wave 1", note: "200 research rows", href: "../board-games-wave-1/" },
         { id: "ready-shelf", label: "Ready-now cards", note: "Quick filter", action: "profile", value: "ready" },
         { id: "guest-shelf", label: "Guest-friendly cards", note: "Quick filter", action: "profile", value: "guest" },
         { id: "lan-shelf", label: "LAN multiplayer cards", note: "Quick filter", action: "profile", value: "lan" },
@@ -1215,10 +1223,11 @@ write_public_index() {
         { id: "research-shelf", label: "Research / QA cards", note: "Quick filter", action: "profile", value: "research" }
       ];
       var internalShelfStats = [
-        [743, "Game Boy vault titles"],
-        [201, "curated GB/GBC titles"],
-        [200, "board-game entries"],
-        [28, "DOS classics"]
+        [743, "playable Game Boy vault links"],
+        [201, "curated GB/GBC links"],
+        [200, "board-game research rows"],
+        [28, "tracked DOS entries"],
+        [0, "live DOS packages"]
       ];
       var featuredIds = ["pillage-first-lan", "travianz-lan", "unciv-lan", "mindustry-lan", "evolab", "gene-garden", "zero-ad-lan", "wesnoth-lan", "openttd-lan", "life-engine", "apotris-gba"];
       var state = {
@@ -1543,9 +1552,9 @@ write_public_index() {
       function renderStatus(visible, profilePool, allEnabled) {
         var status = document.getElementById("status"); clear(status);
         var chips = [
-          [visible.length, "cards shown"],
-          [profilePool.length, "cards in profile"],
-          [allEnabled.length, "cards enabled"]
+          [visible.length, "top-level cards shown"],
+          [profilePool.length, "top-level cards in mode"],
+          [allEnabled.length, "top-level cards enabled"]
         ];
         chips = chips.concat(internalShelfStats);
         if (state.query) chips.push(["search", state.query]);

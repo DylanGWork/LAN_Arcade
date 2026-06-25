@@ -1,7 +1,7 @@
 {
   "name": "Board Games Wave 1",
   "kind": "board-games-wave-1",
-  "generatedAt": "2026-06-20T16:54:45Z",
+  "generatedAt": "2026-06-25T08:48:07Z",
   "sourcePlan": "/home/dylan/LAN_Arcade/game-intake/board-games-wave-1-import-plan-2026-06-21.md",
   "selectionPolicy": "Metadata/import shelf from approved board-game Wave 1 list. Playable payloads are linked only when source-clear local implementations already exist.",
   "counts": {
