@@ -6426,7 +6426,8 @@ if 'TileTooltipLastPlayerAction' not in s:
 };
 
 const formatLastActionTimestamp = (timestamp: number) => {
-  return new Date(timestamp * 1000).toLocaleString(undefined, {
+  const timestampMs = timestamp < 10_000_000_000 ? timestamp * 1000 : timestamp;
+  return new Date(timestampMs).toLocaleString(undefined, {
     month: 'short',
     day: 'numeric',
     hour: '2-digit',
