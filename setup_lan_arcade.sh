@@ -1183,7 +1183,11 @@ write_public_index() {
         </label>
       </header>
       <div id="status" class="status-row" aria-live="polite"></div>
-      <p class="catalog-note">Top-level cards are launcher pages and shelves. Large collections open one level deeper: Game Boy has 743 playable vault links plus 201 curated Wave 1 links; Board Games Wave 1 has 200 research rows; Classic PC Games has 28 listed entries, 15 browser-playable packages, and 13 entries still needing recipes or files.</p>
+      <section class="shelf" id="recentShelf" hidden>
+        <div class="shelf-head"><h3>Recently played</h3><span class="shelf-note">Saved on this browser</span></div>
+        <div id="recentGrid" class="featured-grid"></div>
+      </section>
+      <p class="catalog-note">Search includes games inside the Game Boy and Classic PC shelves when you type a title. The home screen stays focused on launcher pages, shelves, browser games, and LAN services.</p>
       <section class="shelf" id="featuredShelf">
         <div class="shelf-head"><h3>Featured</h3><span class="shelf-note">Ready picks, collections, and high-interest LAN services</span></div>
         <div id="featuredGrid" class="featured-grid"></div>
@@ -1229,10 +1233,18 @@ write_public_index() {
         [28, "listed old PC game entries"],
         [15, "playable old PC game packages"]
       ];
+      var deepSearchSources = [
+        { id: "classic-pc", label: "Classic PC Games", type: "dos", manifest: "../private-dos-vault/manifest.json", basePath: "../private-dos-vault/" },
+        { id: "game-boy-vault", label: "Game Boy Vault", type: "rom", manifest: "../private-rom-vault/manifest.json", basePath: "../private-rom-vault/" },
+        { id: "game-boy-wave-1", label: "Game Boy Wave 1", type: "rom", manifest: "../private-rom-wave-1/manifest.json", basePath: "../private-rom-wave-1/" },
+        { id: "board-games-wave-1", label: "Board Games Wave 1", type: "board", manifest: "../board-games-wave-1/manifest.json", basePath: "../board-games-wave-1/" }
+      ];
+      var recentStorageKey = "lanArcadeRecentlyPlayed.v1";
       var featuredIds = ["pillage-first-lan", "travianz-lan", "unciv-lan", "mindustry-lan", "evolab", "gene-garden", "zero-ad-lan", "wesnoth-lan", "openttd-lan", "life-engine", "apotris-gba"];
       var state = {
         catalog: { games: [], categories: [] },
         filters: { disabled_categories: [], disabled_games: [] },
+        deepGames: [],
         profile: "all",
         category: "",
         query: "",
@@ -1260,6 +1272,73 @@ write_public_index() {
         }).catch(function () { return fallbackValue; });
       }
       function clear(el) { el.textContent = ""; }
+      function slugText(value) { return String(value || "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""); }
+      function compactGameForStorage(game) {
+        return {
+          id: String(game.id || ""),
+          title: String(game.title || game.id || "Game"),
+          icon: String(game.icon || "Play").slice(0, 4),
+          meta: String(game.meta || "Offline game"),
+          description: String(game.description || "Offline-friendly game mirrored on this LAN."),
+          tags: toStringArray(game.tags).slice(0, 6),
+          categories: toStringArray(game.categories).slice(0, 8),
+          path: gameUrl(game),
+          preview: String(game.preview || ""),
+          deepType: String(game.deepType || ""),
+          system: String(game.system || "")
+        };
+      }
+      function loadRecentGames() {
+        try {
+          var data = JSON.parse(localStorage.getItem(recentStorageKey) || "[]");
+          return Array.isArray(data) ? data.filter(function (game) { return game && game.id && game.path; }) : [];
+        } catch (e) { return []; }
+      }
+      function rememberGame(game) {
+        try {
+          var item = compactGameForStorage(game);
+          var existing = loadRecentGames().filter(function (old) { return old.id !== item.id; });
+          existing.unshift(item);
+          localStorage.setItem(recentStorageKey, JSON.stringify(existing.slice(0, 12)));
+        } catch (e) {}
+      }
+      function nestedPath(source, game) {
+        var id = encodeURIComponent(String(game.id || ""));
+        if (source.type === "dos") {
+          if (game.bundleUrl || game.packageUrl || game.sourceState === "packaged") return source.basePath + "play.html?id=" + id;
+          return source.basePath;
+        }
+        if (source.type === "rom") return source.basePath + String(game.playUrl || ("play.html?id=" + id)).replace(/^\.\//, "");
+        return source.basePath;
+      }
+      function normalizeNestedGame(source, game) {
+        if (!game || !game.id) return null;
+        var title = String(game.title || game.id || "Game");
+        var rawGenres = toStringArray(game.genres || (game.genre ? [game.genre] : []));
+        var tags = [source.label];
+        if (game.system || game.platform) tags.push(String(game.system || game.platform));
+        rawGenres.slice(0, 3).forEach(function (genre) { tags.push(genre); });
+        if (game.status) tags.push(String(game.status));
+        var categories = ["retro", "emulator", "private", "age-10-plus"];
+        rawGenres.forEach(function (genre) { var slug = slugText(genre); if (slug) categories.push(slug); });
+        if (source.type === "dos") categories.push("dos");
+        if (source.type === "board") categories = ["board-game", "research", "age-10-plus"];
+        var preview = "";
+        if (source.type === "dos" && Array.isArray(game.screenshots) && game.screenshots[0] && game.screenshots[0].url) preview = source.basePath + String(game.screenshots[0].url);
+        return {
+          id: source.id + ":" + String(game.id),
+          title: title,
+          icon: title.replace(/[^A-Za-z0-9]/g, "").slice(0, 4) || source.label.slice(0, 4),
+          meta: String(game.platform || game.system || source.label) + " - " + String(game.genre || rawGenres[0] || game.status || "offline game"),
+          description: String(game.summary || game.notes || game.selectionReason || "Playable from the " + source.label + " shelf."),
+          tags: uniqueArray(tags),
+          categories: uniqueArray(categories),
+          path: nestedPath(source, game),
+          preview: preview,
+          deepType: source.type,
+          system: String(game.system || game.platform || source.label)
+        };
+      }
       function categoryLabelMap(catalog) {
         var map = Object.create(null);
         (Array.isArray(catalog.categories) ? catalog.categories : []).forEach(function (category) {
@@ -1322,6 +1401,9 @@ write_public_index() {
         return true;
       }
       function statusLabel(game) {
+        if (game.deepType === "dos") return "Classic PC";
+        if (game.deepType === "rom") return String(game.system || "Emulator");
+        if (game.deepType === "board") return "Board game";
         if (isCollection(game)) return "Collection";
         if (isServerService(game)) return "LAN service";
         if (isNativeOrServerGame(game)) return "Native hub";
@@ -1331,6 +1413,8 @@ write_public_index() {
         return "Browser ready";
       }
       function readinessLabel(game) {
+        if (game.deepType === "dos") return game.path && game.path.indexOf("play.html") >= 0 ? "Ready offline" : "Open shelf";
+        if (game.deepType === "rom") return "Ready offline";
         if (hasText(game, ["restore needed"])) return "Restore needed";
         if (hasText(game, ["blocked", "waiting"])) return "Blocked";
         if (isResearchEntry(game)) return "Needs QA";
@@ -1347,6 +1431,8 @@ write_public_index() {
         return "";
       }
       function deviceLabel(game) {
+        if (game.deepType === "dos") return "Browser DOSBox";
+        if (game.deepType === "rom") return "Browser emulator";
         if (hasCategory(game, "mobile-friendly")) return "Phone/browser";
         if (isCollection(game)) return "Shelf";
         if (isEmulator(game)) return "Emulator";
@@ -1366,6 +1452,8 @@ write_public_index() {
         return "Age unset";
       }
       function primaryActionLabel(game) {
+        if (game.deepType === "dos" && game.path && game.path.indexOf("play.html") >= 0) return "Play";
+        if (game.deepType === "rom") return "Play";
         if (isResearchEntry(game)) return "Review";
         if (isCollection(game)) return "Open shelf";
         if (isServerService(game)) return "Start / join";
@@ -1388,13 +1476,31 @@ write_public_index() {
       function filteredBaseGames() {
         var labels = categoryLabelMap(state.catalog);
         var query = String(state.query || "").toLowerCase().trim();
-        return (Array.isArray(state.catalog.games) ? state.catalog.games : []).filter(function (game) {
+        var topLevel = (Array.isArray(state.catalog.games) ? state.catalog.games : []).filter(function (game) {
           if (!gameEnabled(game)) return false;
           if (!matchesProfile(game, state.profile)) return false;
           if (state.category && toStringArray(game.categories).indexOf(state.category) < 0) return false;
           if (query && searchText(game, labels).indexOf(query) < 0) return false;
           return true;
         });
+        if (!query) return topLevel;
+        var seen = Object.create(null);
+        var seenNestedTitles = Object.create(null);
+        topLevel.forEach(function (game) {
+          seen[String(game.id || "")] = true;
+          seenNestedTitles[String(game.title || "").toLowerCase() + "|" + String(game.system || game.meta || "").toLowerCase()] = true;
+        });
+        var deepMatches = state.deepGames.filter(function (game) {
+          if (seen[String(game.id || "")]) return false;
+          var nestedKey = String(game.title || "").toLowerCase() + "|" + String(game.system || game.meta || "").toLowerCase();
+          if (seenNestedTitles[nestedKey]) return false;
+          if (!matchesProfile(game, state.profile)) return false;
+          if (state.category && toStringArray(game.categories).indexOf(state.category) < 0) return false;
+          if (searchText(game, labels).indexOf(query) < 0) return false;
+          seenNestedTitles[nestedKey] = true;
+          return true;
+        }).slice(0, 80);
+        return topLevel.concat(deepMatches);
       }
       function scoreGame(game) {
         var id = String(game.id || "");
@@ -1411,8 +1517,33 @@ write_public_index() {
         if (isResearchEntry(game)) score -= 120;
         return score;
       }
+      function queryScore(game, query) {
+        if (!query) return 0;
+        var title = String(game.title || "").toLowerCase();
+        var id = String(game.id || "").toLowerCase();
+        var tags = toStringArray(game.tags).join(" ").toLowerCase();
+        var meta = String(game.meta || "").toLowerCase();
+        var desc = String(game.description || "").toLowerCase();
+        var score = 0;
+        if (title === query) score += 5000;
+        if (title.indexOf(query) === 0) score += 3600;
+        else if (title.indexOf(query) >= 0) score += 3000;
+        if (id.indexOf(query) >= 0) score += 1800;
+        if (tags.indexOf(query) >= 0) score += 900;
+        if (meta.indexOf(query) >= 0) score += 500;
+        if (desc.indexOf(query) >= 0) score += 180;
+        if (game.deepType && title.indexOf(query) >= 0) score += 450;
+        return score;
+      }
       function sortGames(games) {
         var sorted = games.slice();
+        var query = String(state.query || "").toLowerCase().trim();
+        if (query) {
+          sorted.sort(function (a, b) {
+            return queryScore(b, query) - queryScore(a, query) || scoreGame(b) - scoreGame(a) || String(a.title || a.id).localeCompare(String(b.title || b.id));
+          });
+          return sorted;
+        }
         if (state.sort === "newer") return sorted.reverse();
         if (state.sort === "category") {
           sorted.sort(function (a, b) {
@@ -1463,6 +1594,7 @@ write_public_index() {
       function makeCard(game, featured) {
         var card = document.createElement("a"); card.className = featured ? "featured-card" : "game-card"; card.href = gameUrl(game);
         card.setAttribute("aria-label", primaryActionLabel(game) + " " + String(game.title || game.id || "game"));
+        card.addEventListener("click", function () { rememberGame(game); });
         card.appendChild(makeMedia(game));
         var body = document.createElement("div"); body.className = "card-body";
         var title = document.createElement("h4"); title.className = "card-title"; title.textContent = String(game.title || game.id || "Unknown"); body.appendChild(title);
@@ -1476,6 +1608,15 @@ write_public_index() {
         body.appendChild(launchRow);
         card.appendChild(body);
         return card;
+      }
+      function renderRecent() {
+        var shelf = document.getElementById("recentShelf");
+        var grid = document.getElementById("recentGrid");
+        if (!shelf || !grid) return;
+        var recent = loadRecentGames().slice(0, 3);
+        clear(grid);
+        recent.forEach(function (game) { grid.appendChild(makeCard(game, true)); });
+        shelf.hidden = recent.length === 0 || String(state.query || "").trim() || state.category;
       }
       function renderProfiles() {
         var list = document.getElementById("profileList"); clear(list);
@@ -1552,9 +1693,9 @@ write_public_index() {
       function renderStatus(visible, profilePool, allEnabled) {
         var status = document.getElementById("status"); clear(status);
         var chips = [
-          [visible.length, "top-level cards shown"],
-          [profilePool.length, "top-level cards in mode"],
-          [allEnabled.length, "top-level cards enabled"]
+          [visible.length, state.query ? "search results" : "cards shown"],
+          [profilePool.length, "cards in mode"],
+          [allEnabled.length, "cards enabled"]
         ];
         chips = chips.concat(internalShelfStats);
         if (state.query) chips.push(["search", state.query]);
@@ -1571,6 +1712,7 @@ write_public_index() {
         var allEnabled = allGames.filter(gameEnabled);
         var profilePool = allEnabled.filter(function (game) { return matchesProfile(game, state.profile); });
         var visible = sortGames(filteredBaseGames());
+        renderRecent();
         renderProfiles();
         renderShelves();
         renderGenres(profilePool);
@@ -1592,9 +1734,13 @@ write_public_index() {
       Promise.all([
         fetchJson("./catalog.json", { games: [], categories: [] }),
         fetchJson("./admin.filters.json", { disabled_categories: [], disabled_games: [] })
-      ]).then(function (results) {
+      ].concat(deepSearchSources.map(function (source) { return fetchJson(source.manifest, { games: [] }).then(function (manifest) { return { source: source, manifest: manifest || { games: [] } }; }); }))).then(function (results) {
         state.catalog = results[0] || { games: [], categories: [] };
         state.filters = normalizeFilters(results[1]);
+        state.deepGames = results.slice(2).flatMap(function (entry) {
+          var games = Array.isArray(entry.manifest.games) ? entry.manifest.games : [];
+          return games.map(function (game) { return normalizeNestedGame(entry.source, game); }).filter(Boolean);
+        });
         render();
       });
       document.getElementById("searchInput").addEventListener("input", function (event) { state.query = String(event.target.value || ""); render(); });

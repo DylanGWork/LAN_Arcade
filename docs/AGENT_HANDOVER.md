@@ -1,3 +1,15 @@
+# Library Search, Classic PC, And Wording Lessons - 2026-06-27
+
+Dylan flagged that SimAnt did not appear in the main library search even though it was playable inside the Classic PC shelf. Root cause: `/mirrors/games/` searched only top-level catalog cards. The library generator now keeps large ROM/DOS/board collections nested by default, but title search loads nested manifests and returns direct playable entries for matching games. It also keeps a browser-local Recently played shelf via `localStorage`; this is not yet account-backed.
+
+User-facing language needs stricter separation from intake/admin language. Public pages should not expose confusing states such as `source-ready`, `package missing`, `candidate`, or vague `top-level cards` wording. Use action-oriented labels: `Play`, `Open shelf`, `Ready to play`, `Needs local files`, `Download game ZIP`, and `Review before play`. Keep technical states in manifests, intake docs, admin pages, and QA reports.
+
+Classic PC/DOS entries have multiple independent states: metadata listed, source ZIP present, browser `.jsdos` bundle present, smoke result, and manual/site mirror. Do not treat `package missing` as a single game status without explaining what the player can do.
+
+The SimAnt memory investigation showed that tiny DOS games can still cost roughly 700 MB in browser because the js-dos/WebAssembly runtime dominates memory. Use worker/canvas mode and unload cleanup in the Classic PC player. For low-power laptops, local DOSBox from the downloaded game ZIP remains the safer fallback.
+
+Regression checks used after the search/recently-played fix: `npm run qa:static`, LAN-origin Playwright search for `ant` and `simant`, direct SimAnt launch, Recently played persistence, and mobile/narrow no-overflow check.
+
 # Pillage First Raid Loot Patch - 2026-06-20
 
 Dylan reported that raids travelled out and back but produced no reports or resources. Upstream Pillage First had `// TODO: Combat` in both attack and raid movement resolvers, and report controllers still return empty/no-op data. LAN Arcade now patches the mirrored build in `scripts/build_pillage_first_mirror.sh` so new raid resolutions steal resources from target villages according to troop carry capacity, attach the loot bundle to the return event, and deposit it into the source village when troops return. Existing return events created before this patch will not retroactively gain loot.

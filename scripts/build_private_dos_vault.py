@@ -341,8 +341,17 @@ async function boot(){
   if(!playUrl){gameEl.innerHTML='<p style="padding:20px">This game needs local files before it can be played here.</p>';return}
   if(typeof Dos!=='function'){gameEl.innerHTML='<p style="padding:20px;color:#ffb4ae">The local js-dos runtime did not load.</p>';return}
   ensureStorageShim();
-  Dos(gameEl,{url:playUrl,pathPrefix:'../js-dos-runtime/__JSDOS_VERSION__/emulators/',autoStart:true,workerThread:false,backend:'dosbox',mouseCapture:false,noCloud:true,kiosk:true,fsChanges:{local:false}});
+  const player=Dos(gameEl,{url:playUrl,pathPrefix:'../js-dos-runtime/__JSDOS_VERSION__/emulators/',autoStart:true,workerThread:true,renderBackend:'canvas',backend:'dosbox',mouseCapture:false,noCloud:true,kiosk:true,fsChanges:{local:false}});
+  window.__dosPlayer=player;
 }
+async function stopDosPlayer(){
+  const player=window.__dosPlayer;
+  if(player&&typeof player.stop==='function'){
+    try{await player.stop()}catch(e){}
+  }
+}
+addEventListener('pagehide',()=>{stopDosPlayer()});
+addEventListener('beforeunload',()=>{stopDosPlayer()});
 boot().catch(e=>{document.getElementById('game').innerHTML='<pre style="white-space:pre-wrap;padding:20px;color:#ffb4ae">'+esc(e.stack||e.message||String(e))+'</pre>'})
 </script></body></html>'''
     page = page.replace('__JSDOS_VERSION__', JSDOS_RUNTIME_VERSION)

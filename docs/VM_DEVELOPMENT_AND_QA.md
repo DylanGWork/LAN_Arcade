@@ -556,6 +556,32 @@ The `/mirrors/emulatorjs-runtime/` block should at least provide
 `Cross-Origin-Resource-Policy: same-origin`. Without these headers, the browser
 will show an EmulatorJS error and will not request the DOS package.
 
+
+## Recent Library And Emulator Regression Lessons
+
+Lessons from the June 2026 Classic PC/Game Library regressions:
+
+- Main library search must include nested shelves. The home page should not render hundreds of ROM/DOS/board entries by default, but a title search such as `simant` must return the actual playable entry, not only the parent shelf card.
+- Count labels must be precise. Use `cards`, `shelf entries`, `playable links`, or `research rows` as appropriate. Do not imply the top-level catalog count is the total playable-game count.
+- Keep user-facing pages in player language. Intake states such as `source-ready`, `candidate`, `package missing`, `partial`, and `blocked` are useful for admin/intake views, but the public library should say what the player can do next: `Play`, `Open shelf`, `Download game ZIP`, `Needs local files`, or `Review before play`.
+- Classic PC/DOS entries have separate states: listed metadata, local ZIP package, browser `.jsdos` bundle, QA smoke result, and manual/website mirror. Do not collapse these into one ambiguous status.
+- Browser DOS emulation can use hundreds of MB per tab even for tiny games. The Classic PC player should use js-dos worker/canvas mode, avoid direct WebGL where possible, call the player stop hook on unload, and document local DOSBox as the fallback for weak laptops.
+- Recently played currently uses browser `localStorage`; it is useful for a single browser but is not a multi-user/account-backed history. Do not claim cross-device or family-account persistence until the account/save architecture is implemented.
+
+Minimum checks after changing the public library/search layer:
+
+```bash
+npm run qa:static
+node - <<'NODE'
+// Use Playwright or an existing harness to verify at least:
+// 1. /mirrors/games/ loads on the LAN origin.
+// 2. A nested title search, e.g. simant, returns a direct playable card.
+// 3. Opening that card reaches the playable page.
+// 4. Returning to /mirrors/games/ shows it in Recently played when applicable.
+// 5. Mobile/narrow viewport has no horizontal overflow.
+NODE
+```
+
 ## Pillage First SPA Fallback And Deploy Safety
 
 Pillage First is a static SPA under:
