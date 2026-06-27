@@ -4,6 +4,7 @@ export type ScoreMode = 'standard' | 'challenge' | 'practice';
 
 export type AccountRole = 'admin' | 'adult' | 'child' | 'guest' | 'service';
 export type AccountStatus = 'active' | 'pending' | 'disabled';
+export type MailboxStatus = 'pending' | 'ready' | 'alias' | 'disabled' | 'error';
 
 export interface ArcadeCategory {
   id: string;
@@ -45,6 +46,8 @@ export interface ArcadeAccount {
   username: string;
   displayName: string;
   localEmail: string;
+  mailboxStatus: MailboxStatus;
+  emailVerifiedAt: string | null;
   role: AccountRole;
   status: AccountStatus;
   parentAccountId: string | null;

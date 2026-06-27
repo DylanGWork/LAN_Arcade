@@ -69,9 +69,9 @@ test('accounts create local email, linked player, and login session', async () =
   await withServer(fixture, async (baseUrl) => {
     const created = await request<{
       token: string;
-      account: { id: string; username: string; localEmail: string; role: string; status: string };
+      account: { id: string; username: string; localEmail: string; mailboxStatus: string; emailVerifiedAt: string | null; role: string; status: string };
       player: { id: string; accountId: string | null };
-      email: { mailboxProvisioning: string };
+      email: { mailboxStatus: string; emailVerifiedAt: string | null };
     }>(baseUrl, '/accounts', {
       method: 'POST',
       body: JSON.stringify({ username: 'Dylan', displayName: 'Dylan', password: 'correct-horse-battery', role: 'admin' })
@@ -79,10 +79,13 @@ test('accounts create local email, linked player, and login session', async () =
 
     assert.equal(created.account.username, 'dylan');
     assert.equal(created.account.localEmail, 'dylan@gannan.home.arpa');
+    assert.equal(created.account.mailboxStatus, 'pending');
+    assert.equal(created.account.emailVerifiedAt, null);
     assert.equal(created.account.role, 'admin');
     assert.equal(created.account.status, 'active');
     assert.equal(created.player.accountId, created.account.id);
-    assert.equal(created.email.mailboxProvisioning, 'pending-mailu-automation');
+    assert.equal(created.email.mailboxStatus, 'pending');
+    assert.equal(created.email.emailVerifiedAt, null);
     assert.ok(created.token.length > 20);
 
     const current = await request<{ account: { id: string }; player: { id: string } }>(baseUrl, '/auth/me', {

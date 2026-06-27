@@ -126,7 +126,7 @@ async function handleRequest(
       name: config.arcadeName,
       apiVersion: '0.2.0',
       generatedAt: new Date().toISOString(),
-      capabilities: ['catalog', 'profiles', 'accounts', 'account-sessions', 'account-activity', 'account-save-vault', 'local-email-addresses', 'scores', 'leaderboards', 'daily-challenges']
+      capabilities: ['catalog', 'profiles', 'accounts', 'account-sessions', 'account-activity', 'account-save-vault', 'local-email-addresses', 'account-email-state', 'scores', 'leaderboards', 'daily-challenges']
     });
     return;
   }
@@ -155,7 +155,8 @@ async function handleRequest(
         player: created.player,
         email: {
           localAddress: created.account.localEmail,
-          mailboxProvisioning: 'pending-mailu-automation'
+          mailboxStatus: created.account.mailboxStatus,
+          emailVerifiedAt: created.account.emailVerifiedAt,
         }
       });
     } catch (error) {

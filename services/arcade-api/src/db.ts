@@ -5,6 +5,7 @@ import Database from 'better-sqlite3';
 import type {
   AccountRole,
   AccountStatus,
+  MailboxStatus,
   ArcadeAccount,
   LeaderboardEntry,
   Player,
@@ -54,6 +55,8 @@ export interface AccountRecord {
   username: string;
   display_name: string;
   local_email: string;
+  mailbox_status: MailboxStatus;
+  email_verified_at: string | null;
   password_hash: string;
   role: AccountRole;
   status: AccountStatus;
@@ -153,9 +156,9 @@ export function openArcadeDb(databasePath: string): ArcadeDb {
         const passwordHash = hashSecret(payload.password);
         connection.prepare(`
           INSERT INTO accounts (
-            id, username, display_name, local_email, password_hash, role, status,
+            id, username, display_name, local_email, mailbox_status, email_verified_at, password_hash, role, status,
             parent_account_id, created_at, updated_at, last_login_at
-          ) VALUES (?, ?, ?, ?, ?, ?, 'active', ?, ?, ?, NULL)
+          ) VALUES (?, ?, ?, ?, 'pending', NULL, ?, ?, 'active', ?, ?, ?, NULL)
         `).run(id, username, displayName, localEmail, passwordHash, role, payload.parentAccountId || null, now, now);
 
         let player = connection.prepare(`
@@ -178,7 +181,7 @@ export function openArcadeDb(databasePath: string): ArcadeDb {
         }
 
         const account = connection.prepare(`
-          SELECT id, username, display_name, local_email, password_hash, role, status,
+          SELECT id, username, display_name, local_email, mailbox_status, email_verified_at, password_hash, role, status,
                  parent_account_id, created_at, updated_at, last_login_at
           FROM accounts
           WHERE id = ?
@@ -194,7 +197,7 @@ export function openArcadeDb(databasePath: string): ArcadeDb {
     },
     listAccounts() {
       return connection.prepare(`
-        SELECT id, username, display_name, local_email, password_hash, role, status,
+        SELECT id, username, display_name, local_email, mailbox_status, email_verified_at, password_hash, role, status,
                parent_account_id, created_at, updated_at, last_login_at
         FROM accounts
         ORDER BY lower(username)
@@ -202,7 +205,7 @@ export function openArcadeDb(databasePath: string): ArcadeDb {
     },
     findAccountById(accountId) {
       return connection.prepare(`
-        SELECT id, username, display_name, local_email, password_hash, role, status,
+        SELECT id, username, display_name, local_email, mailbox_status, email_verified_at, password_hash, role, status,
                parent_account_id, created_at, updated_at, last_login_at
         FROM accounts
         WHERE id = ?
@@ -210,7 +213,7 @@ export function openArcadeDb(databasePath: string): ArcadeDb {
     },
     findAccountByUsername(username) {
       return connection.prepare(`
-        SELECT id, username, display_name, local_email, password_hash, role, status,
+        SELECT id, username, display_name, local_email, mailbox_status, email_verified_at, password_hash, role, status,
                parent_account_id, created_at, updated_at, last_login_at
         FROM accounts
         WHERE username = ?
@@ -493,6 +496,8 @@ function migrate(connection: Database.Database): void {
       username TEXT NOT NULL UNIQUE,
       display_name TEXT NOT NULL,
       local_email TEXT NOT NULL UNIQUE,
+      mailbox_status TEXT NOT NULL DEFAULT 'pending',
+      email_verified_at TEXT,
       password_hash TEXT NOT NULL,
       role TEXT NOT NULL,
       status TEXT NOT NULL,
@@ -583,6 +588,8 @@ function migrate(connection: Database.Database): void {
       ON account_save_slots(account_id, adapter, game_id, updated_at DESC);
   `);
   safeAlter(connection, 'ALTER TABLE players ADD COLUMN account_id TEXT REFERENCES accounts(id) ON DELETE SET NULL');
+  safeAlter(connection, "ALTER TABLE accounts ADD COLUMN mailbox_status TEXT NOT NULL DEFAULT 'pending'");
+  safeAlter(connection, 'ALTER TABLE accounts ADD COLUMN email_verified_at TEXT');
 }
 
 function safeAlter(connection: Database.Database, sql: string): void {
@@ -604,6 +611,8 @@ function toAccount(row: AccountRecord): ArcadeAccount {
     username: row.username,
     displayName: row.display_name,
     localEmail: row.local_email,
+    mailboxStatus: row.mailbox_status || 'pending',
+    emailVerifiedAt: row.email_verified_at,
     role: row.role,
     status: row.status,
     parentAccountId: row.parent_account_id,
