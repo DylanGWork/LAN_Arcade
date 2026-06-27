@@ -147,6 +147,62 @@ test('signed-in accounts can record and list recent game activity', async () => 
   });
 });
 
+test('signed-in accounts can store and retrieve isolated save slots', async () => {
+  const fixture = tempFixture();
+  await withServer(fixture, async (baseUrl) => {
+    const created = await request<{ token: string }>(baseUrl, '/accounts', {
+      method: 'POST',
+      body: JSON.stringify({ username: 'Morgan', displayName: 'Morgan', password: 'correct-horse-battery' })
+    });
+
+    const first = await request<{ save: { adapter: string; gameId: string; slot: string; payload: string; checksum: string; sizeBytes: number } }>(baseUrl, '/account/saves', {
+      method: 'PUT',
+      headers: { 'x-arcade-account-session': created.token },
+      body: JSON.stringify({
+        adapter: 'browser-localstorage',
+        gameId: '2048',
+        slot: 'autosave',
+        label: 'Auto save',
+        payloadEncoding: 'json',
+        payload: JSON.stringify({ board: [2, 4, 8], score: 14 }),
+        metadata: { source: 'test' }
+      })
+    });
+    assert.equal(first.save.adapter, 'browser-localstorage');
+    assert.equal(first.save.gameId, '2048');
+    assert.equal(first.save.slot, 'autosave');
+    assert.ok(first.save.payload.includes('board'));
+    assert.equal(first.save.sizeBytes, Buffer.byteLength(first.save.payload, 'utf8'));
+    assert.equal(first.save.checksum.length, 64);
+
+    const list = await request<{ saves: Array<{ gameId: string; payload?: string; metadata: { source?: string } }> }>(baseUrl, '/account/saves?adapter=browser-localstorage', {
+      headers: { 'x-arcade-account-session': created.token }
+    });
+    assert.equal(list.saves.length, 1);
+    assert.equal(list.saves[0].gameId, '2048');
+    assert.equal(list.saves[0].payload, undefined);
+    assert.equal(list.saves[0].metadata.source, 'test');
+
+    const fetched = await request<{ save: { payload: string; metadata: { source?: string } } }>(baseUrl, '/account/saves/browser-localstorage/2048/autosave', {
+      headers: { 'x-arcade-account-session': created.token }
+    });
+    assert.deepEqual(JSON.parse(fetched.save.payload), { board: [2, 4, 8], score: 14 });
+
+    const updated = await request<{ save: { payload: string; checksum: string } }>(baseUrl, '/account/saves', {
+      method: 'PUT',
+      headers: { 'x-arcade-account-session': created.token },
+      body: JSON.stringify({
+        adapter: 'browser-localstorage',
+        gameId: '2048',
+        slot: 'autosave',
+        payload: JSON.stringify({ board: [16], score: 16 })
+      })
+    });
+    assert.notEqual(updated.save.checksum, first.save.checksum);
+    assert.deepEqual(JSON.parse(updated.save.payload), { board: [16], score: 16 });
+  });
+});
+
 test('players, sessions, scores, and leaderboards work', async () => {
   const fixture = tempFixture();
   await withServer(fixture, async (baseUrl) => {

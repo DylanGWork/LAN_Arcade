@@ -8,8 +8,10 @@ import type {
   ArcadeAccount,
   LeaderboardEntry,
   Player,
+  AccountSaveSlot,
   RecentGameActivity,
   RecordGameActivityRequest,
+  UpsertAccountSaveRequest,
   ScoreMode,
   ScoreSubmission
 } from '@lan-arcade/shared';
@@ -24,6 +26,9 @@ export interface ArcadeDb {
   getAccountSession(token: string): AccountSessionRecord | undefined;
   recordAccountActivity(accountId: string, input: RecordGameActivityRequest): RecentGameActivity;
   listAccountActivity(accountId: string, options?: { limit?: number }): RecentGameActivity[];
+  upsertAccountSave(accountId: string, input: UpsertAccountSaveRequest): AccountSaveSlot;
+  getAccountSave(accountId: string, adapter: string, gameId: string, slot: string): AccountSaveSlot | undefined;
+  listAccountSaves(accountId: string, options?: { adapter?: string; gameId?: string; limit?: number; includePayload?: boolean }): AccountSaveSlot[];
   createPlayer(displayName: string, pin?: string): Player;
   listPlayers(): Player[];
   findPlayerById(playerId: string): PlayerRecord | undefined;
@@ -108,6 +113,22 @@ interface AccountActivityRow {
   play_count: number;
   first_played_at: string;
   last_played_at: string;
+}
+
+interface AccountSaveRow {
+  id: string;
+  account_id: string;
+  adapter: string;
+  game_id: string;
+  slot: string;
+  label: string;
+  payload_encoding: 'json' | 'text' | 'base64';
+  payload: string;
+  metadata_json: string;
+  size_bytes: number;
+  checksum: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export function openArcadeDb(databasePath: string): ArcadeDb {
@@ -278,6 +299,70 @@ export function openArcadeDb(databasePath: string): ArcadeDb {
         ORDER BY last_played_at DESC
         LIMIT ?
       `).all(accountId, limit).map((row) => toRecentGameActivity(row as AccountActivityRow));
+    },
+    upsertAccountSave(accountId, input) {
+      const now = new Date().toISOString();
+      const id = crypto.randomUUID();
+      const payload = String(input.payload);
+      const sizeBytes = Buffer.byteLength(payload, 'utf8');
+      const checksum = crypto.createHash('sha256').update(payload).digest('hex');
+      const metadataJson = JSON.stringify(input.metadata || {});
+      connection.prepare(`
+        INSERT INTO account_save_slots (
+          id, account_id, adapter, game_id, slot, label, payload_encoding, payload,
+          metadata_json, size_bytes, checksum, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(account_id, adapter, game_id, slot) DO UPDATE SET
+          label = excluded.label,
+          payload_encoding = excluded.payload_encoding,
+          payload = excluded.payload,
+          metadata_json = excluded.metadata_json,
+          size_bytes = excluded.size_bytes,
+          checksum = excluded.checksum,
+          updated_at = excluded.updated_at
+      `).run(
+        id,
+        accountId,
+        input.adapter,
+        input.gameId,
+        input.slot,
+        input.label || input.slot,
+        input.payloadEncoding || 'json',
+        payload,
+        metadataJson,
+        sizeBytes,
+        checksum,
+        now,
+        now
+      );
+      const saved = this.getAccountSave(accountId, input.adapter, input.gameId, input.slot);
+      if (!saved) throw new Error('Save was written but could not be loaded');
+      return saved;
+    },
+    getAccountSave(accountId, adapter, gameId, slot) {
+      const row = connection.prepare(`
+        SELECT id, account_id, adapter, game_id, slot, label, payload_encoding, payload,
+               metadata_json, size_bytes, checksum, created_at, updated_at
+        FROM account_save_slots
+        WHERE account_id = ? AND adapter = ? AND game_id = ? AND slot = ?
+      `).get(accountId, adapter, gameId, slot) as AccountSaveRow | undefined;
+      return row ? toAccountSaveSlot(row, true) : undefined;
+    },
+    listAccountSaves(accountId, options = {}) {
+      const params: unknown[] = [accountId];
+      const where = ['account_id = ?'];
+      if (options.adapter) { where.push('adapter = ?'); params.push(options.adapter); }
+      if (options.gameId) { where.push('game_id = ?'); params.push(options.gameId); }
+      const limit = Math.min(Math.max(options.limit || 50, 1), 200);
+      params.push(limit);
+      return connection.prepare(`
+        SELECT id, account_id, adapter, game_id, slot, label, payload_encoding, payload,
+               metadata_json, size_bytes, checksum, created_at, updated_at
+        FROM account_save_slots
+        WHERE ${where.join(' AND ')}
+        ORDER BY updated_at DESC
+        LIMIT ?
+      `).all(...params).map((row) => toAccountSaveSlot(row as AccountSaveRow, Boolean(options.includePayload)));
     },
     createPlayer(displayName, pin) {
       const id = crypto.randomUUID();
@@ -469,6 +554,23 @@ function migrate(connection: Database.Database): void {
       UNIQUE(account_id, game_id, path)
     );
 
+    CREATE TABLE IF NOT EXISTS account_save_slots (
+      id TEXT PRIMARY KEY,
+      account_id TEXT NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+      adapter TEXT NOT NULL,
+      game_id TEXT NOT NULL,
+      slot TEXT NOT NULL,
+      label TEXT NOT NULL,
+      payload_encoding TEXT NOT NULL,
+      payload TEXT NOT NULL,
+      metadata_json TEXT NOT NULL,
+      size_bytes INTEGER NOT NULL,
+      checksum TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      UNIQUE(account_id, adapter, game_id, slot)
+    );
+
     CREATE INDEX IF NOT EXISTS idx_scores_game_seed_score
       ON scores(game_id, seed, score DESC);
     CREATE INDEX IF NOT EXISTS idx_players_account_id
@@ -477,6 +579,8 @@ function migrate(connection: Database.Database): void {
       ON account_sessions(account_id);
     CREATE INDEX IF NOT EXISTS idx_account_activity_account_recent
       ON account_activity(account_id, last_played_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_account_save_slots_account_game
+      ON account_save_slots(account_id, adapter, game_id, updated_at DESC);
   `);
   safeAlter(connection, 'ALTER TABLE players ADD COLUMN account_id TEXT REFERENCES accounts(id) ON DELETE SET NULL');
 }
@@ -553,6 +657,24 @@ function toRecentGameActivity(row: AccountActivityRow): RecentGameActivity {
     playCount: row.play_count,
     firstPlayedAt: row.first_played_at,
     lastPlayedAt: row.last_played_at
+  };
+}
+
+function toAccountSaveSlot(row: AccountSaveRow, includePayload: boolean): AccountSaveSlot {
+  return {
+    id: row.id,
+    accountId: row.account_id,
+    adapter: row.adapter,
+    gameId: row.game_id,
+    slot: row.slot,
+    label: row.label,
+    payloadEncoding: row.payload_encoding,
+    payload: includePayload ? row.payload : undefined,
+    metadata: safeJsonObject(row.metadata_json),
+    sizeBytes: row.size_bytes,
+    checksum: row.checksum,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at
   };
 }
 

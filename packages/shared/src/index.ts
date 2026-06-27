@@ -103,6 +103,34 @@ export interface RecordGameActivityRequest {
   deepType?: string;
 }
 
+export type SavePayloadEncoding = 'json' | 'text' | 'base64';
+
+export interface AccountSaveSlot {
+  id: string;
+  accountId: string;
+  adapter: string;
+  gameId: string;
+  slot: string;
+  label: string;
+  payloadEncoding: SavePayloadEncoding;
+  payload?: string;
+  metadata: Record<string, unknown>;
+  sizeBytes: number;
+  checksum: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface UpsertAccountSaveRequest {
+  adapter: string;
+  gameId: string;
+  slot: string;
+  label?: string;
+  payloadEncoding?: SavePayloadEncoding;
+  payload: string;
+  metadata?: Record<string, unknown>;
+}
+
 export interface CreatePlayerRequest {
   displayName: string;
   pin?: string;

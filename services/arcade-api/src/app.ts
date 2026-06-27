@@ -44,6 +44,18 @@ const accountActivitySchema = z.object({
   deepType: z.string().trim().max(60).default('')
 });
 
+const saveKeySchema = z.string().trim().min(1).max(180).regex(/^[A-Za-z0-9._:-]+$/);
+
+const accountSaveSchema = z.object({
+  adapter: saveKeySchema.max(64),
+  gameId: saveKeySchema,
+  slot: saveKeySchema.max(80),
+  label: z.string().trim().max(180).optional(),
+  payloadEncoding: z.enum(['json', 'text', 'base64']).default('json'),
+  payload: z.string().max(524288),
+  metadata: z.record(z.string(), z.unknown()).default({})
+});
+
 const scoreSchema = z.object({
   gameId: z.string().trim().min(1),
   playerId: z.string().trim().min(1),
@@ -114,7 +126,7 @@ async function handleRequest(
       name: config.arcadeName,
       apiVersion: '0.2.0',
       generatedAt: new Date().toISOString(),
-      capabilities: ['catalog', 'profiles', 'accounts', 'account-sessions', 'account-activity', 'local-email-addresses', 'scores', 'leaderboards', 'daily-challenges']
+      capabilities: ['catalog', 'profiles', 'accounts', 'account-sessions', 'account-activity', 'account-save-vault', 'local-email-addresses', 'scores', 'leaderboards', 'daily-challenges']
     });
     return;
   }
@@ -197,6 +209,45 @@ async function handleRequest(
     const parsed = accountActivitySchema.safeParse(await readJson(request));
     if (!parsed.success) return sendJson(response, 400, { error: 'Invalid activity payload', details: parsed.error.flatten() });
     sendJson(response, 201, { activity: db.recordAccountActivity(session.account_id, parsed.data) });
+    return;
+  }
+
+  if (method === 'GET' && pathname === '/account/saves') {
+    const session = readAccountSession(request, db);
+    if (!session) return sendJson(response, 401, { error: 'Missing or invalid account session' });
+    const limit = url.searchParams.get('limit') ? Number.parseInt(url.searchParams.get('limit') || '50', 10) : 50;
+    sendJson(response, 200, {
+      saves: db.listAccountSaves(session.account_id, {
+        adapter: url.searchParams.get('adapter') || undefined,
+        gameId: url.searchParams.get('gameId') || undefined,
+        includePayload: url.searchParams.get('includePayload') === '1',
+        limit
+      })
+    });
+    return;
+  }
+
+  if (method === 'PUT' && pathname === '/account/saves') {
+    const session = readAccountSession(request, db);
+    if (!session) return sendJson(response, 401, { error: 'Missing or invalid account session' });
+    const parsed = accountSaveSchema.safeParse(await readJson(request));
+    if (!parsed.success) return sendJson(response, 400, { error: 'Invalid save payload', details: parsed.error.flatten() });
+    sendJson(response, 200, { save: db.upsertAccountSave(session.account_id, parsed.data) });
+    return;
+  }
+
+  const saveMatch = pathname.match(/^\/account\/saves\/([^/]+)\/([^/]+)\/([^/]+)$/);
+  if (method === 'GET' && saveMatch) {
+    const session = readAccountSession(request, db);
+    if (!session) return sendJson(response, 401, { error: 'Missing or invalid account session' });
+    const save = db.getAccountSave(
+      session.account_id,
+      decodeURIComponent(saveMatch[1]),
+      decodeURIComponent(saveMatch[2]),
+      decodeURIComponent(saveMatch[3])
+    );
+    if (!save) return sendJson(response, 404, { error: 'Save not found' });
+    sendJson(response, 200, { save });
     return;
   }
 
