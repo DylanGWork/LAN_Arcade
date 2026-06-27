@@ -1,3 +1,5 @@
+import { scopedLocalStorageKey } from '../data/ArcadeAccountScope';
+
 // Local leaderboard system for tracking top runs
 export interface LeaderboardEntry {
   id: string;
@@ -14,9 +16,11 @@ export interface LeaderboardEntry {
 export class LeaderboardSystem {
   private static readonly STORAGE_KEY = 'evolab_leaderboard';
   private static readonly MAX_ENTRIES = 10;
+  private readonly storageKey: string;
   private entries: LeaderboardEntry[] = [];
 
   constructor() {
+    this.storageKey = scopedLocalStorageKey(LeaderboardSystem.STORAGE_KEY);
     this.loadFromStorage();
   }
 
@@ -125,7 +129,7 @@ export class LeaderboardSystem {
   // Save to localStorage
   private saveToStorage(): void {
     try {
-      localStorage.setItem(LeaderboardSystem.STORAGE_KEY, JSON.stringify(this.entries));
+      localStorage.setItem(this.storageKey, JSON.stringify(this.entries));
     } catch (error) {
       console.error('Failed to save leaderboard:', error);
     }
@@ -134,7 +138,7 @@ export class LeaderboardSystem {
   // Load from localStorage
   private loadFromStorage(): void {
     try {
-      const stored = localStorage.getItem(LeaderboardSystem.STORAGE_KEY);
+      const stored = localStorage.getItem(this.storageKey);
       if (stored) {
         this.entries = JSON.parse(stored);
         this.sortEntries();

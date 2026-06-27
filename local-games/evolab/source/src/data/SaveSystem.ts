@@ -1,6 +1,7 @@
 import Dexie, { type Table } from 'dexie';
 import { Genome } from '../genetics/Genome';
 import { logger } from '../utils/Logger';
+import { resolveArcadeAccountScope, type ArcadeAccountScope } from './ArcadeAccountScope';
 
 export interface SavedSimulation {
   id?: number;
@@ -58,8 +59,8 @@ class EvoLabDatabase extends Dexie {
   settings!: Table<{ id: number; data: GameSettings }>;
   achievements!: Table<{ id: number; data: string }>;
 
-  constructor() {
-    super('EvoLabDB');
+  constructor(databaseName: string) {
+    super(databaseName);
     this.version(1).stores({
       simulations: '++id, name, timestamp, generation',
       creatures: '++id, name, timestamp',
@@ -89,9 +90,15 @@ function createCausedError(message: string, cause: unknown): Error {
 export class SaveSystem {
   private db: EvoLabDatabase;
   private autoSaveTimer: number | null = null;
+  private accountScope: ArcadeAccountScope;
 
   constructor() {
-    this.db = new EvoLabDatabase();
+    this.accountScope = resolveArcadeAccountScope();
+    this.db = new EvoLabDatabase(this.accountScope.databaseName);
+  }
+
+  getSaveScope(): ArcadeAccountScope {
+    return { ...this.accountScope };
   }
 
   async saveSimulation(

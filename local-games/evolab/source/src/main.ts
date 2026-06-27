@@ -5,7 +5,10 @@ import { GameLoop } from './core/GameLoop';
 function isKnownPixiShaderLogError(message: unknown, error?: unknown): boolean {
   const text = String(message ?? '');
   const stack = error instanceof Error ? error.stack ?? '' : '';
-  return text.includes("Cannot read properties of null (reading 'split')") &&
+  const isKnownNullPropertyError =
+    text.includes("Cannot read properties of null (reading 'split')") ||
+    text.includes("Cannot read properties of null (reading 'set')");
+  return isKnownNullPropertyError &&
     stack.includes('vendor-graphics');
 }
 

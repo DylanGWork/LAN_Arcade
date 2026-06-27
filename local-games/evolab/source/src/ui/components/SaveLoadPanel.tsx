@@ -18,6 +18,7 @@ export const SaveLoadPanel: React.FC<SaveLoadPanelProps> = ({
   const [tab, setTab] = useState<'simulations' | 'creatures'>('simulations');
   const [simulations, setSimulations] = useState<SavedSimulation[]>([]);
   const [creatures, setCreatures] = useState<SavedCreature[]>([]);
+  const [saveScope] = useState(() => saveSystem.getSaveScope());
 
   // Handle ESC key to close
   useEffect(() => {
@@ -144,6 +145,23 @@ export const SaveLoadPanel: React.FC<SaveLoadPanelProps> = ({
           onClick={e => e.stopPropagation()}
         >
           <h2 id="saveload-title" style={{ margin: '0 0 20px 0', color: '#fff', fontSize: '24px' }}>Load Save</h2>
+
+        <div
+          aria-live="polite"
+          style={{
+            margin: '0 0 16px 0',
+            padding: '10px 12px',
+            background: saveScope.mode === 'account' ? 'rgba(74, 222, 128, 0.16)' : 'rgba(250, 204, 21, 0.14)',
+            border: `1px solid ${saveScope.mode === 'account' ? '#4ade80' : '#facc15'}`,
+            borderRadius: '6px',
+            color: '#fff',
+            fontSize: '13px',
+          }}
+        >
+          {saveScope.mode === 'account'
+            ? `Saving as ${saveScope.label}. Other accounts use separate EvoLab saves.`
+            : 'Guest saves stay in this browser. Sign in before playing to keep EvoLab saves separate.'}
+        </div>
 
         {/* Tabs */}
         <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
