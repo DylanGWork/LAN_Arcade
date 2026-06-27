@@ -953,6 +953,43 @@ write_public_index() {
       font-size: 14px;
     }
     .side-link:hover { border-color: var(--green); }
+    .account-panel {
+      display: grid;
+      gap: 8px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #101617;
+      padding: 10px;
+    }
+    .account-name { font-weight: 850; color: var(--text); }
+    .account-note { color: var(--muted); font-size: 12px; line-height: 1.35; }
+    .account-actions { display: grid; gap: 6px; }
+    .account-row { display: grid; gap: 6px; }
+    .account-row input {
+      width: 100%;
+      min-height: 34px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #0b0f10;
+      color: var(--text);
+      padding: 7px 8px;
+      font-size: 13px;
+    }
+    .account-button {
+      width: 100%;
+      min-height: 34px;
+      border: 1px solid rgba(88,214,141,.42);
+      border-radius: 6px;
+      background: var(--green-soft);
+      color: #dfffea;
+      font-weight: 850;
+      cursor: pointer;
+    }
+    .account-button.secondary { border-color: var(--line); background: #151c20; color: var(--text); }
+    .account-button:disabled { opacity: .55; cursor: wait; }
+    .account-panel details { border-top: 1px solid var(--line); padding-top: 7px; }
+    .account-panel summary { cursor: pointer; color: var(--text); font-weight: 800; font-size: 13px; }
+    .account-error { color: #ffd1d3; font-size: 12px; line-height: 1.35; }
     .main {
       min-width: 0;
       padding: 18px 22px 36px;
@@ -1144,6 +1181,10 @@ write_public_index() {
         <span>Offline LAN game library</span>
       </div>
       <section class="side-section">
+        <h2 class="side-title">Player</h2>
+        <div id="accountPanel" class="account-panel" aria-live="polite"></div>
+      </section>
+      <section class="side-section">
         <h2 class="side-title">Play Modes</h2>
         <div id="profileList" class="side-list"></div>
       </section>
@@ -1184,7 +1225,7 @@ write_public_index() {
       </header>
       <div id="status" class="status-row" aria-live="polite"></div>
       <section class="shelf" id="recentShelf" hidden>
-        <div class="shelf-head"><h3>Recently played</h3><span class="shelf-note">Saved on this browser</span></div>
+        <div class="shelf-head"><h3>Recently played</h3><span id="recentShelfNote" class="shelf-note">Saved on this browser</span></div>
         <div id="recentGrid" class="featured-grid"></div>
       </section>
       <p class="catalog-note">Search includes games inside the Game Boy and Classic PC shelves when you type a title. The home screen stays focused on launcher pages, shelves, browser games, and LAN services.</p>
@@ -1239,12 +1280,15 @@ write_public_index() {
         { id: "game-boy-wave-1", label: "Game Boy Wave 1", type: "rom", manifest: "../private-rom-wave-1/manifest.json", basePath: "../private-rom-wave-1/" },
         { id: "board-games-wave-1", label: "Board Games Wave 1", type: "board", manifest: "../board-games-wave-1/manifest.json", basePath: "../board-games-wave-1/" }
       ];
-      var recentStorageKey = "lanArcadeRecentlyPlayed.v1";
+      var recentStorageBaseKey = "lanArcadeRecentlyPlayed.v1";
+      var accountStorageKey = "lanArcadeAccount.v1";
+      var accountApiBase = window.location.origin + "/arcade-api/";
       var featuredIds = ["pillage-first-lan", "travianz-lan", "unciv-lan", "mindustry-lan", "evolab", "gene-garden", "zero-ad-lan", "wesnoth-lan", "openttd-lan", "life-engine", "apotris-gba"];
       var state = {
         catalog: { games: [], categories: [] },
         filters: { disabled_categories: [], disabled_games: [] },
         deepGames: [],
+        account: { mode: "guest", token: "", account: null, player: null, message: "Guest mode" },
         profile: "all",
         category: "",
         query: "",
@@ -1288,9 +1332,12 @@ write_public_index() {
           system: String(game.system || "")
         };
       }
+      function currentRecentStorageKey() {
+        return state.account && state.account.account ? recentStorageBaseKey + "." + state.account.account.id : recentStorageBaseKey;
+      }
       function loadRecentGames() {
         try {
-          var data = JSON.parse(localStorage.getItem(recentStorageKey) || "[]");
+          var data = JSON.parse(localStorage.getItem(currentRecentStorageKey()) || "[]");
           return Array.isArray(data) ? data.filter(function (game) { return game && game.id && game.path; }) : [];
         } catch (e) { return []; }
       }
@@ -1299,8 +1346,106 @@ write_public_index() {
           var item = compactGameForStorage(game);
           var existing = loadRecentGames().filter(function (old) { return old.id !== item.id; });
           existing.unshift(item);
-          localStorage.setItem(recentStorageKey, JSON.stringify(existing.slice(0, 12)));
+          localStorage.setItem(currentRecentStorageKey(), JSON.stringify(existing.slice(0, 12)));
         } catch (e) {}
+      }
+      function loadStoredAccount() {
+        try {
+          var saved = JSON.parse(localStorage.getItem(accountStorageKey) || "null");
+          return saved && saved.token ? saved : null;
+        } catch (e) { return null; }
+      }
+      function saveStoredAccount(payload) {
+        try { localStorage.setItem(accountStorageKey, JSON.stringify(payload)); } catch (e) {}
+      }
+      function clearStoredAccount() {
+        try { localStorage.removeItem(accountStorageKey); } catch (e) {}
+      }
+      function accountRequest(path, options) {
+        var requestOptions = options || {};
+        requestOptions.headers = Object.assign({ "content-type": "application/json" }, requestOptions.headers || {});
+        return fetch(accountApiBase + String(path || "").replace(/^\//, ""), requestOptions).then(function (response) {
+          return response.text().then(function (raw) {
+            var body = raw ? JSON.parse(raw) : {};
+            if (!response.ok) throw new Error(body.error || ("HTTP " + response.status));
+            return body;
+          });
+        });
+      }
+      function setAccountState(next) {
+        state.account = Object.assign({ mode: "guest", token: "", account: null, player: null, message: "Guest mode" }, next || {});
+        renderAccountPanel();
+        renderRecent();
+      }
+      function validateStoredAccount() {
+        var saved = loadStoredAccount();
+        if (!saved) { renderAccountPanel(); return Promise.resolve(); }
+        setAccountState({ mode: "checking", token: saved.token, account: saved.account || null, player: saved.player || null, message: "Checking account..." });
+        return accountRequest("auth/me", { headers: { "x-arcade-account-session": saved.token } }).then(function (body) {
+          setAccountState({ mode: "signed-in", token: saved.token, account: body.account, player: body.player || null, message: "Signed in" });
+          saveStoredAccount({ token: saved.token, account: body.account, player: body.player || null });
+        }).catch(function () {
+          clearStoredAccount();
+          setAccountState({ mode: "guest", message: "Guest mode" });
+        });
+      }
+      function accountInput(panel, id, placeholder, type) {
+        var input = document.createElement("input");
+        input.id = id;
+        input.placeholder = placeholder;
+        input.type = type || "text";
+        input.autocomplete = type === "password" ? "current-password" : "username";
+        panel.appendChild(input);
+        return input;
+      }
+      function accountButton(label, className, onClick) {
+        var button = document.createElement("button");
+        button.type = "button";
+        button.className = "account-button" + (className ? " " + className : "");
+        button.textContent = label;
+        button.addEventListener("click", onClick);
+        return button;
+      }
+      function renderAccountPanel(errorMessage) {
+        var panel = document.getElementById("accountPanel");
+        if (!panel) return;
+        clear(panel);
+        var current = state.account || { mode: "guest" };
+        if (current.account) {
+          var name = document.createElement("div"); name.className = "account-name"; name.textContent = current.account.displayName || current.account.username; panel.appendChild(name);
+          var email = document.createElement("div"); email.className = "account-note"; email.textContent = current.account.localEmail || "Local account"; panel.appendChild(email);
+          var note = document.createElement("div"); note.className = "account-note"; note.textContent = "Recent games are kept separate for this account on this browser."; panel.appendChild(note);
+          panel.appendChild(accountButton("Switch to guest", "secondary", function () { clearStoredAccount(); setAccountState({ mode: "guest", message: "Guest mode" }); }));
+          return;
+        }
+        var title = document.createElement("div"); title.className = "account-name"; title.textContent = current.mode === "checking" ? "Checking account..." : "Guest mode"; panel.appendChild(title);
+        var msg = document.createElement("div"); msg.className = "account-note"; msg.textContent = "Play without setup, or sign in for separate local activity and future saves."; panel.appendChild(msg);
+        if (errorMessage) { var error = document.createElement("div"); error.className = "account-error"; error.textContent = errorMessage; panel.appendChild(error); }
+        var signIn = document.createElement("details");
+        var signInSummary = document.createElement("summary"); signInSummary.textContent = "Sign in"; signIn.appendChild(signInSummary);
+        var signInForm = document.createElement("div"); signInForm.className = "account-row"; signIn.appendChild(signInForm);
+        var loginUser = accountInput(signInForm, "accountLoginUsername", "Username", "text");
+        var loginPassword = accountInput(signInForm, "accountLoginPassword", "Password", "password");
+        signInForm.appendChild(accountButton("Sign in", "", function () {
+          accountRequest("auth/login", { method: "POST", body: JSON.stringify({ username: loginUser.value, password: loginPassword.value }) }).then(function (body) {
+            saveStoredAccount({ token: body.token, account: body.account, player: body.player || null });
+            setAccountState({ mode: "signed-in", token: body.token, account: body.account, player: body.player || null, message: "Signed in" });
+          }).catch(function (error) { renderAccountPanel(error.message || "Sign in failed"); });
+        }));
+        panel.appendChild(signIn);
+        var create = document.createElement("details");
+        var createSummary = document.createElement("summary"); createSummary.textContent = "Create account"; create.appendChild(createSummary);
+        var createForm = document.createElement("div"); createForm.className = "account-row"; create.appendChild(createForm);
+        var createUser = accountInput(createForm, "accountCreateUsername", "Username", "text");
+        var createName = accountInput(createForm, "accountCreateDisplay", "Display name", "text");
+        var createPassword = accountInput(createForm, "accountCreatePassword", "Password", "password");
+        createForm.appendChild(accountButton("Create", "", function () {
+          accountRequest("accounts", { method: "POST", body: JSON.stringify({ username: createUser.value, displayName: createName.value || createUser.value, password: createPassword.value }) }).then(function (body) {
+            saveStoredAccount({ token: body.token, account: body.account, player: body.player || null });
+            setAccountState({ mode: "signed-in", token: body.token, account: body.account, player: body.player || null, message: "Signed in" });
+          }).catch(function (error) { renderAccountPanel(error.message || "Account creation failed"); });
+        }));
+        panel.appendChild(create);
       }
       function nestedPath(source, game) {
         var id = encodeURIComponent(String(game.id || ""));
@@ -1625,6 +1770,8 @@ write_public_index() {
         var grid = document.getElementById("recentGrid");
         if (!shelf || !grid) return;
         var recent = loadRecentGames().slice(0, 3);
+        var note = document.getElementById("recentShelfNote");
+        if (note) note.textContent = state.account && state.account.account ? "Saved for " + (state.account.account.displayName || state.account.account.username) + " on this browser" : "Saved on this browser";
         clear(grid);
         recent.forEach(function (game) { grid.appendChild(makeCard(game, true)); });
         shelf.hidden = recent.length === 0 || String(state.query || "").trim() || state.category;
@@ -1723,6 +1870,7 @@ write_public_index() {
         var allEnabled = allGames.filter(gameEnabled);
         var profilePool = allEnabled.filter(function (game) { return matchesProfile(game, state.profile); });
         var visible = sortGames(filteredBaseGames());
+        renderAccountPanel();
         renderRecent();
         renderProfiles();
         renderShelves();
@@ -1753,6 +1901,7 @@ write_public_index() {
           return games.map(function (game) { return normalizeNestedGame(entry.source, game); }).filter(Boolean);
         });
         render();
+        validateStoredAccount().then(render);
       });
       document.getElementById("searchInput").addEventListener("input", function (event) { state.query = String(event.target.value || ""); render(); });
       document.getElementById("genreSearch").addEventListener("input", function (event) { state.genreQuery = String(event.target.value || ""); render(); });
