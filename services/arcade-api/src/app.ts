@@ -3,7 +3,7 @@ import { z } from 'zod';
 import type { AdminFilters, ScoreSubmission } from '@lan-arcade/shared';
 import { buildCatalog, currentChallenge, readAdminFilters, writeAdminFilters } from './catalog.js';
 import { loadConfig, type ApiConfig } from './config.js';
-import { openArcadeDb, playerFromRecord, type ArcadeDb } from './db.js';
+import { accountFromRecord, openArcadeDb, playerFromRecord, type ArcadeDb } from './db.js';
 
 const createPlayerSchema = z.object({
   displayName: z.string().trim().min(1).max(32),
@@ -14,6 +14,21 @@ const createSessionSchema = z.object({
   playerId: z.string().trim().optional(),
   displayName: z.string().trim().optional(),
   pin: z.string().trim().optional()
+});
+
+const accountRoleSchema = z.enum(['admin', 'adult', 'child', 'guest', 'service']);
+
+const createAccountSchema = z.object({
+  username: z.string().trim().min(2).max(32).regex(/^[A-Za-z0-9][A-Za-z0-9._-]*$/),
+  password: z.string().min(8).max(256),
+  displayName: z.string().trim().min(1).max(48).optional(),
+  role: accountRoleSchema.default('adult'),
+  parentAccountId: z.string().trim().min(1).nullable().optional()
+});
+
+const loginSchema = z.object({
+  username: z.string().trim().min(1).max(64),
+  password: z.string().min(1).max(256)
 });
 
 const scoreSchema = z.object({
@@ -84,15 +99,74 @@ async function handleRequest(
   if (method === 'GET' && pathname === '/server-info') {
     sendJson(response, 200, {
       name: config.arcadeName,
-      apiVersion: '0.1.0',
+      apiVersion: '0.2.0',
       generatedAt: new Date().toISOString(),
-      capabilities: ['catalog', 'profiles', 'scores', 'leaderboards', 'daily-challenges']
+      capabilities: ['catalog', 'profiles', 'accounts', 'account-sessions', 'local-email-addresses', 'scores', 'leaderboards', 'daily-challenges']
     });
     return;
   }
 
   if (method === 'GET' && pathname === '/catalog') {
     sendJson(response, 200, await buildCatalog(config));
+    return;
+  }
+
+  if (method === 'GET' && pathname === '/accounts') {
+    sendJson(response, 200, { accounts: db.listAccounts() });
+    return;
+  }
+
+  if (method === 'POST' && pathname === '/accounts') {
+    const parsed = createAccountSchema.safeParse(await readJson(request));
+    if (!parsed.success) return sendJson(response, 400, { error: 'Invalid account payload', details: parsed.error.flatten() });
+    try {
+      const created = db.createAccount(parsed.data);
+      const accountRecord = db.findAccountById(created.account.id);
+      if (!accountRecord) return sendJson(response, 500, { error: 'Account was created but could not be loaded' });
+      const token = db.createAccountSession(accountRecord, parsed.data.password);
+      return sendJson(response, 201, {
+        token,
+        account: created.account,
+        player: created.player,
+        email: {
+          localAddress: created.account.localEmail,
+          mailboxProvisioning: 'pending-mailu-automation'
+        }
+      });
+    } catch (error) {
+      return sendJson(response, 409, { error: error instanceof Error ? error.message : 'Could not create account' });
+    }
+  }
+
+  if (method === 'POST' && pathname === '/auth/login') {
+    const parsed = loginSchema.safeParse(await readJson(request));
+    if (!parsed.success) return sendJson(response, 400, { error: 'Invalid login payload', details: parsed.error.flatten() });
+    const account = db.findAccountByUsername(parsed.data.username);
+    if (!account) return sendJson(response, 401, { error: 'Invalid username or password' });
+    try {
+      const token = db.createAccountSession(account, parsed.data.password);
+      const refreshed = db.findAccountById(account.id) || account;
+      const player = db.findPlayerByAccountId(account.id);
+      return sendJson(response, 200, {
+        token,
+        account: accountFromRecord(refreshed),
+        player: player ? playerFromRecord(player) : null
+      });
+    } catch {
+      return sendJson(response, 401, { error: 'Invalid username or password' });
+    }
+  }
+
+  if (method === 'GET' && pathname === '/auth/me') {
+    const session = readAccountSession(request, db);
+    if (!session) return sendJson(response, 401, { error: 'Missing or invalid account session' });
+    const account = db.findAccountById(session.account_id);
+    if (!account) return sendJson(response, 401, { error: 'Account not found' });
+    const player = db.findPlayerByAccountId(account.id);
+    sendJson(response, 200, {
+      account: accountFromRecord(account),
+      player: player ? playerFromRecord(player) : null
+    });
     return;
   }
 
@@ -177,10 +251,16 @@ async function handleRequest(
   sendJson(response, 404, { error: 'Not found' });
 }
 
+function readAccountSession(request: IncomingMessage, db: ArcadeDb) {
+  const sessionToken = request.headers['x-arcade-account-session'];
+  if (typeof sessionToken !== 'string') return undefined;
+  return db.getAccountSession(sessionToken);
+}
+
 function setCommonHeaders(response: ServerResponse): void {
   response.setHeader('access-control-allow-origin', '*');
   response.setHeader('access-control-allow-methods', 'GET,POST,PUT,OPTIONS');
-  response.setHeader('access-control-allow-headers', 'content-type,x-arcade-session');
+  response.setHeader('access-control-allow-headers', 'content-type,x-arcade-session,x-arcade-account-session');
   response.setHeader('cache-control', 'no-store');
 }
 

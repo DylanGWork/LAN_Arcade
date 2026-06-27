@@ -2,6 +2,9 @@ export type GameSource = 'lan-web' | 'app-web' | 'lan-service';
 
 export type ScoreMode = 'standard' | 'challenge' | 'practice';
 
+export type AccountRole = 'admin' | 'adult' | 'child' | 'guest' | 'service';
+export type AccountStatus = 'active' | 'pending' | 'disabled';
+
 export interface ArcadeCategory {
   id: string;
   label: string;
@@ -37,16 +40,36 @@ export interface AdminFilters {
   disabled_games: string[];
 }
 
+export interface ArcadeAccount {
+  id: string;
+  username: string;
+  displayName: string;
+  localEmail: string;
+  role: AccountRole;
+  status: AccountStatus;
+  parentAccountId: string | null;
+  createdAt: string;
+  updatedAt: string;
+  lastLoginAt: string | null;
+}
+
 export interface Player {
   id: string;
   displayName: string;
   pinProtected: boolean;
   createdAt: string;
+  accountId?: string | null;
 }
 
 export interface Session {
   token: string;
   player: Player;
+}
+
+export interface AccountSession {
+  token: string;
+  account: ArcadeAccount;
+  player: Player | null;
 }
 
 export interface CreatePlayerRequest {
@@ -58,6 +81,19 @@ export interface CreateSessionRequest {
   playerId?: string;
   displayName?: string;
   pin?: string;
+}
+
+export interface CreateAccountRequest {
+  username: string;
+  password: string;
+  displayName?: string;
+  role?: AccountRole;
+  parentAccountId?: string | null;
+}
+
+export interface LoginRequest {
+  username: string;
+  password: string;
 }
 
 export interface ScoreSubmission {

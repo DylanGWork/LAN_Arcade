@@ -64,6 +64,43 @@ test('catalog merges mirrored and app-only games', async () => {
   });
 });
 
+test('accounts create local email, linked player, and login session', async () => {
+  const fixture = tempFixture();
+  await withServer(fixture, async (baseUrl) => {
+    const created = await request<{
+      token: string;
+      account: { id: string; username: string; localEmail: string; role: string; status: string };
+      player: { id: string; accountId: string | null };
+      email: { mailboxProvisioning: string };
+    }>(baseUrl, '/accounts', {
+      method: 'POST',
+      body: JSON.stringify({ username: 'Dylan', displayName: 'Dylan', password: 'correct-horse-battery', role: 'admin' })
+    });
+
+    assert.equal(created.account.username, 'dylan');
+    assert.equal(created.account.localEmail, 'dylan@gannan.home.arpa');
+    assert.equal(created.account.role, 'admin');
+    assert.equal(created.account.status, 'active');
+    assert.equal(created.player.accountId, created.account.id);
+    assert.equal(created.email.mailboxProvisioning, 'pending-mailu-automation');
+    assert.ok(created.token.length > 20);
+
+    const current = await request<{ account: { id: string }; player: { id: string } }>(baseUrl, '/auth/me', {
+      headers: { 'x-arcade-account-session': created.token }
+    });
+    assert.equal(current.account.id, created.account.id);
+    assert.equal(current.player.id, created.player.id);
+
+    const login = await request<{ token: string; account: { id: string }; player: { id: string } }>(baseUrl, '/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ username: 'DYLAN', password: 'correct-horse-battery' })
+    });
+    assert.equal(login.account.id, created.account.id);
+    assert.equal(login.player.id, created.player.id);
+    assert.ok(login.token.length > 20);
+  });
+});
+
 test('players, sessions, scores, and leaderboards work', async () => {
   const fixture = tempFixture();
   await withServer(fixture, async (baseUrl) => {
