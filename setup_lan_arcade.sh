@@ -1233,7 +1233,7 @@ write_public_index() {
         <div class="shelf-head"><h3>Recently played</h3><span id="recentShelfNote" class="shelf-note">Saved on this browser</span></div>
         <div id="recentGrid" class="featured-grid"></div>
       </section>
-      <p class="catalog-note">Search includes games inside the Game Boy and Classic PC shelves when you type a title. The home screen stays focused on launcher pages, shelves, browser games, and LAN services.</p>
+      <p class="catalog-note">Search includes games inside the Game Boy and Classic PC shelves when you type a title. Large collections open as shelves so the home screen stays readable.</p>
       <section class="shelf" id="featuredShelf">
         <div class="shelf-head"><h3>Featured</h3><span class="shelf-note">Ready picks, collections, and high-interest LAN services</span></div>
         <div id="featuredGrid" class="featured-grid"></div>
@@ -1256,7 +1256,7 @@ write_public_index() {
         { id: "pi", label: "Camping / Pi-friendly", note: "Lightweight picks for modest devices" },
         { id: "lan", label: "LAN multiplayer", note: "Multiplayer games and hosted sessions" },
         { id: "emulation", label: "Retro shelves", note: "Game Boy, classic PC, and emulator collections" },
-        { id: "native", label: "Native / services", note: "Installers, clients, LAN services, and heavier hubs" },
+        { id: "native", label: "Installed & LAN games", note: "Games that use installers, desktop clients, or hosted LAN sessions" },
         { id: "research", label: "Needs setup", note: "Games waiting for files, fixes, or play testing" }
       ];
       var shelves = [
@@ -1269,7 +1269,7 @@ write_public_index() {
         { id: "guest-shelf", label: "Guest friendly", note: "Quick filter", action: "profile", value: "guest" },
         { id: "lan-shelf", label: "LAN multiplayer", note: "Quick filter", action: "profile", value: "lan" },
         { id: "board-games", label: "Board games", note: "Catalog filter", action: "category", value: "board-game" },
-        { id: "native-server", label: "Native / services", note: "Quick filter", action: "profile", value: "native" },
+        { id: "native-server", label: "Installed & LAN games", note: "Quick filter", action: "profile", value: "native" },
         { id: "research-shelf", label: "Needs setup", note: "Quick filter", action: "profile", value: "research" }
       ];
       var internalShelfStats = [
@@ -1277,7 +1277,7 @@ write_public_index() {
         [201, "curated Game Boy picks"],
         [200, "board games"],
         [28, "classic PC games"],
-        [15, "classic PC games ready"]
+        [15, "ready Classic PC games"]
       ];
       var deepSearchSources = [
         { id: "classic-pc", label: "Classic PC Games", type: "dos", manifest: "../private-dos-vault/manifest.json", basePath: "../private-dos-vault/" },
