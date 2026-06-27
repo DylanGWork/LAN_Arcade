@@ -187,6 +187,8 @@ MIRRORS_DIR="/var/www/html/mirrors"
 INDEX_DIR="$MIRRORS_DIR/games"
 INDEX_FILE="$INDEX_DIR/index.html"
 CATALOG_FILE="$INDEX_DIR/catalog.json"
+LAUNCHER_ADAPTERS_FILE="$INDEX_DIR/launcher-adapters.json"
+LAUNCHER_ADAPTERS_SOURCE="$SCRIPT_DIR/config/launcher-adapters.json"
 FILTERS_FILE="$INDEX_DIR/admin.filters.json"
 WIKI_DIR="$INDEX_DIR/wiki"
 WIKI_INDEX_FILE="$WIKI_DIR/index.html"
@@ -835,6 +837,13 @@ build_catalog_json() {
 
   mv "$tmp_file" "$CATALOG_FILE"
   chmod 644 "$CATALOG_FILE"
+
+  if [ -f "$LAUNCHER_ADAPTERS_SOURCE" ]; then
+    cp "$LAUNCHER_ADAPTERS_SOURCE" "$LAUNCHER_ADAPTERS_FILE"
+  else
+    printf '{ "generatedAt": "", "games": {} }\n' > "$LAUNCHER_ADAPTERS_FILE"
+  fi
+  chmod 644 "$LAUNCHER_ADAPTERS_FILE"
 }
 
 write_public_index() {
@@ -1331,6 +1340,7 @@ write_public_index() {
       var state = {
         catalog: { games: [], categories: [] },
         filters: { disabled_categories: [], disabled_games: [] },
+        launcherAudit: { games: {} },
         deepGames: [],
         serverRecentGames: [],
         serverFavoriteGames: [],
@@ -1658,28 +1668,53 @@ write_public_index() {
         if (["emulator-library", "private-gbc-vault", "private-dos-classics", "private-rom-wave-1", "board-games-wave-1", "retro-emulator-lab"].indexOf(id) >= 0) return true;
         return hasText(game, ["vault", "shelf", "collection", "wave 1", "intake"]) && (isEmulator(game) || hasCategory(game, "board-game") || hasCategory(game, "private"));
       }
-      function isServerService(game) { return hasText(game, ["lan service", "lan server", "server", "hosted service"]); }
+      function launcherInfo(game) {
+        if (!game || game.deepType) return null;
+        var id = String(game.id || "");
+        var games = state.launcherAudit && state.launcherAudit.games ? state.launcherAudit.games : {};
+        return games[id] || null;
+      }
+      function launcherAdapter(game) {
+        var info = launcherInfo(game);
+        return info ? String(info.adapter || "") : "";
+      }
+      function hasLauncherAdapter(game, adapters) {
+        var adapter = launcherAdapter(game);
+        return adapter && adapters.indexOf(adapter) >= 0;
+      }
+      function isServerService(game) {
+        if (hasLauncherAdapter(game, ["hosted-lan"])) return true;
+        return hasText(game, ["lan service", "lan server", "server", "hosted service"]);
+      }
       function isNativeOrServerGame(game) {
+        var info = launcherInfo(game);
+        if (info) return hasLauncherAdapter(game, ["hosted-lan", "desktop-client", "linux-package", "server-stream"]);
         var id = String(game.id || "").toLowerCase();
         return id.slice(-4) === "-lan" || isServerService(game) || hasText(game, ["native", "client required", "installer"]);
       }
       function isResearchEntry(game) {
+        if (hasLauncherAdapter(game, ["linux-package", "desktop-client", "research-shelf", "needs-setup"])) return true;
         if (isCollection(game)) return hasText(game, ["restore needed", "blocked", "waiting", "research", "candidate"]);
         return hasText(game, ["research", "candidate", "blocked", "waiting", "needs qa", "partial smoke", "not yet", "restore needed"]);
       }
       function isReadyNow(game) {
+        var info = launcherInfo(game);
+        if (info && typeof info.readyNow === "boolean") return info.readyNow === true;
         if (isResearchEntry(game) || hasText(game, ["restore needed", "blocked", "waiting"])) return false;
         if (isCollection(game)) return true;
         return !isNativeOrServerGame(game);
       }
       function isGuestFriendly(game) {
+        var info = launcherInfo(game);
+        if (info && info.guestReady === false) return false;
         if (!isReadyNow(game)) return false;
+        if (info && info.guestReady === true) return true;
         return hasAnyCategory(game, ["family", "casual", "mobile-friendly", "puzzle", "retro", "board-game", "age-5-plus"]);
       }
       function matchesProfile(game, profile) {
         if (profile === "ready") return isReadyNow(game);
         if (profile === "guest") return isGuestFriendly(game);
-        if (profile === "lan") return hasCategory(game, "multiplayer") || isServerService(game);
+        if (profile === "lan") return hasLauncherAdapter(game, ["hosted-lan"]) || hasCategory(game, "multiplayer") || isServerService(game);
         if (profile === "emulation") return isEmulator(game) || isCollection(game);
         if (profile === "native") return isNativeOrServerGame(game);
         if (profile === "research") return isResearchEntry(game);
@@ -1693,6 +1728,8 @@ write_public_index() {
         if (game.deepType === "dos") return "Classic PC";
         if (game.deepType === "rom") return String(game.system || "Emulator");
         if (game.deepType === "board") return "Board game";
+        var info = launcherInfo(game);
+        if (info && info.statusLabel) return String(info.statusLabel);
         if (isCollection(game)) return "Collection";
         if (isServerService(game)) return "LAN service";
         if (isNativeOrServerGame(game)) return "Native hub";
@@ -1704,6 +1741,8 @@ write_public_index() {
       function readinessLabel(game) {
         if (game.deepType === "dos") return game.path && game.path.indexOf("play.html") >= 0 ? "Ready to play" : "Open collection";
         if (game.deepType === "rom") return "Ready offline";
+        var info = launcherInfo(game);
+        if (info && info.readiness) return String(info.readiness);
         if (hasText(game, ["restore needed"])) return "Needs files";
         if (hasText(game, ["blocked", "waiting"])) return "Needs setup";
         if (isResearchEntry(game)) return "Needs setup";
@@ -1714,6 +1753,8 @@ write_public_index() {
         return "Ready offline";
       }
       function readinessTone(game) {
+        var info = launcherInfo(game);
+        if (info && typeof info.readyNow === "boolean") return info.readyNow ? "ready" : "warn";
         var label = readinessLabel(game);
         if (label === "Ready offline" || label === "Ready to play" || label === "Collection ready") return "ready";
         if (label === "Needs setup" || label === "Needs files") return "warn";
@@ -1722,6 +1763,8 @@ write_public_index() {
       function deviceLabel(game) {
         if (game.deepType === "dos") return "Browser DOSBox";
         if (game.deepType === "rom") return "Browser emulator";
+        var info = launcherInfo(game);
+        if (info && info.deviceLabel) return String(info.deviceLabel);
         if (hasCategory(game, "mobile-friendly")) return "Phone/browser";
         if (isCollection(game)) return "Shelf";
         if (isEmulator(game)) return "Emulator";
@@ -1743,6 +1786,8 @@ write_public_index() {
       function primaryActionLabel(game) {
         if (game.deepType === "dos" && game.path && game.path.indexOf("play.html") >= 0) return "Play";
         if (game.deepType === "rom") return "Play";
+        var info = launcherInfo(game);
+        if (info && info.primaryAction) return String(info.primaryAction);
         if (isResearchEntry(game)) return "View details";
         if (isCollection(game)) return "Open collection";
         if (isServerService(game)) return "Start / join";
@@ -1862,6 +1907,8 @@ write_public_index() {
         if (game.deepType === "dos") return game.path && game.path.indexOf("play.html") >= 0 ? "browser play" : "classic PC collection";
         if (game.deepType === "rom") return "browser emulator";
         if (game.deepType === "board") return "rules and table notes";
+        var info = launcherInfo(game);
+        if (info && info.launchHint) return String(info.launchHint);
         if (isCollection(game)) return "collection";
         if (isServerService(game)) return "local server";
         if (isNativeOrServerGame(game)) return "desktop install";
@@ -2078,11 +2125,13 @@ write_public_index() {
 
       Promise.all([
         fetchJson("./catalog.json", { games: [], categories: [] }),
-        fetchJson("./admin.filters.json", { disabled_categories: [], disabled_games: [] })
+        fetchJson("./admin.filters.json", { disabled_categories: [], disabled_games: [] }),
+        fetchJson("./launcher-adapters.json", { games: {} })
       ].concat(deepSearchSources.map(function (source) { return fetchJson(source.manifest, { games: [] }).then(function (manifest) { return { source: source, manifest: manifest || { games: [] } }; }); }))).then(function (results) {
         state.catalog = results[0] || { games: [], categories: [] };
         state.filters = normalizeFilters(results[1]);
-        state.deepGames = results.slice(2).flatMap(function (entry) {
+        state.launcherAudit = results[2] || { games: {} };
+        state.deepGames = results.slice(3).flatMap(function (entry) {
           var games = Array.isArray(entry.manifest.games) ? entry.manifest.games : [];
           return games.map(function (game) { return normalizeNestedGame(entry.source, game); }).filter(Boolean);
         });

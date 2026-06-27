@@ -55,6 +55,33 @@ Large collections are intentionally nested so the home screen does not become un
 
 Search should reach into these shelves and show direct nested results for known titles. If a title such as SimAnt does not appear from search, that is a search/index bug, not proof that the package is missing.
 
+
+## Launcher Adapter Audit - 2026-06-28
+
+The public library now has a generated launcher-adapter audit at:
+
+```text
+config/launcher-adapters.json
+/var/www/html/mirrors/games/launcher-adapters.json
+qa/reports/launcher-adapter-audit/final-20260628/REPORT.md
+```
+
+This separates `has files` from `a normal player can start this easily`. The latest audit of 152 top-level cards found:
+
+| Adapter | Count | Player meaning | Ready now? |
+| --- | ---: | --- | --- |
+| `browser` | 7 | Opens directly in the browser. | Yes |
+| `browser-emulator` | 11 | Opens through a browser emulator. | Yes |
+| `collection` | 5 | Opens a nested playable shelf. | Yes, at shelf level |
+| `hosted-lan` | 18 | Starts/joins a local browser or LAN service. | Yes, if the service is healthy |
+| `desktop-client` | 33 | Has desktop/client downloads but still needs a simpler launcher/install flow. | No |
+| `linux-package` | 77 | Debian/Linux package shelf only. | No |
+| `research-shelf` | 1 | Research/curation rows, not playable entries. | No |
+
+By adapter state, **41 top-level cards are low-friction ready** and **111 need launcher/setup/curation work** before they should appear in `Ready now`. This is why package-heavy games such as Drascula are labelled `Needs easy launcher` even when their Debian package files exist locally.
+
+Going forward, public pages and cards should use launcher language: `Play`, `Open collection`, `Start / join`, `Install / play`, or `Setup notes`. Do not expose raw package inventories as the primary player path.
+
 ## Current User-Facing Problems
 
 - Some pages still expose operator wording like `source-ready`, `candidate`, `package`, `manifest`, or `cache` where players need plain actions.

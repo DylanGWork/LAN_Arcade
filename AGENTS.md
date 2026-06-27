@@ -64,6 +64,7 @@ Do not stop Docker globally.
 - Large shelves such as Game Boy, Classic PC/DOS, and board-game research must remain nested to avoid flooding the home page, but search must reach into those shelves and offer direct playable results for known titles.
 - Browser DOS emulation is resource-heavy. Prefer js-dos worker/canvas mode, clean up emulator instances on page unload, and treat local DOSBox downloads as the low-power fallback.
 - Keep inventory states explicit. `Listed`, `nested`, `packaged`, `playable`, and `QA-smoked` are different states; do not tell Dylan or players that a whole wave is imported when only a shelf or research manifest exists.
+- Public launcher labels must come from the launcher-adapter audit where available. Package-only native shelves and desktop-client download hubs are not `Ready now` until they have a browser launcher, simple desktop launcher bundle, or server-streamed play path.
 
 ## Current Known Issue
 

@@ -29,6 +29,7 @@
     "qa:repair-assets": "node scripts/repair_missing_assets_from_report.mjs",
     "qa:repair-mirror-media": "python3 scripts/repair_mirror_external_media.py",
     "native:downloads:normalize": "python3 scripts/normalize_native_download_pages.py",
+    "qa:launcher-adapters": "python3 scripts/audit_launcher_adapters.py",
     "rom:vault:build": "python3 scripts/build_private_rom_vault.py",
     "rom:vault:smoke": "node scripts/playtest_private_rom_vault.mjs",
     "dos:vault:build": "python3 scripts/build_private_dos_vault.py",

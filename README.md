@@ -116,6 +116,7 @@ Recommended checks while developing:
 
 ```sh
 npm run qa:git-identity
+npm run qa:launcher-adapters
 npm run qa:library-discovery
 npm run test -w @lan-arcade/arcade-api
 npm run backup:user-data
