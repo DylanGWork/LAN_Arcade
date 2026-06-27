@@ -8,6 +8,8 @@ import type {
   ArcadeAccount,
   LeaderboardEntry,
   Player,
+  RecentGameActivity,
+  RecordGameActivityRequest,
   ScoreMode,
   ScoreSubmission
 } from '@lan-arcade/shared';
@@ -20,6 +22,8 @@ export interface ArcadeDb {
   findAccountByUsername(username: string): AccountRecord | undefined;
   createAccountSession(account: AccountRecord, password: string): string;
   getAccountSession(token: string): AccountSessionRecord | undefined;
+  recordAccountActivity(accountId: string, input: RecordGameActivityRequest): RecentGameActivity;
+  listAccountActivity(accountId: string, options?: { limit?: number }): RecentGameActivity[];
   createPlayer(displayName: string, pin?: string): Player;
   listPlayers(): Player[];
   findPlayerById(playerId: string): PlayerRecord | undefined;
@@ -86,6 +90,24 @@ interface ScoreRow {
   duration_ms: number | null;
   details_json: string;
   created_at: string;
+}
+
+interface AccountActivityRow {
+  id: string;
+  account_id: string;
+  game_id: string;
+  title: string;
+  path: string;
+  meta: string;
+  description: string;
+  tags_json: string;
+  categories_json: string;
+  preview: string;
+  system: string;
+  deep_type: string;
+  play_count: number;
+  first_played_at: string;
+  last_played_at: string;
 }
 
 export function openArcadeDb(databasePath: string): ArcadeDb {
@@ -191,6 +213,71 @@ export function openArcadeDb(databasePath: string): ArcadeDb {
       return connection.prepare(`
         SELECT token, account_id, created_at FROM account_sessions WHERE token = ?
       `).get(token) as AccountSessionRecord | undefined;
+    },
+    recordAccountActivity(accountId, input) {
+      const now = new Date().toISOString();
+      const id = crypto.randomUUID();
+      const gameId = input.id.trim();
+      const title = input.title.trim() || gameId;
+      const gamePath = input.path.trim();
+      const meta = (input.meta || '').trim();
+      const description = (input.description || '').trim();
+      const tagsJson = JSON.stringify(safeStringArray(input.tags));
+      const categoriesJson = JSON.stringify(safeStringArray(input.categories));
+      const preview = (input.preview || '').trim();
+      const system = (input.system || '').trim();
+      const deepType = (input.deepType || '').trim();
+      connection.prepare(`
+        INSERT INTO account_activity (
+          id, account_id, game_id, title, path, meta, description, tags_json, categories_json,
+          preview, system, deep_type, play_count, first_played_at, last_played_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)
+        ON CONFLICT(account_id, game_id, path) DO UPDATE SET
+          title = excluded.title,
+          meta = excluded.meta,
+          description = excluded.description,
+          tags_json = excluded.tags_json,
+          categories_json = excluded.categories_json,
+          preview = excluded.preview,
+          system = excluded.system,
+          deep_type = excluded.deep_type,
+          play_count = account_activity.play_count + 1,
+          last_played_at = excluded.last_played_at
+      `).run(
+        id,
+        accountId,
+        gameId,
+        title,
+        gamePath,
+        meta,
+        description,
+        tagsJson,
+        categoriesJson,
+        preview,
+        system,
+        deepType,
+        now,
+        now
+      );
+      const row = connection.prepare(`
+        SELECT id, account_id, game_id, title, path, meta, description, tags_json, categories_json,
+               preview, system, deep_type, play_count, first_played_at, last_played_at
+        FROM account_activity
+        WHERE account_id = ? AND game_id = ? AND path = ?
+      `).get(accountId, gameId, gamePath) as AccountActivityRow | undefined;
+      if (!row) throw new Error('Activity was recorded but could not be loaded');
+      return toRecentGameActivity(row);
+    },
+    listAccountActivity(accountId, options = {}) {
+      const limit = Math.min(Math.max(options.limit || 12, 1), 100);
+      return connection.prepare(`
+        SELECT id, account_id, game_id, title, path, meta, description, tags_json, categories_json,
+               preview, system, deep_type, play_count, first_played_at, last_played_at
+        FROM account_activity
+        WHERE account_id = ?
+        ORDER BY last_played_at DESC
+        LIMIT ?
+      `).all(accountId, limit).map((row) => toRecentGameActivity(row as AccountActivityRow));
     },
     createPlayer(displayName, pin) {
       const id = crypto.randomUUID();
@@ -363,12 +450,33 @@ function migrate(connection: Database.Database): void {
       created_at TEXT NOT NULL
     );
 
+    CREATE TABLE IF NOT EXISTS account_activity (
+      id TEXT PRIMARY KEY,
+      account_id TEXT NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+      game_id TEXT NOT NULL,
+      title TEXT NOT NULL,
+      path TEXT NOT NULL,
+      meta TEXT NOT NULL,
+      description TEXT NOT NULL,
+      tags_json TEXT NOT NULL,
+      categories_json TEXT NOT NULL,
+      preview TEXT NOT NULL,
+      system TEXT NOT NULL,
+      deep_type TEXT NOT NULL,
+      play_count INTEGER NOT NULL,
+      first_played_at TEXT NOT NULL,
+      last_played_at TEXT NOT NULL,
+      UNIQUE(account_id, game_id, path)
+    );
+
     CREATE INDEX IF NOT EXISTS idx_scores_game_seed_score
       ON scores(game_id, seed, score DESC);
     CREATE INDEX IF NOT EXISTS idx_players_account_id
       ON players(account_id);
     CREATE INDEX IF NOT EXISTS idx_account_sessions_account_id
       ON account_sessions(account_id);
+    CREATE INDEX IF NOT EXISTS idx_account_activity_account_recent
+      ON account_activity(account_id, last_played_at DESC);
   `);
   safeAlter(connection, 'ALTER TABLE players ADD COLUMN account_id TEXT REFERENCES accounts(id) ON DELETE SET NULL');
 }
@@ -428,6 +536,26 @@ function toLeaderboardEntry(row: unknown): LeaderboardEntry {
   };
 }
 
+function toRecentGameActivity(row: AccountActivityRow): RecentGameActivity {
+  return {
+    id: row.id,
+    accountId: row.account_id,
+    gameId: row.game_id,
+    title: row.title,
+    path: row.path,
+    meta: row.meta,
+    description: row.description,
+    tags: safeJsonArray(row.tags_json),
+    categories: safeJsonArray(row.categories_json),
+    preview: row.preview,
+    system: row.system,
+    deepType: row.deep_type,
+    playCount: row.play_count,
+    firstPlayedAt: row.first_played_at,
+    lastPlayedAt: row.last_played_at
+  };
+}
+
 function safeJsonObject(value: string): Record<string, unknown> {
   try {
     const parsed = JSON.parse(value);
@@ -435,6 +563,20 @@ function safeJsonObject(value: string): Record<string, unknown> {
   } catch {
     return {};
   }
+}
+
+function safeJsonArray(value: string): string[] {
+  try {
+    const parsed = JSON.parse(value);
+    return safeStringArray(parsed);
+  } catch {
+    return [];
+  }
+}
+
+function safeStringArray(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value.map((item) => String(item).trim()).filter(Boolean).slice(0, 20);
 }
 
 function hashPin(pin: string): string {

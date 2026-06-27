@@ -31,6 +31,19 @@ const loginSchema = z.object({
   password: z.string().min(1).max(256)
 });
 
+const accountActivitySchema = z.object({
+  id: z.string().trim().min(1).max(180),
+  title: z.string().trim().min(1).max(180),
+  path: z.string().trim().min(1).max(600),
+  meta: z.string().trim().max(240).default(''),
+  description: z.string().trim().max(800).default(''),
+  tags: z.array(z.string().trim().max(80)).max(20).default([]),
+  categories: z.array(z.string().trim().max(80)).max(20).default([]),
+  preview: z.string().trim().max(600).default(''),
+  system: z.string().trim().max(120).default(''),
+  deepType: z.string().trim().max(60).default('')
+});
+
 const scoreSchema = z.object({
   gameId: z.string().trim().min(1),
   playerId: z.string().trim().min(1),
@@ -101,7 +114,7 @@ async function handleRequest(
       name: config.arcadeName,
       apiVersion: '0.2.0',
       generatedAt: new Date().toISOString(),
-      capabilities: ['catalog', 'profiles', 'accounts', 'account-sessions', 'local-email-addresses', 'scores', 'leaderboards', 'daily-challenges']
+      capabilities: ['catalog', 'profiles', 'accounts', 'account-sessions', 'account-activity', 'local-email-addresses', 'scores', 'leaderboards', 'daily-challenges']
     });
     return;
   }
@@ -167,6 +180,23 @@ async function handleRequest(
       account: accountFromRecord(account),
       player: player ? playerFromRecord(player) : null
     });
+    return;
+  }
+
+  if (method === 'GET' && pathname === '/account/activity/recent') {
+    const session = readAccountSession(request, db);
+    if (!session) return sendJson(response, 401, { error: 'Missing or invalid account session' });
+    const limit = url.searchParams.get('limit') ? Number.parseInt(url.searchParams.get('limit') || '12', 10) : 12;
+    sendJson(response, 200, { activity: db.listAccountActivity(session.account_id, { limit }) });
+    return;
+  }
+
+  if (method === 'POST' && pathname === '/account/activity') {
+    const session = readAccountSession(request, db);
+    if (!session) return sendJson(response, 401, { error: 'Missing or invalid account session' });
+    const parsed = accountActivitySchema.safeParse(await readJson(request));
+    if (!parsed.success) return sendJson(response, 400, { error: 'Invalid activity payload', details: parsed.error.flatten() });
+    sendJson(response, 201, { activity: db.recordAccountActivity(session.account_id, parsed.data) });
     return;
   }
 

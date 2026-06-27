@@ -101,6 +101,52 @@ test('accounts create local email, linked player, and login session', async () =
   });
 });
 
+test('signed-in accounts can record and list recent game activity', async () => {
+  const fixture = tempFixture();
+  await withServer(fixture, async (baseUrl) => {
+    const created = await request<{ token: string; account: { id: string } }>(baseUrl, '/accounts', {
+      method: 'POST',
+      body: JSON.stringify({ username: 'Casey', displayName: 'Casey', password: 'correct-horse-battery' })
+    });
+
+    await request(baseUrl, '/account/activity', {
+      method: 'POST',
+      headers: { 'x-arcade-account-session': created.token },
+      body: JSON.stringify({
+        id: 'simant-ma',
+        title: 'SimAnt',
+        path: '../private-dos-vault/play.html?id=simant-ma',
+        meta: 'Classic PC',
+        tags: ['DOS', 'Simulation'],
+        categories: ['retro', 'dos']
+      })
+    });
+
+    const second = await request<{ activity: { gameId: string; playCount: number; tags: string[] } }>(baseUrl, '/account/activity', {
+      method: 'POST',
+      headers: { 'x-arcade-account-session': created.token },
+      body: JSON.stringify({
+        id: 'simant-ma',
+        title: 'SimAnt',
+        path: '../private-dos-vault/play.html?id=simant-ma',
+        meta: 'Classic PC',
+        tags: ['DOS', 'Sim'],
+        categories: ['retro', 'dos']
+      })
+    });
+    assert.equal(second.activity.gameId, 'simant-ma');
+    assert.equal(second.activity.playCount, 2);
+    assert.deepEqual(second.activity.tags, ['DOS', 'Sim']);
+
+    const recent = await request<{ activity: Array<{ gameId: string; playCount: number }> }>(baseUrl, '/account/activity/recent', {
+      headers: { 'x-arcade-account-session': created.token }
+    });
+    assert.equal(recent.activity.length, 1);
+    assert.equal(recent.activity[0].gameId, 'simant-ma');
+    assert.equal(recent.activity[0].playCount, 2);
+  });
+});
+
 test('players, sessions, scores, and leaderboards work', async () => {
   const fixture = tempFixture();
   await withServer(fixture, async (baseUrl) => {

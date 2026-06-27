@@ -1288,6 +1288,7 @@ write_public_index() {
         catalog: { games: [], categories: [] },
         filters: { disabled_categories: [], disabled_games: [] },
         deepGames: [],
+        serverRecentGames: [],
         account: { mode: "guest", token: "", account: null, player: null, message: "Guest mode" },
         profile: "all",
         category: "",
@@ -1347,6 +1348,22 @@ write_public_index() {
           var existing = loadRecentGames().filter(function (old) { return old.id !== item.id; });
           existing.unshift(item);
           localStorage.setItem(currentRecentStorageKey(), JSON.stringify(existing.slice(0, 12)));
+          if (state.account && state.account.account && state.account.token) {
+            state.serverRecentGames = [item].concat(state.serverRecentGames.filter(function (old) { return old.id !== item.id || old.path !== item.path; })).slice(0, 12);
+            renderRecent();
+            accountRequest("account/activity", {
+              method: "POST",
+              keepalive: true,
+              headers: { "x-arcade-account-session": state.account.token },
+              body: JSON.stringify(item)
+            }).then(function (body) {
+              if (body && body.activity) {
+                var synced = recentGameFromActivity(body.activity);
+                state.serverRecentGames = [synced].concat(state.serverRecentGames.filter(function (old) { return old.id !== synced.id || old.path !== synced.path; })).slice(0, 12);
+                renderRecent();
+              }
+            }).catch(function () {});
+          }
         } catch (e) {}
       }
       function loadStoredAccount() {
@@ -1361,6 +1378,21 @@ write_public_index() {
       function clearStoredAccount() {
         try { localStorage.removeItem(accountStorageKey); } catch (e) {}
       }
+      function recentGameFromActivity(activity) {
+        return {
+          id: String(activity.gameId || activity.id || ""),
+          title: String(activity.title || activity.gameId || "Game"),
+          icon: String(activity.title || activity.gameId || "Play").replace(/[^A-Za-z0-9]/g, "").slice(0, 4) || "Play",
+          meta: String(activity.meta || "Offline game"),
+          description: String(activity.description || "Offline-friendly game mirrored on this LAN."),
+          tags: toStringArray(activity.tags).slice(0, 6),
+          categories: toStringArray(activity.categories).slice(0, 8),
+          path: String(activity.path || ""),
+          preview: String(activity.preview || ""),
+          deepType: String(activity.deepType || ""),
+          system: String(activity.system || "")
+        };
+      }
       function accountRequest(path, options) {
         var requestOptions = options || {};
         requestOptions.headers = Object.assign({ "content-type": "application/json" }, requestOptions.headers || {});
@@ -1374,8 +1406,18 @@ write_public_index() {
       }
       function setAccountState(next) {
         state.account = Object.assign({ mode: "guest", token: "", account: null, player: null, message: "Guest mode" }, next || {});
+        if (!state.account.account) state.serverRecentGames = [];
         renderAccountPanel();
         renderRecent();
+        if (state.account.account && state.account.token) loadServerRecent();
+      }
+      function loadServerRecent() {
+        if (!state.account || !state.account.token || !state.account.account) return Promise.resolve();
+        return accountRequest("account/activity/recent?limit=12", { headers: { "x-arcade-account-session": state.account.token } }).then(function (body) {
+          var rows = Array.isArray(body.activity) ? body.activity : [];
+          state.serverRecentGames = rows.map(recentGameFromActivity).filter(function (game) { return game.id && game.path; });
+          renderRecent();
+        }).catch(function () {});
       }
       function validateStoredAccount() {
         var saved = loadStoredAccount();
@@ -1769,9 +1811,10 @@ write_public_index() {
         var shelf = document.getElementById("recentShelf");
         var grid = document.getElementById("recentGrid");
         if (!shelf || !grid) return;
-        var recent = loadRecentGames().slice(0, 3);
+        var recentSource = state.account && state.account.account && state.serverRecentGames.length ? state.serverRecentGames : loadRecentGames();
+        var recent = recentSource.slice(0, 3);
         var note = document.getElementById("recentShelfNote");
-        if (note) note.textContent = state.account && state.account.account ? "Saved for " + (state.account.account.displayName || state.account.account.username) + " on this browser" : "Saved on this browser";
+        if (note) note.textContent = state.account && state.account.account ? "Synced for " + (state.account.account.displayName || state.account.account.username) + " on this arcade" : "Saved on this browser";
         clear(grid);
         recent.forEach(function (game) { grid.appendChild(makeCard(game, true)); });
         shelf.hidden = recent.length === 0 || String(state.query || "").trim() || state.category;

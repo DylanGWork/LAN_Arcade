@@ -72,6 +72,37 @@ export interface AccountSession {
   player: Player | null;
 }
 
+export interface RecentGameActivity {
+  id: string;
+  accountId: string;
+  gameId: string;
+  title: string;
+  path: string;
+  meta: string;
+  description: string;
+  tags: string[];
+  categories: string[];
+  preview: string;
+  system: string;
+  deepType: string;
+  playCount: number;
+  firstPlayedAt: string;
+  lastPlayedAt: string;
+}
+
+export interface RecordGameActivityRequest {
+  id: string;
+  title: string;
+  path: string;
+  meta?: string;
+  description?: string;
+  tags?: string[];
+  categories?: string[];
+  preview?: string;
+  system?: string;
+  deepType?: string;
+}
+
 export interface CreatePlayerRequest {
   displayName: string;
   pin?: string;
