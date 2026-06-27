@@ -1453,6 +1453,17 @@ write_public_index() {
         button.addEventListener("click", onClick);
         return button;
       }
+      function mailboxStatusLabel(account) {
+        var status = String(account && account.mailboxStatus || "pending");
+        if (status === "ready") return "Mailbox ready";
+        if (status === "alias") return "Mailbox routed to family/admin";
+        if (status === "disabled") return "Mailbox disabled";
+        if (status === "error") return "Mailbox needs attention";
+        return "Mailbox setup pending";
+      }
+      function emailVerificationLabel(account) {
+        return account && account.emailVerifiedAt ? "Email verified " + new Date(account.emailVerifiedAt).toLocaleDateString() : "Email not verified yet";
+      }
       function renderAccountPanel(errorMessage) {
         var panel = document.getElementById("accountPanel");
         if (!panel) return;
@@ -1461,6 +1472,7 @@ write_public_index() {
         if (current.account) {
           var name = document.createElement("div"); name.className = "account-name"; name.textContent = current.account.displayName || current.account.username; panel.appendChild(name);
           var email = document.createElement("div"); email.className = "account-note"; email.textContent = current.account.localEmail || "Local account"; panel.appendChild(email);
+          var mailState = document.createElement("div"); mailState.className = "account-note"; mailState.textContent = mailboxStatusLabel(current.account) + " - " + emailVerificationLabel(current.account); panel.appendChild(mailState);
           var note = document.createElement("div"); note.className = "account-note"; note.textContent = "Recent games are kept separate for this account on this browser."; panel.appendChild(note);
           panel.appendChild(accountButton("Switch to guest", "secondary", function () { clearStoredAccount(); setAccountState({ mode: "guest", message: "Guest mode" }); }));
           return;
@@ -2050,6 +2062,17 @@ write_account_index() {
         var val = document.createElement("div"); val.className = "value"; val.textContent = value || "-"; row.appendChild(val);
         return row;
       }
+      function mailboxStatusLabel(account) {
+        var status = String(account && account.mailboxStatus || "pending");
+        if (status === "ready") return "Ready";
+        if (status === "alias") return "Routed to family/admin";
+        if (status === "disabled") return "Disabled";
+        if (status === "error") return "Needs attention";
+        return "Setup pending";
+      }
+      function emailVerificationLabel(account) {
+        return account && account.emailVerifiedAt ? "Verified " + new Date(account.emailVerifiedAt).toLocaleString() : "Not verified yet";
+      }
       function renderSignedOut() {
         var accountEl = document.getElementById("accountState");
         accountEl.className = "empty";
@@ -2065,6 +2088,8 @@ write_account_index() {
         el.appendChild(field("Display name", account.displayName));
         el.appendChild(field("Username", account.username));
         el.appendChild(field("Local email", account.localEmail));
+        el.appendChild(field("Mailbox", mailboxStatusLabel(account)));
+        el.appendChild(field("Email verification", emailVerificationLabel(account)));
         el.appendChild(field("Role", account.role));
         el.appendChild(field("Status", account.status));
         el.appendChild(field("Player", player ? player.displayName : "Not linked"));
