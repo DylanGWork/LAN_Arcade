@@ -1,0 +1,73 @@
+{
+  "openttd-wiki": {
+    "title": "OpenTTD Manual",
+    "dest": "openttd-wiki",
+    "source_subdir": "wiki.openttd.org",
+    "level": 2,
+    "pages": [
+      "https://wiki.openttd.org/en/Manual/",
+      "https://wiki.openttd.org/en/Manual/Main%20Page",
+      "https://wiki.openttd.org/en/Manual/Installation",
+      "https://wiki.openttd.org/en/Manual/Tutorial/",
+      "https://wiki.openttd.org/en/Manual/Game%20interface",
+      "https://wiki.openttd.org/en/Manual/Railway%20construction",
+      "https://wiki.openttd.org/en/Manual/Signals",
+      "https://wiki.openttd.org/en/Manual/Roadway%20construction",
+      "https://wiki.openttd.org/en/Manual/Vehicles",
+      "https://wiki.openttd.org/en/Manual/Orders",
+      "https://wiki.openttd.org/en/Manual/Multiplayer",
+      "https://wiki.openttd.org/en/Manual/Hotkeys"
+    ]
+  },
+  "mindustry-docs": {
+    "title": "Mindustry Wiki",
+    "dest": "mindustry-docs",
+    "source_subdir": "mindustrygame.github.io/wiki",
+    "level": 3,
+    "url": "https://mindustrygame.github.io/wiki/"
+  },
+  "freeciv-docs": {
+    "title": "Freeciv Website",
+    "dest": "freeciv-docs",
+    "source_subdir": "www.freeciv.org",
+    "level": 2,
+    "pages": [
+      "https://www.freeciv.org/",
+      "https://www.freeciv.org/download.html"
+    ]
+  },
+  "supertuxkart-site": {
+    "title": "SuperTuxKart Site",
+    "dest": "supertuxkart-site",
+    "source_subdir": "supertuxkart.net",
+    "level": 2,
+    "pages": [
+      "https://supertuxkart.net/Main_Page",
+      "https://supertuxkart.net/Discover",
+      "https://supertuxkart.net/FAQ",
+      "https://supertuxkart.net/Download"
+    ]
+  },
+  "xonotic-site": {
+    "title": "Xonotic Site",
+    "dest": "xonotic-site",
+    "source_subdir": "xonotic.org",
+    "level": 2,
+    "pages": [
+      "https://xonotic.org/",
+      "https://xonotic.org/download/",
+      "https://xonotic.org/guide/",
+      "https://xonotic.org/faq/"
+    ]
+  },
+  "freedoom-site": {
+    "title": "Freedoom Site",
+    "dest": "freedoom-site",
+    "source_subdir": "freedoom.github.io",
+    "level": 2,
+    "pages": [
+      "https://freedoom.github.io/",
+      "https://freedoom.github.io/download.html"
+    ]
+  }
+}

@@ -32,9 +32,9 @@ STATUS_KEYS = ['smoke-pass', 'source-ready', 'partial', 'blocked', 'candidate']
 STATUS_LABELS = {
     'smoke-pass': 'Play-tested',
     'source-ready': 'Ready to try',
-    'partial': 'Partly tested',
-    'blocked': 'Not ready',
-    'candidate': 'Planned game',
+    'partial': 'Starts, needs testing',
+    'blocked': 'Needs attention',
+    'candidate': 'Needs files',
 }
 
 PACKAGE_CONFIGS = {
@@ -78,8 +78,8 @@ def short_summary(row):
     bits = [row.get('next_action', ''), row.get('notes', ''), row.get('download_evidence', '')]
     text = ' '.join(b.strip() for b in bits if b and b.strip())
     if not text:
-        return 'Planned game found in the approved intake sweep; game package is not cached on the VM yet.'
-    return 'Planned game only: ' + text[:260].rstrip()
+        return 'This game is on the wishlist, but the local game files are not available yet.'
+    return 'Wanted game: ' + text[:260].rstrip()
 
 def load_sweep_candidates():
     existing = {g['id'] for g in GAMES}
@@ -103,11 +103,11 @@ def load_sweep_candidates():
                     status='candidate',
                     genre=genre_from_lane(row.get('lane', '')),
                     source=row.get('source_url', ''),
-                    runtime=runtime or 'DOSBox/EmulatorJS candidate',
+                    runtime=runtime or 'Browser DOSBox',
                     availability=row.get('availability_status', ''),
                     evidence=row.get('download_evidence', ''),
                     summary=short_summary(row),
-                    controls=['Game package is not cached yet', 'No gameplay smoke has been run for this candidate'],
+                    controls=['Local game files are needed before browser play', 'Gameplay check has not been completed yet'],
                 ))
     return out
 
@@ -243,12 +243,12 @@ def build(dest):
             root = stage_game(g, stage)
             if root and status == 'candidate':
                 status = 'source-ready'
-            summary = g.get('summary', 'Planned game found in intake; game package is not cached yet.')
+            summary = g.get('summary', 'This game is on the wishlist, but local game files are not available yet.')
             controls = g.get('controls') or ['Click inside the game before using keyboard or mouse', 'If a DOS menu appears, choose PLAY.BAT']
             if root:
-                if summary.startswith('Planned game only:'):
+                if summary.startswith('Wanted game:'):
                     details = summary.split(':', 1)[1].strip()
-                    summary = 'Imported from Dylan-provided ZIP and ready to try in the browser.'
+                    summary = 'Ready to play from locally stored game files.'
                     if details:
                         summary += ' ' + details
                 controls = [
@@ -278,13 +278,13 @@ def write_index(dest, games):
         shot = g['screenshots'][0]['url'] if g['screenshots'] else ''
         media = f'<img src="{html.escape(shot)}" alt="{html.escape(g["title"])} screenshot">' if shot else '<div class="placeholder">DOS</div>'
         play = f'<a class="primary" href="play.html?id={html.escape(g["id"])}">Play</a>' if (g.get('bundleUrl') or g.get('packageUrl')) else '<span class="disabled">Game files needed</span>'
-        source = f'<a href="{html.escape(g["sourceUrl"])}">Game page</a>' if g.get('sourceUrl') else ''
-        manuals = ''.join(f'<a href="{html.escape(m["url"])}">{html.escape(m["name"])} </a>' for m in g['manuals']) or '<span>No manual cached yet</span>'
+        source = f'<a href="{html.escape(g["sourceUrl"])}">Original page</a>' if g.get('sourceUrl') else ''
+        manuals = ''.join(f'<a href="{html.escape(m["url"])}">{html.escape(m["name"])} </a>' for m in g['manuals']) or '<span>No manual available yet</span>'
         text = html.escape((g['title']+' '+g['genre']+' '+g['summary']+' '+g.get('runtime','')).lower())
         cards.append(f'''<article class="card" data-status="{html.escape(g["status"])}" data-text="{text}">
 <div class="media">{media}<b class="{html.escape(g["status"])}">{label(g["status"])}</b></div>
 <h2>{html.escape(g["title"])}</h2>
-<p class="meta">Classic PC - {html.escape(g["genre"])} - {html.escape(g.get("runtime") or "candidate")}</p>
+<p class="meta">Classic PC - {html.escape(g["genre"])} - {html.escape(g.get("runtime") or "Browser DOSBox")}</p>
 <p>{html.escape(g["summary"])}</p>
 <div class="actions">{play}{source}</div>
 <div class="manuals">{manuals}</div>
@@ -293,7 +293,7 @@ def write_index(dest, games):
     packaged = sum(1 for g in games if g.get('packageUrl'))
     page = f'''<!doctype html><html lang="en"><head><meta charset="utf-8"><meta http-equiv="Cache-Control" content="no-store, max-age=0"><meta http-equiv="Pragma" content="no-cache"><meta http-equiv="Expires" content="0"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Classic PC Games</title><style>
 :root{{color-scheme:dark;--bg:#080d12;--panel:#121922;--line:#314357;--text:#eef6ff;--muted:#a8b8cc;--green:#35d07f;--amber:#ffca55;--red:#ff7468}}*{{box-sizing:border-box}}body{{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,sans-serif}}main{{width:min(1220px,94vw);margin:auto;padding:24px 0 44px}}.top{{display:flex;justify-content:space-between;gap:12px;align-items:start}}h1{{font-size:clamp(30px,5vw,56px);margin:0}}p{{color:var(--muted);line-height:1.45}}a,.disabled,button{{border:1px solid var(--line);border-radius:7px;background:#182230;color:var(--text);text-decoration:none;font-weight:800;padding:8px 10px;display:inline-flex;align-items:center;min-height:38px}}.primary,button.active{{background:#1d7d4e;border-color:#35d07f}}.disabled{{opacity:.62}}.notice{{border-left:4px solid var(--amber);background:#18150b;border-radius:7px;padding:11px 12px;color:#f2ddb7;margin:14px 0}}.stats{{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:12px 0}}.stat,.card{{border:1px solid var(--line);background:var(--panel);border-radius:8px}}.stat{{padding:12px}}.stat strong{{display:block;font-size:26px}}.toolbar{{display:grid;grid-template-columns:1fr auto;gap:10px;margin:14px 0}}input{{background:#0e151f;color:var(--text);border:1px solid var(--line);border-radius:7px;padding:11px;font:inherit}}.filters{{display:flex;gap:8px;flex-wrap:wrap}}.grid{{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}}.card{{overflow:hidden;padding:0 14px 14px}}.media{{position:relative;aspect-ratio:16/9;background:#05080c;margin:0 -14px 12px;display:grid;place-items:center}}.media img{{width:100%;height:100%;object-fit:cover}}.placeholder{{font-size:42px;color:#304457;font-weight:900}}.media b{{position:absolute;top:10px;left:10px;border-radius:999px;padding:6px 10px;background:#233145}}.media b.smoke-pass{{background:#11351f;color:#b9ffd2}}.media b.source-ready{{background:#123652;color:#c8ecff}}.media b.partial{{background:#37290c;color:#ffe0a1}}.media b.blocked{{background:#3b1414;color:#ffd0cc}}.media b.candidate{{background:#1b2d43;color:#c7ddff}}h2{{font-size:20px;margin:0}}.meta{{text-transform:uppercase;font-size:12px;letter-spacing:.08em}}.actions,.manuals{{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}}.manuals{{border-top:1px solid var(--line);padding-top:10px}}.manuals a,.manuals span{{font-size:13px}}@media(max-width:900px){{.grid{{grid-template-columns:repeat(2,1fr)}}.stats{{grid-template-columns:repeat(2,1fr)}}}}@media(max-width:650px){{main{{width:96vw}}.top,.toolbar{{display:block}}.top a{{width:100%;justify-content:center;margin-top:10px}}.grid{{grid-template-columns:1fr}}.filters{{margin-top:8px}}}}
-</style></head><body><main><div class="top"><div><h1>Classic PC Games</h1><p>Classic computer games run here in the browser where possible. If a game says Game files needed, the arcade has notes or screenshots but not the local game package yet.</p></div><a href="../games/">Back to Arcade</a></div><div class="notice">Games with Play now are ready in the browser. Games marked Game files needed are waiting for a local copy of the game files before they can be launched offline.</div><section class="stats"><div class="stat"><strong>{len(games)}</strong><span>games listed</span></div><div class="stat"><strong>{packaged}</strong><span>playable here</span></div><div class="stat"><strong>{stats['source-ready']}</strong><span>ready to try</span></div><div class="stat"><strong>{stats['candidate']}</strong><span>planned games</span></div></section><section class="toolbar"><input id="q" type="search" placeholder="Search old PC games"><div class="filters"><button class="active" data-f="all">All</button><button data-f="smoke-pass">Play-tested</button><button data-f="source-ready">Ready to try</button><button data-f="partial">Partly tested</button><button data-f="blocked">Not ready</button><button data-f="candidate">Planned game</button></div></section><section class="grid">{''.join(cards)}</section></main><script>
+</style></head><body><main><div class="top"><div><h1>Classic PC Games</h1><p>Classic computer games run here in the browser where possible. If a game says Game files needed, add the local game files before trying to play it offline.</p></div><a href="../games/">Back to Arcade</a></div><div class="notice">Games with Play are ready in the browser. Games marked Game files needed are listed for future import and need local files before they can be launched offline.</div><section class="stats"><div class="stat"><strong>{len(games)}</strong><span>games listed</span></div><div class="stat"><strong>{packaged}</strong><span>playable here</span></div><div class="stat"><strong>{stats['source-ready']}</strong><span>ready to try</span></div><div class="stat"><strong>{stats['candidate']}</strong><span>need files</span></div></section><section class="toolbar"><input id="q" type="search" placeholder="Search old PC games"><div class="filters"><button class="active" data-f="all">All</button><button data-f="smoke-pass">Play-tested</button><button data-f="source-ready">Ready to try</button><button data-f="partial">Starts, needs testing</button><button data-f="blocked">Needs attention</button><button data-f="candidate">Needs files</button></div></section><section class="grid">{''.join(cards)}</section></main><script>
 const q=document.querySelector('#q'),cards=[...document.querySelectorAll('.card')],buttons=[...document.querySelectorAll('button')];let f='all';function draw(){{const s=q.value.toLowerCase().trim();for(const c of cards)c.hidden=!((f==='all'||c.dataset.status===f)&&(!s||c.dataset.text.includes(s)))}}q.oninput=draw;buttons.forEach(b=>b.onclick=()=>{{f=b.dataset.f;buttons.forEach(x=>x.classList.toggle('active',x===b));draw()}});
 </script></body></html>'''
     (dest/'index.html').write_text(page, encoding='utf-8')
@@ -301,7 +301,7 @@ const q=document.querySelector('#q'),cards=[...document.querySelectorAll('.card'
 def write_play(dest):
     page='''<!doctype html><html lang="en"><head><meta charset="utf-8"><meta http-equiv="Cache-Control" content="no-store, max-age=0"><meta http-equiv="Pragma" content="no-cache"><meta http-equiv="Expires" content="0"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Classic PC Game Player</title><link rel="stylesheet" href="../js-dos-runtime/__JSDOS_VERSION__/js-dos.css"><style>
 :root{color-scheme:dark;--bg:#070b10;--panel:#121922;--line:#314357;--text:#eef6ff;--muted:#a8b8cc;--amber:#ffca55}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,sans-serif}main{width:min(1280px,96vw);margin:auto;padding:16px 0 28px}.top{display:flex;justify-content:space-between;gap:12px}.layout{display:grid;grid-template-columns:1fr 310px;gap:14px}.player{background:#020609;border:1px solid var(--line);border-radius:8px;overflow:hidden}#game{height:min(74vh,720px);min-height:430px}.panel{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:14px}a{color:var(--text);background:#182230;border:1px solid var(--line);border-radius:7px;padding:9px 11px;text-decoration:none;font-weight:850;display:inline-flex;margin:4px}.warn{border-left:4px solid var(--amber);background:#18150b;border-radius:7px;padding:10px;color:#f2ddb7}.key{border:1px solid var(--line);border-radius:7px;padding:8px;margin:6px 0;background:#0e151f}p{color:var(--muted);line-height:1.45}.dosbox-container,.emulator-root{width:100%;height:100%}@media(max-width:900px){main{width:96vw}.layout{grid-template-columns:1fr}#game{height:62vh;min-height:340px}.top{display:block}.top a{width:100%;justify-content:center}}
-</style><script src="../js-dos-runtime/__JSDOS_VERSION__/js-dos.js"></script></head><body><main><div class="top"><div><h1 id="title">Classic PC Game Player</h1><p id="meta"></p></div><a href="./">Back to Classic PC Games</a></div><div class="layout"><section class="player"><div id="game"></div></section><aside class="panel"><p id="summary"></p><div class="warn">Click inside the game first. If a DOS menu appears, choose PLAY.BAT.</div><h2>Controls</h2><div id="controls"></div><h2>Offline Files</h2><div id="files"></div><h2>Browser Check</h2><p id="browser"></p></aside></div></main><script>
+</style><script src="../js-dos-runtime/__JSDOS_VERSION__/js-dos.js"></script></head><body><main><div class="top"><div><h1 id="title">Classic PC Game Player</h1><p id="meta"></p></div><a href="./">Back to Classic PC Games</a></div><div class="layout"><section class="player"><div id="game"></div></section><aside class="panel"><p id="summary"></p><div class="warn">Click inside the game first. If a DOS menu appears, choose PLAY.BAT.</div><h2>Controls</h2><div id="controls"></div><h2>Offline Game Files</h2><div id="files"></div><h2>How This Runs</h2><p id="browser"></p></aside></div></main><script>
 function esc(v){const s=document.createElement('span');s.textContent=v||'';return s.innerHTML}
 function ensureStorageShim(){
   if(navigator.storage&&navigator.storage.estimate&&navigator.storage.getDirectory)return;
@@ -328,16 +328,17 @@ async function boot(){
   const playUrl=g.bundleUrl||g.packageUrl;
   document.title=g.title+' - Classic PC Game Player';
   title.textContent=g.title;
-  meta.textContent=g.platform+' - '+g.genre+' - '+g.status;
+  const statusLabels={'smoke-pass':'Play-tested','source-ready':'Ready to try','partial':'Starts, needs testing','blocked':'Needs attention','candidate':'Needs files'};
+  meta.textContent=g.platform+' - '+g.genre+' - '+(statusLabels[g.status]||g.status);
   summary.textContent=g.summary;
   controls.innerHTML=(g.controls||[]).map(c=>'<div class="key">'+esc(c)+'</div>').join('');
   let links=[];
   if(g.packageUrl)links.push('<a href="'+esc(g.packageUrl)+'">Download game ZIP</a>');
   if(g.bundleUrl)links.push('<a href="'+esc(g.bundleUrl)+'">Browser play bundle</a>');
   for(const man of g.manuals||[])links.push('<a href="'+esc(man.url)+'">'+esc(man.name)+'</a>');
-  if(g.sourceUrl)links.push('<a href="'+esc(g.sourceUrl)+'">Game page</a>');
+  if(g.sourceUrl)links.push('<a href="'+esc(g.sourceUrl)+'">Original page</a>');
   files.innerHTML=links.join('');
-  browser.textContent='Uses the locally mirrored js-dos runtime, so browser play works over normal LAN HTTP.';
+  browser.textContent='Runs in the browser using the arcade local DOS emulator. No internet is needed after this page loads.';
   if(!playUrl){gameEl.innerHTML='<p style="padding:20px">This game needs local files before it can be played here.</p>';return}
   if(typeof Dos!=='function'){gameEl.innerHTML='<p style="padding:20px;color:#ffb4ae">The local js-dos runtime did not load.</p>';return}
   ensureStorageShim();

@@ -1209,29 +1209,29 @@ write_public_index() {
         { id: "guest", label: "Guest quick-play", note: "Family, casual, and low-setup choices" },
         { id: "pi", label: "Camping / Pi-friendly", note: "Lightweight picks for modest devices" },
         { id: "lan", label: "LAN multiplayer", note: "Multiplayer games and hosted sessions" },
-        { id: "emulation", label: "Emulation shelves", note: "ROM vaults, DOS shelves, and emulator entries" },
+        { id: "emulation", label: "Retro shelves", note: "Game Boy, classic PC, and emulator collections" },
         { id: "native", label: "Native / services", note: "Installers, clients, LAN services, and heavier hubs" },
-        { id: "research", label: "Research / QA", note: "Candidates, blockers, and entries needing promotion" }
+        { id: "research", label: "Needs setup", note: "Games waiting for files, fixes, or play testing" }
       ];
       var shelves = [
-        { id: "game-boy-wave-1", label: "Game Boy Wave 1", note: "201 playable links", href: "../private-rom-wave-1/" },
+        { id: "game-boy-wave-1", label: "Curated Game Boy Picks", note: "201 ready games", href: "../private-rom-wave-1/" },
         { id: "emulator-library", label: "Emulator Library", note: "All retro shelves", href: "../emulator-library/" },
-        { id: "game-boy-vault", label: "Game Boy Vault", note: "743 playable links", href: "../private-rom-vault/" },
-        { id: "classic-pc-games", label: "Classic PC Games", note: "28 listed / 15 playable", href: "../private-dos-vault/?v=dos28-20260622b" },
-        { id: "board-games-wave-1", label: "Board Games Wave 1", note: "200 research rows", href: "../board-games-wave-1/" },
-        { id: "ready-shelf", label: "Ready-now cards", note: "Quick filter", action: "profile", value: "ready" },
-        { id: "guest-shelf", label: "Guest-friendly cards", note: "Quick filter", action: "profile", value: "guest" },
-        { id: "lan-shelf", label: "LAN multiplayer cards", note: "Quick filter", action: "profile", value: "lan" },
-        { id: "board-games", label: "Board-game cards", note: "Catalog filter", action: "category", value: "board-game" },
-        { id: "native-server", label: "Native / service cards", note: "Quick filter", action: "profile", value: "native" },
-        { id: "research-shelf", label: "Research / QA cards", note: "Quick filter", action: "profile", value: "research" }
+        { id: "game-boy-vault", label: "743 Game Boy Games", note: "Ready in browser", href: "../private-rom-vault/" },
+        { id: "classic-pc-games", label: "Classic PC Games", note: "15 ready / 28 total", href: "../private-dos-vault/?v=dos28-20260622b" },
+        { id: "board-games-wave-1", label: "Board Game Shelf", note: "200 board games", href: "../board-games-wave-1/" },
+        { id: "ready-shelf", label: "Ready now", note: "Quick filter", action: "profile", value: "ready" },
+        { id: "guest-shelf", label: "Guest friendly", note: "Quick filter", action: "profile", value: "guest" },
+        { id: "lan-shelf", label: "LAN multiplayer", note: "Quick filter", action: "profile", value: "lan" },
+        { id: "board-games", label: "Board games", note: "Catalog filter", action: "category", value: "board-game" },
+        { id: "native-server", label: "Native / services", note: "Quick filter", action: "profile", value: "native" },
+        { id: "research-shelf", label: "Needs setup", note: "Quick filter", action: "profile", value: "research" }
       ];
       var internalShelfStats = [
-        [743, "playable Game Boy vault links"],
-        [201, "curated GB/GBC links"],
-        [200, "board-game research rows"],
-        [28, "listed old PC game entries"],
-        [15, "playable old PC game packages"]
+        [743, "Game Boy vault games"],
+        [201, "curated Game Boy picks"],
+        [200, "board games"],
+        [28, "classic PC games"],
+        [15, "classic PC games ready"]
       ];
       var deepSearchSources = [
         { id: "classic-pc", label: "Classic PC Games", type: "dos", manifest: "../private-dos-vault/manifest.json", basePath: "../private-dos-vault/" },
@@ -1311,14 +1311,25 @@ write_public_index() {
         if (source.type === "rom") return source.basePath + String(game.playUrl || ("play.html?id=" + id)).replace(/^\.\//, "");
         return source.basePath;
       }
+      function publicNestedStatus(status) {
+        var labels = {
+          "smoke-pass": "Play-tested",
+          "source-ready": "Ready to try",
+          "partial": "Starts, needs testing",
+          "blocked": "Needs attention",
+          "candidate": "Needs files"
+        };
+        return labels[String(status || "")] || String(status || "");
+      }
       function normalizeNestedGame(source, game) {
         if (!game || !game.id) return null;
         var title = String(game.title || game.id || "Game");
         var rawGenres = toStringArray(game.genres || (game.genre ? [game.genre] : []));
+        var statusText = publicNestedStatus(game.status);
         var tags = [source.label];
         if (game.system || game.platform) tags.push(String(game.system || game.platform));
         rawGenres.slice(0, 3).forEach(function (genre) { tags.push(genre); });
-        if (game.status) tags.push(String(game.status));
+        if (statusText) tags.push(statusText);
         var categories = ["retro", "emulator", "private", "age-10-plus"];
         rawGenres.forEach(function (genre) { var slug = slugText(genre); if (slug) categories.push(slug); });
         if (source.type === "dos") categories.push("dos");
@@ -1329,7 +1340,7 @@ write_public_index() {
           id: source.id + ":" + String(game.id),
           title: title,
           icon: title.replace(/[^A-Za-z0-9]/g, "").slice(0, 4) || source.label.slice(0, 4),
-          meta: String(game.platform || game.system || source.label) + " - " + String(game.genre || rawGenres[0] || game.status || "offline game"),
+          meta: String(game.platform || game.system || source.label) + " - " + String(game.genre || rawGenres[0] || statusText || "offline game"),
           description: String(game.summary || game.notes || game.selectionReason || "Playable from the " + source.label + " shelf."),
           tags: uniqueArray(tags),
           categories: uniqueArray(categories),
@@ -1413,11 +1424,11 @@ write_public_index() {
         return "Browser ready";
       }
       function readinessLabel(game) {
-        if (game.deepType === "dos") return game.path && game.path.indexOf("play.html") >= 0 ? "Ready offline" : "Open shelf";
+        if (game.deepType === "dos") return game.path && game.path.indexOf("play.html") >= 0 ? "Ready to play" : "Open shelf";
         if (game.deepType === "rom") return "Ready offline";
-        if (hasText(game, ["restore needed"])) return "Restore needed";
-        if (hasText(game, ["blocked", "waiting"])) return "Blocked";
-        if (isResearchEntry(game)) return "Needs QA";
+        if (hasText(game, ["restore needed"])) return "Needs files";
+        if (hasText(game, ["blocked", "waiting"])) return "Needs setup";
+        if (isResearchEntry(game)) return "Needs setup";
         if (isServerService(game)) return "Start on demand";
         if (isNativeOrServerGame(game)) return "Client install";
         if (isCollection(game)) return "Shelf ready";
@@ -1426,8 +1437,8 @@ write_public_index() {
       }
       function readinessTone(game) {
         var label = readinessLabel(game);
-        if (label === "Ready offline" || label === "Shelf ready") return "ready";
-        if (label === "Blocked" || label === "Needs QA" || label === "Restore needed") return "warn";
+        if (label === "Ready offline" || label === "Ready to play" || label === "Shelf ready") return "ready";
+        if (label === "Needs setup" || label === "Needs files") return "warn";
         return "";
       }
       function deviceLabel(game) {
@@ -1625,7 +1636,7 @@ write_public_index() {
           var button = document.createElement("button"); button.type = "button"; button.className = "side-button" + (state.profile === profile.id ? " active" : "");
           var label = document.createElement("span"); label.textContent = profile.label; button.appendChild(label);
           var countEl = document.createElement("span"); countEl.className = "count"; countEl.textContent = count; button.appendChild(countEl);
-          countEl.title = count + " top-level catalog cards";
+          countEl.title = count + " library items";
           button.addEventListener("click", function () { state.profile = profile.id; state.category = ""; render(); });
           list.appendChild(button);
         });
@@ -1693,14 +1704,14 @@ write_public_index() {
       function renderStatus(visible, profilePool, allEnabled) {
         var status = document.getElementById("status"); clear(status);
         var chips = [
-          [visible.length, state.query ? "search results" : "cards shown"],
-          [profilePool.length, "cards in mode"],
-          [allEnabled.length, "cards enabled"]
+          [visible.length, state.query ? "search results" : "shown"],
+          [profilePool.length, "in this view"],
+          [allEnabled.length, "available"]
         ];
         chips = chips.concat(internalShelfStats);
         if (state.query) chips.push(["search", state.query]);
         if (state.category) chips.push(["genre", (categoryLabelMap(state.catalog)[state.category] || state.category)]);
-        if (state.filters.disabled_categories.length || state.filters.disabled_games.length) chips.push([state.filters.disabled_games.length, "admin-hidden games"]);
+        if (state.filters.disabled_categories.length || state.filters.disabled_games.length) chips.push([state.filters.disabled_games.length, "hidden by settings"]);
         chips.forEach(function (parts) {
           var chip = document.createElement("span"); chip.className = "stat-pill";
           chip.innerHTML = "<strong>" + String(parts[0]) + "</strong> " + String(parts[1]);
