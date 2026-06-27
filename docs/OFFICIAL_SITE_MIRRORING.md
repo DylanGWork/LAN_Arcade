@@ -14,6 +14,18 @@ The script replaces the older one-off wget snippets with a safer standard workfl
 - write `LAN_ARCADE_SOURCE.txt` and `LAN_ARCADE_OFFLINE_PATCH.txt`;
 - write JSON reports under `qa/reports/...` when `--report` is supplied.
 
+## External Media Repair Rule
+
+After saving an official site or wiki, scan the deployed copy for remote media URLs. Images, CSS assets, and font files that still point to the internet break the off-grid promise even when the page itself loads. Use the repair helper for existing mirrors:
+
+```bash
+python3 scripts/repair_mirror_external_media.py \
+  --mirror-root /var/www/html/mirrors/0ad/play0ad.com \
+  --report qa/reports/docs-mirror/zero-ad-external-media-repair.json
+```
+
+Remaining external links to official source pages can be acceptable when they are clearly labelled as internet/original links. Remaining external media loads are not acceptable for a promoted offline website/manual.
+
 ## Recipe-Based Usage
 
 Recipes live in `config/site-mirror-recipes.json`.

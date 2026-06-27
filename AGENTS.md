@@ -63,6 +63,7 @@ Do not stop Docker globally.
 - Keep user-facing library wording separate from intake/admin wording. Avoid labels such as `source-ready`, `package missing`, `candidate`, or `top-level cards` on pages intended for guests; use plain labels such as `Ready to play`, `Needs local files`, `Open shelf`, `Play`, or `Install / play`.
 - Large shelves such as Game Boy, Classic PC/DOS, and board-game research must remain nested to avoid flooding the home page, but search must reach into those shelves and offer direct playable results for known titles.
 - Browser DOS emulation is resource-heavy. Prefer js-dos worker/canvas mode, clean up emulator instances on page unload, and treat local DOSBox downloads as the low-power fallback.
+- Keep inventory states explicit. `Listed`, `nested`, `packaged`, `playable`, and `QA-smoked` are different states; do not tell Dylan or players that a whole wave is imported when only a shelf or research manifest exists.
 
 ## Current Known Issue
 

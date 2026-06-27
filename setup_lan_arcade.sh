@@ -1065,6 +1065,17 @@ write_public_index() {
       grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 12px;
     }
+    #recentGrid.featured-grid, #favoriteGrid.featured-grid {
+      grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+    }
+    #recentGrid .game-card, #favoriteGrid .game-card { box-shadow: 0 10px 22px rgba(0,0,0,.22); }
+    #recentGrid .game-card .media, #favoriteGrid .game-card .media { aspect-ratio: 16 / 6.6; }
+    #recentGrid .desc, #favoriteGrid .desc,
+    #recentGrid .tags, #favoriteGrid .tags,
+    #recentGrid .detail-chips, #favoriteGrid .detail-chips { display: none; }
+    #recentGrid .card-body, #favoriteGrid .card-body { gap: 5px; padding: 9px 10px 10px; }
+    #recentGrid .card-title, #favoriteGrid .card-title { font-size: 15px; }
+    #recentGrid .favorite-button, #favoriteGrid .favorite-button { display: none; }
     .featured-card, .game-card {
       position: relative;
       overflow: hidden;
@@ -1777,8 +1788,14 @@ write_public_index() {
           if (searchText(game, labels).indexOf(query) < 0) return false;
           seenNestedTitles[nestedKey] = true;
           return true;
-        }).slice(0, 80);
-        return topLevel.concat(deepMatches);
+        }).slice(0, 100);
+        if (deepMatches.length) {
+          topLevel = topLevel.filter(function (game) {
+            var id = String(game.id || "");
+            return ["emulator-library", "private-dos-classics", "private-rom-wave-1", "private-gbc-vault", "board-games-wave-1"].indexOf(id) < 0;
+          });
+        }
+        return deepMatches.concat(topLevel);
       }
       function scoreGame(game) {
         var id = String(game.id || "");
@@ -1926,22 +1943,22 @@ write_public_index() {
         var grid = document.getElementById("recentGrid");
         if (!shelf || !grid) return;
         var recentSource = state.account && state.account.account && state.serverRecentGames.length ? state.serverRecentGames : loadRecentGames();
-        var recent = recentSource.slice(0, 3);
+        var recent = recentSource.slice(0, 6);
         var note = document.getElementById("recentShelfNote");
         if (note) note.textContent = state.account && state.account.account ? "Synced for " + (state.account.account.displayName || state.account.account.username) + " on this arcade" : "Saved on this device";
         clear(grid);
-        recent.forEach(function (game) { grid.appendChild(makeCard(game, true)); });
+        recent.forEach(function (game) { grid.appendChild(makeCard(game, false)); });
         shelf.hidden = recent.length === 0 || String(state.query || "").trim() || state.category;
       }
       function renderFavorites() {
         var shelf = document.getElementById("favoriteShelf");
         var grid = document.getElementById("favoriteGrid");
         if (!shelf || !grid) return;
-        var favorites = currentFavoriteGames().slice(0, 3);
+        var favorites = currentFavoriteGames().slice(0, 6);
         var note = document.getElementById("favoriteShelfNote");
         if (note) note.textContent = state.account && state.account.account ? "Synced for " + (state.account.account.displayName || state.account.account.username) + " on this arcade" : "Saved on this device";
         clear(grid);
-        favorites.forEach(function (game) { grid.appendChild(makeCard(game, true)); });
+        favorites.forEach(function (game) { grid.appendChild(makeCard(game, false)); });
         shelf.hidden = favorites.length === 0 || String(state.query || "").trim() || state.category;
       }
       function renderProfiles() {
