@@ -106,6 +106,23 @@ export interface RecordGameActivityRequest {
   deepType?: string;
 }
 
+export interface FavoriteGame {
+  id: string;
+  accountId: string;
+  gameId: string;
+  title: string;
+  path: string;
+  meta: string;
+  description: string;
+  tags: string[];
+  categories: string[];
+  preview: string;
+  system: string;
+  deepType: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export type SavePayloadEncoding = 'json' | 'text' | 'base64';
 
 export interface AccountSaveSlot {

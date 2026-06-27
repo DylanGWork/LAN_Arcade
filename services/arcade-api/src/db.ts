@@ -10,6 +10,7 @@ import type {
   LeaderboardEntry,
   Player,
   AccountSaveSlot,
+  FavoriteGame,
   RecentGameActivity,
   RecordGameActivityRequest,
   UpsertAccountSaveRequest,
@@ -27,6 +28,9 @@ export interface ArcadeDb {
   getAccountSession(token: string): AccountSessionRecord | undefined;
   recordAccountActivity(accountId: string, input: RecordGameActivityRequest): RecentGameActivity;
   listAccountActivity(accountId: string, options?: { limit?: number }): RecentGameActivity[];
+  upsertAccountFavorite(accountId: string, input: RecordGameActivityRequest): FavoriteGame;
+  deleteAccountFavorite(accountId: string, gameId: string): boolean;
+  listAccountFavorites(accountId: string, options?: { limit?: number }): FavoriteGame[];
   upsertAccountSave(accountId: string, input: UpsertAccountSaveRequest): AccountSaveSlot;
   getAccountSave(accountId: string, adapter: string, gameId: string, slot: string): AccountSaveSlot | undefined;
   listAccountSaves(accountId: string, options?: { adapter?: string; gameId?: string; limit?: number; includePayload?: boolean }): AccountSaveSlot[];
@@ -116,6 +120,23 @@ interface AccountActivityRow {
   play_count: number;
   first_played_at: string;
   last_played_at: string;
+}
+
+interface AccountFavoriteRow {
+  id: string;
+  account_id: string;
+  game_id: string;
+  title: string;
+  path: string;
+  meta: string;
+  description: string;
+  tags_json: string;
+  categories_json: string;
+  preview: string;
+  system: string;
+  deep_type: string;
+  created_at: string;
+  updated_at: string;
 }
 
 interface AccountSaveRow {
@@ -302,6 +323,77 @@ export function openArcadeDb(databasePath: string): ArcadeDb {
         ORDER BY last_played_at DESC
         LIMIT ?
       `).all(accountId, limit).map((row) => toRecentGameActivity(row as AccountActivityRow));
+    },
+    upsertAccountFavorite(accountId, input) {
+      const now = new Date().toISOString();
+      const id = crypto.randomUUID();
+      const gameId = input.id.trim();
+      const title = input.title.trim() || gameId;
+      const gamePath = input.path.trim();
+      const meta = (input.meta || '').trim();
+      const description = (input.description || '').trim();
+      const tagsJson = JSON.stringify(safeStringArray(input.tags));
+      const categoriesJson = JSON.stringify(safeStringArray(input.categories));
+      const preview = (input.preview || '').trim();
+      const system = (input.system || '').trim();
+      const deepType = (input.deepType || '').trim();
+      connection.prepare(`
+        INSERT INTO account_favorites (
+          id, account_id, game_id, title, path, meta, description, tags_json, categories_json,
+          preview, system, deep_type, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(account_id, game_id) DO UPDATE SET
+          title = excluded.title,
+          path = excluded.path,
+          meta = excluded.meta,
+          description = excluded.description,
+          tags_json = excluded.tags_json,
+          categories_json = excluded.categories_json,
+          preview = excluded.preview,
+          system = excluded.system,
+          deep_type = excluded.deep_type,
+          updated_at = excluded.updated_at
+      `).run(
+        id,
+        accountId,
+        gameId,
+        title,
+        gamePath,
+        meta,
+        description,
+        tagsJson,
+        categoriesJson,
+        preview,
+        system,
+        deepType,
+        now,
+        now
+      );
+      const row = connection.prepare(`
+        SELECT id, account_id, game_id, title, path, meta, description, tags_json, categories_json,
+               preview, system, deep_type, created_at, updated_at
+        FROM account_favorites
+        WHERE account_id = ? AND game_id = ?
+      `).get(accountId, gameId) as AccountFavoriteRow | undefined;
+      if (!row) throw new Error('Favorite was saved but could not be loaded');
+      return toFavoriteGame(row);
+    },
+    deleteAccountFavorite(accountId, gameId) {
+      const result = connection.prepare(`
+        DELETE FROM account_favorites WHERE account_id = ? AND game_id = ?
+      `).run(accountId, gameId.trim());
+      return result.changes > 0;
+    },
+    listAccountFavorites(accountId, options = {}) {
+      const limit = Math.min(Math.max(options.limit || 100, 1), 200);
+      return connection.prepare(`
+        SELECT id, account_id, game_id, title, path, meta, description, tags_json, categories_json,
+               preview, system, deep_type, created_at, updated_at
+        FROM account_favorites
+        WHERE account_id = ?
+        ORDER BY updated_at DESC
+        LIMIT ?
+      `).all(accountId, limit).map((row) => toFavoriteGame(row as AccountFavoriteRow));
     },
     upsertAccountSave(accountId, input) {
       const now = new Date().toISOString();
@@ -559,6 +651,24 @@ function migrate(connection: Database.Database): void {
       UNIQUE(account_id, game_id, path)
     );
 
+    CREATE TABLE IF NOT EXISTS account_favorites (
+      id TEXT PRIMARY KEY,
+      account_id TEXT NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+      game_id TEXT NOT NULL,
+      title TEXT NOT NULL,
+      path TEXT NOT NULL,
+      meta TEXT NOT NULL,
+      description TEXT NOT NULL,
+      tags_json TEXT NOT NULL,
+      categories_json TEXT NOT NULL,
+      preview TEXT NOT NULL,
+      system TEXT NOT NULL,
+      deep_type TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      UNIQUE(account_id, game_id)
+    );
+
     CREATE TABLE IF NOT EXISTS account_save_slots (
       id TEXT PRIMARY KEY,
       account_id TEXT NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
@@ -584,6 +694,8 @@ function migrate(connection: Database.Database): void {
       ON account_sessions(account_id);
     CREATE INDEX IF NOT EXISTS idx_account_activity_account_recent
       ON account_activity(account_id, last_played_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_account_favorites_account_updated
+      ON account_favorites(account_id, updated_at DESC);
     CREATE INDEX IF NOT EXISTS idx_account_save_slots_account_game
       ON account_save_slots(account_id, adapter, game_id, updated_at DESC);
   `);
@@ -666,6 +778,25 @@ function toRecentGameActivity(row: AccountActivityRow): RecentGameActivity {
     playCount: row.play_count,
     firstPlayedAt: row.first_played_at,
     lastPlayedAt: row.last_played_at
+  };
+}
+
+function toFavoriteGame(row: AccountFavoriteRow): FavoriteGame {
+  return {
+    id: row.id,
+    accountId: row.account_id,
+    gameId: row.game_id,
+    title: row.title,
+    path: row.path,
+    meta: row.meta,
+    description: row.description,
+    tags: safeJsonArray(row.tags_json),
+    categories: safeJsonArray(row.categories_json),
+    preview: row.preview,
+    system: row.system,
+    deepType: row.deep_type,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at
   };
 }
 

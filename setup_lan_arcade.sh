@@ -1072,8 +1072,14 @@ write_public_index() {
       border-radius: var(--radius);
       background: var(--card);
       color: inherit;
-      text-decoration: none;
       box-shadow: 0 16px 35px rgba(0,0,0,.28);
+    }
+    .card-link {
+      color: inherit;
+      text-decoration: none;
+      display: grid;
+      grid-template-rows: auto 1fr;
+      min-height: 100%;
     }
     .featured-card:hover, .game-card:hover { border-color: var(--green); transform: translateY(-1px); }
     .media {
@@ -1137,6 +1143,23 @@ write_public_index() {
     .detail-chip.ready { background: rgba(88,214,141,.15); border-color: rgba(88,214,141,.44); color: #c9f8dc; }
     .detail-chip.warn { background: #2b2113; border-color: #6b5228; color: #ffe0a3; }
     .launch-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 2px; }
+    .favorite-button {
+      position: absolute;
+      top: 9px;
+      right: 9px;
+      z-index: 4;
+      min-height: 30px;
+      border: 1px solid rgba(255,255,255,.18);
+      border-radius: 999px;
+      background: rgba(5,8,9,.82);
+      color: #f6fbf8;
+      padding: 5px 9px;
+      font-weight: 850;
+      font-size: 12px;
+      cursor: pointer;
+      box-shadow: 0 10px 22px rgba(0,0,0,.28);
+    }
+    .favorite-button:hover, .favorite-button.saved { border-color: rgba(88,214,141,.62); background: rgba(18,63,39,.9); color: #dfffea; }
     .launch { display: inline-flex; align-items: center; gap: 6px; color: #f6fbf8; font-weight: 850; font-size: 13px; }
     .launch::before { content: ""; width: 7px; height: 7px; border-radius: 999px; background: var(--green); box-shadow: 0 0 0 3px rgba(88,214,141,.13); }
     .path { color: #7f8b91; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -1233,6 +1256,10 @@ write_public_index() {
         <div class="shelf-head"><h3>Recently played</h3><span id="recentShelfNote" class="shelf-note">Saved on this browser</span></div>
         <div id="recentGrid" class="featured-grid"></div>
       </section>
+      <section class="shelf" id="favoriteShelf" hidden>
+        <div class="shelf-head"><h3>Favourites</h3><span id="favoriteShelfNote" class="shelf-note">Saved on this browser</span></div>
+        <div id="favoriteGrid" class="featured-grid"></div>
+      </section>
       <p class="catalog-note">Search includes games inside the Game Boy and Classic PC shelves when you type a title. Large collections open as shelves so the home screen stays readable.</p>
       <section class="shelf" id="featuredShelf">
         <div class="shelf-head"><h3>Featured</h3><span class="shelf-note">Ready picks, collections, and high-interest LAN services</span></div>
@@ -1286,6 +1313,7 @@ write_public_index() {
         { id: "board-games-wave-1", label: "Board Games Wave 1", type: "board", manifest: "../board-games-wave-1/manifest.json", basePath: "../board-games-wave-1/" }
       ];
       var recentStorageBaseKey = "lanArcadeRecentlyPlayed.v1";
+      var favoriteStorageBaseKey = "lanArcadeFavorites.v1";
       var accountStorageKey = "lanArcadeAccount.v1";
       var accountApiBase = window.location.origin + "/arcade-api/";
       var featuredIds = ["pillage-first-lan", "travianz-lan", "unciv-lan", "mindustry-lan", "evolab", "gene-garden", "zero-ad-lan", "wesnoth-lan", "openttd-lan", "life-engine", "apotris-gba"];
@@ -1294,6 +1322,7 @@ write_public_index() {
         filters: { disabled_categories: [], disabled_games: [] },
         deepGames: [],
         serverRecentGames: [],
+        serverFavoriteGames: [],
         account: { mode: "guest", token: "", account: null, player: null, message: "Guest mode" },
         profile: "all",
         category: "",
@@ -1341,11 +1370,31 @@ write_public_index() {
       function currentRecentStorageKey() {
         return state.account && state.account.account ? recentStorageBaseKey + "." + state.account.account.id : recentStorageBaseKey;
       }
+      function currentFavoriteStorageKey() {
+        return state.account && state.account.account ? favoriteStorageBaseKey + "." + state.account.account.id : favoriteStorageBaseKey;
+      }
       function loadRecentGames() {
         try {
           var data = JSON.parse(localStorage.getItem(currentRecentStorageKey()) || "[]");
           return Array.isArray(data) ? data.filter(function (game) { return game && game.id && game.path; }) : [];
         } catch (e) { return []; }
+      }
+      function loadFavoriteGames() {
+        try {
+          var data = JSON.parse(localStorage.getItem(currentFavoriteStorageKey()) || "[]");
+          return Array.isArray(data) ? data.filter(function (game) { return game && game.id && game.path; }) : [];
+        } catch (e) { return []; }
+      }
+      function saveFavoriteGames(items) {
+        try { localStorage.setItem(currentFavoriteStorageKey(), JSON.stringify((items || []).slice(0, 100))); } catch (e) {}
+      }
+      function currentFavoriteGames() {
+        if (state.account && state.account.account && state.serverFavoriteGames.length) return state.serverFavoriteGames;
+        return loadFavoriteGames();
+      }
+      function isFavorite(game) {
+        var id = String(game && game.id || "");
+        return currentFavoriteGames().some(function (item) { return String(item.id || "") === id; });
       }
       function rememberGame(game) {
         try {
@@ -1383,6 +1432,9 @@ write_public_index() {
       function clearStoredAccount() {
         try { localStorage.removeItem(accountStorageKey); } catch (e) {}
       }
+      function favoriteGameFromRecord(favorite) {
+        return recentGameFromActivity(favorite);
+      }
       function recentGameFromActivity(activity) {
         return {
           id: String(activity.gameId || activity.id || ""),
@@ -1411,10 +1463,11 @@ write_public_index() {
       }
       function setAccountState(next) {
         state.account = Object.assign({ mode: "guest", token: "", account: null, player: null, message: "Guest mode" }, next || {});
-        if (!state.account.account) state.serverRecentGames = [];
+        if (!state.account.account) { state.serverRecentGames = []; state.serverFavoriteGames = []; }
         renderAccountPanel();
         renderRecent();
-        if (state.account.account && state.account.token) loadServerRecent();
+        renderFavorites();
+        if (state.account.account && state.account.token) { loadServerRecent(); loadServerFavorites(); }
       }
       function loadServerRecent() {
         if (!state.account || !state.account.token || !state.account.account) return Promise.resolve();
@@ -1422,6 +1475,16 @@ write_public_index() {
           var rows = Array.isArray(body.activity) ? body.activity : [];
           state.serverRecentGames = rows.map(recentGameFromActivity).filter(function (game) { return game.id && game.path; });
           renderRecent();
+        }).catch(function () {});
+      }
+      function loadServerFavorites() {
+        if (!state.account || !state.account.token || !state.account.account) return Promise.resolve();
+        return accountRequest("account/favorites?limit=100", { headers: { "x-arcade-account-session": state.account.token } }).then(function (body) {
+          var rows = Array.isArray(body.favorites) ? body.favorites : [];
+          state.serverFavoriteGames = rows.map(favoriteGameFromRecord).filter(function (game) { return game.id && game.path; });
+          saveFavoriteGames(state.serverFavoriteGames);
+          renderFavorites();
+          render();
         }).catch(function () {});
       }
       function validateStoredAccount() {
@@ -1806,11 +1869,28 @@ write_public_index() {
         });
         return chips;
       }
+      function toggleFavorite(game) {
+        var item = compactGameForStorage(game);
+        if (!item.id) return;
+        var favorites = currentFavoriteGames();
+        var active = favorites.some(function (old) { return old.id === item.id; });
+        var next = active ? favorites.filter(function (old) { return old.id !== item.id; }) : [item].concat(favorites.filter(function (old) { return old.id !== item.id; })).slice(0, 100);
+        state.serverFavoriteGames = next;
+        saveFavoriteGames(next);
+        render();
+        if (state.account && state.account.account && state.account.token) {
+          var request = active
+            ? accountRequest("account/favorites/" + encodeURIComponent(item.id), { method: "DELETE", headers: { "x-arcade-account-session": state.account.token } })
+            : accountRequest("account/favorites", { method: "PUT", headers: { "x-arcade-account-session": state.account.token }, body: JSON.stringify(item) });
+          request.then(loadServerFavorites).catch(function () {});
+        }
+      }
       function makeCard(game, featured) {
-        var card = document.createElement("a"); card.className = featured ? "featured-card" : "game-card"; card.href = gameUrl(game);
-        card.setAttribute("aria-label", primaryActionLabel(game) + " " + String(game.title || game.id || "game"));
-        card.addEventListener("click", function () { rememberGame(game); });
-        card.appendChild(makeMedia(game));
+        var card = document.createElement("article"); card.className = featured ? "featured-card" : "game-card";
+        var link = document.createElement("a"); link.className = "card-link"; link.href = gameUrl(game);
+        link.setAttribute("aria-label", primaryActionLabel(game) + " " + String(game.title || game.id || "game"));
+        link.addEventListener("click", function () { rememberGame(game); });
+        link.appendChild(makeMedia(game));
         var body = document.createElement("div"); body.className = "card-body";
         var title = document.createElement("h4"); title.className = "card-title"; title.textContent = String(game.title || game.id || "Unknown"); body.appendChild(title);
         var meta = document.createElement("div"); meta.className = "meta"; meta.textContent = String(game.meta || "Offline game"); body.appendChild(meta);
@@ -1821,7 +1901,16 @@ write_public_index() {
         var launch = document.createElement("span"); launch.className = "launch"; launch.textContent = primaryActionLabel(game); launchRow.appendChild(launch);
         var path = document.createElement("span"); path.className = "path"; path.textContent = shortPath(gameUrl(game)); path.title = shortPath(gameUrl(game)); launchRow.appendChild(path);
         body.appendChild(launchRow);
-        card.appendChild(body);
+        link.appendChild(body);
+        card.appendChild(link);
+        var favorite = document.createElement("button");
+        favorite.type = "button";
+        favorite.className = "favorite-button" + (isFavorite(game) ? " saved" : "");
+        favorite.textContent = isFavorite(game) ? "Saved" : "Save";
+        favorite.title = isFavorite(game) ? "Remove from favourites" : "Save to favourites";
+        favorite.setAttribute("aria-label", favorite.title + ": " + String(game.title || game.id || "game"));
+        favorite.addEventListener("click", function (event) { event.preventDefault(); event.stopPropagation(); toggleFavorite(game); });
+        card.appendChild(favorite);
         return card;
       }
       function renderRecent() {
@@ -1835,6 +1924,17 @@ write_public_index() {
         clear(grid);
         recent.forEach(function (game) { grid.appendChild(makeCard(game, true)); });
         shelf.hidden = recent.length === 0 || String(state.query || "").trim() || state.category;
+      }
+      function renderFavorites() {
+        var shelf = document.getElementById("favoriteShelf");
+        var grid = document.getElementById("favoriteGrid");
+        if (!shelf || !grid) return;
+        var favorites = currentFavoriteGames().slice(0, 3);
+        var note = document.getElementById("favoriteShelfNote");
+        if (note) note.textContent = state.account && state.account.account ? "Synced for " + (state.account.account.displayName || state.account.account.username) + " on this arcade" : "Saved on this browser";
+        clear(grid);
+        favorites.forEach(function (game) { grid.appendChild(makeCard(game, true)); });
+        shelf.hidden = favorites.length === 0 || String(state.query || "").trim() || state.category;
       }
       function renderProfiles() {
         var list = document.getElementById("profileList"); clear(list);
@@ -1932,6 +2032,7 @@ write_public_index() {
         var visible = sortGames(filteredBaseGames());
         renderAccountPanel();
         renderRecent();
+        renderFavorites();
         renderProfiles();
         renderShelves();
         renderGenres(profilePool);

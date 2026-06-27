@@ -150,6 +150,49 @@ test('signed-in accounts can record and list recent game activity', async () => 
   });
 });
 
+test('signed-in accounts can save, list, and remove favorite games', async () => {
+  const fixture = tempFixture();
+  await withServer(fixture, async (baseUrl) => {
+    const created = await request<{ token: string }>(baseUrl, '/accounts', {
+      method: 'POST',
+      body: JSON.stringify({ username: 'Riley', displayName: 'Riley', password: 'correct-horse-battery' })
+    });
+
+    const saved = await request<{ favorite: { gameId: string; title: string; path: string; tags: string[] } }>(baseUrl, '/account/favorites', {
+      method: 'PUT',
+      headers: { 'x-arcade-account-session': created.token },
+      body: JSON.stringify({
+        id: 'simant-ma',
+        title: 'SimAnt',
+        path: '../private-dos-vault/play.html?id=simant-ma',
+        meta: 'Classic PC',
+        tags: ['DOS', 'Simulation'],
+        categories: ['retro', 'dos']
+      })
+    });
+    assert.equal(saved.favorite.gameId, 'simant-ma');
+    assert.equal(saved.favorite.title, 'SimAnt');
+    assert.deepEqual(saved.favorite.tags, ['DOS', 'Simulation']);
+
+    const listed = await request<{ favorites: Array<{ gameId: string; path: string }> }>(baseUrl, '/account/favorites', {
+      headers: { 'x-arcade-account-session': created.token }
+    });
+    assert.equal(listed.favorites.length, 1);
+    assert.equal(listed.favorites[0].gameId, 'simant-ma');
+
+    const removed = await request<{ removed: boolean }>(baseUrl, '/account/favorites/simant-ma', {
+      method: 'DELETE',
+      headers: { 'x-arcade-account-session': created.token }
+    });
+    assert.equal(removed.removed, true);
+
+    const empty = await request<{ favorites: Array<{ gameId: string }> }>(baseUrl, '/account/favorites', {
+      headers: { 'x-arcade-account-session': created.token }
+    });
+    assert.equal(empty.favorites.length, 0);
+  });
+});
+
 test('signed-in accounts can store and retrieve isolated save slots', async () => {
   const fixture = tempFixture();
   await withServer(fixture, async (baseUrl) => {

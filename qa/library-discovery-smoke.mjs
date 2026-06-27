@@ -42,7 +42,10 @@ try {
   });
 
   await page.goto(options.baseUrl, { waitUntil: 'networkidle', timeout: 30000 });
-  await page.evaluate(() => localStorage.removeItem('lanArcadeRecentlyPlayed.v1'));
+  await page.evaluate(() => {
+    localStorage.removeItem('lanArcadeRecentlyPlayed.v1');
+    localStorage.removeItem('lanArcadeFavorites.v1');
+  });
 
   const bodyText = await page.locator('body').innerText();
   addCheck(result, 'no top-level card wording', !bodyText.includes('top-level cards'));
@@ -55,7 +58,7 @@ try {
 
   const cards = await page.locator('.game-card, .featured-card').evaluateAll((nodes) => nodes.map((node) => ({
     title: node.querySelector('.card-title')?.textContent?.trim() || '',
-    href: node.href || '',
+    href: node.href || node.querySelector('.card-link')?.href || '',
     launch: node.querySelector('.launch')?.textContent?.trim() || '',
   })));
   const simant = cards.find((card) => card.title === 'SimAnt');
@@ -63,7 +66,20 @@ try {
   addCheck(result, 'SimAnt result is direct play link', Boolean(simant && simant.href.includes('/mirrors/private-dos-vault/play.html?id=simant-ma')));
   addCheck(result, 'SimAnt action is Play', Boolean(simant && simant.launch === 'Play'));
 
-  await page.locator('.game-card, .featured-card').filter({ hasText: 'SimAnt' }).first().click();
+  const simantCard = page.locator('.game-card, .featured-card').filter({ hasText: 'SimAnt' }).first();
+  await simantCard.locator('.favorite-button').click();
+  const favoriteStorageAfterSave = await page.evaluate(() => JSON.parse(localStorage.getItem('lanArcadeFavorites.v1') || '[]').map((item) => ({ title: item.title, path: item.path })));
+  await page.fill('#searchInput', '');
+  await page.waitForTimeout(800);
+  const favoriteHidden = await page.locator('#favoriteShelf').evaluate((el) => el.hidden);
+  const favoriteTitles = await page.locator('#favoriteGrid .card-title').evaluateAll((nodes) => nodes.map((node) => node.textContent?.trim() || ''));
+  addCheck(result, 'favorite shelf appears after save', !favoriteHidden);
+  addCheck(result, 'favorite shelf contains SimAnt', favoriteTitles.includes('SimAnt'));
+  addCheck(result, 'favorite localStorage records SimAnt', favoriteStorageAfterSave.some((item) => item.title === 'SimAnt' && String(item.path || '').includes('simant-ma')));
+
+  await page.fill('#searchInput', options.query);
+  await page.waitForTimeout(500);
+  await page.locator('#gameGrid .game-card').filter({ hasText: 'SimAnt' }).first().locator('.card-link').click();
   await page.waitForLoadState('domcontentloaded', { timeout: 30000 }).catch(() => {});
   await page.goto(options.baseUrl, { waitUntil: 'networkidle', timeout: 30000 });
   await page.waitForTimeout(800);
@@ -81,6 +97,8 @@ try {
   result.searchCards = cards.slice(0, 12);
   result.recentTitles = recentTitles;
   result.recentStorage = recentStorage;
+  result.favoriteTitles = typeof favoriteTitles === 'undefined' ? [] : favoriteTitles;
+  result.favoriteStorage = typeof favoriteStorageAfterSave === 'undefined' ? [] : favoriteStorageAfterSave;
   result.passed = result.checks.every((check) => check.passed);
 } catch (error) {
   result.error = error?.stack || error?.message || String(error);

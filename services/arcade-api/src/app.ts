@@ -126,7 +126,7 @@ async function handleRequest(
       name: config.arcadeName,
       apiVersion: '0.2.0',
       generatedAt: new Date().toISOString(),
-      capabilities: ['catalog', 'profiles', 'accounts', 'account-sessions', 'account-activity', 'account-save-vault', 'local-email-addresses', 'account-email-state', 'scores', 'leaderboards', 'daily-challenges']
+      capabilities: ['catalog', 'profiles', 'accounts', 'account-sessions', 'account-activity', 'account-favorites', 'account-save-vault', 'local-email-addresses', 'account-email-state', 'scores', 'leaderboards', 'daily-challenges']
     });
     return;
   }
@@ -210,6 +210,31 @@ async function handleRequest(
     const parsed = accountActivitySchema.safeParse(await readJson(request));
     if (!parsed.success) return sendJson(response, 400, { error: 'Invalid activity payload', details: parsed.error.flatten() });
     sendJson(response, 201, { activity: db.recordAccountActivity(session.account_id, parsed.data) });
+    return;
+  }
+
+  if (method === 'GET' && pathname === '/account/favorites') {
+    const session = readAccountSession(request, db);
+    if (!session) return sendJson(response, 401, { error: 'Missing or invalid account session' });
+    const limit = url.searchParams.get('limit') ? Number.parseInt(url.searchParams.get('limit') || '100', 10) : 100;
+    sendJson(response, 200, { favorites: db.listAccountFavorites(session.account_id, { limit }) });
+    return;
+  }
+
+  if (method === 'PUT' && pathname === '/account/favorites') {
+    const session = readAccountSession(request, db);
+    if (!session) return sendJson(response, 401, { error: 'Missing or invalid account session' });
+    const parsed = accountActivitySchema.safeParse(await readJson(request));
+    if (!parsed.success) return sendJson(response, 400, { error: 'Invalid favorite payload', details: parsed.error.flatten() });
+    sendJson(response, 200, { favorite: db.upsertAccountFavorite(session.account_id, parsed.data) });
+    return;
+  }
+
+  const favoriteMatch = pathname.match(/^\/account\/favorites\/([^/]+)$/);
+  if (method === 'DELETE' && favoriteMatch) {
+    const session = readAccountSession(request, db);
+    if (!session) return sendJson(response, 401, { error: 'Missing or invalid account session' });
+    sendJson(response, 200, { removed: db.deleteAccountFavorite(session.account_id, decodeURIComponent(favoriteMatch[1])) });
     return;
   }
 
