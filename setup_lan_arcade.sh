@@ -193,6 +193,8 @@ WIKI_INDEX_FILE="$WIKI_DIR/index.html"
 DOWNLOADS_DIR="$INDEX_DIR/downloads"
 DOWNLOADS_INDEX_FILE="$DOWNLOADS_DIR/index.html"
 DOWNLOAD_SCREENSHOTS_DIR="$DOWNLOADS_DIR/screenshots"
+ACCOUNT_DIR="$INDEX_DIR/account"
+ACCOUNT_INDEX_FILE="$ACCOUNT_DIR/index.html"
 COMPANION_APK_REPO_FILE="$SCRIPT_DIR/releases/android/lan-arcade-companion-debug.apk"
 DOC_ASSETS_DIR="$SCRIPT_DIR/docs/assets"
 ADMIN_DIR="$INDEX_DIR/admin"
@@ -274,7 +276,7 @@ else
   fi
 fi
 
-mkdir -p "$MIRRORS_DIR" "$INDEX_DIR" "$WIKI_DIR" "$ADMIN_DIR"
+mkdir -p "$MIRRORS_DIR" "$INDEX_DIR" "$WIKI_DIR" "$ACCOUNT_DIR" "$ADMIN_DIR"
 if [ "$RUNNING_AS_ROOT" -eq 1 ]; then
   chown -R "$LOCAL_USER:$LOCAL_USER" "$MIRRORS_DIR"
 fi
@@ -1198,9 +1200,10 @@ write_public_index() {
         <div id="genreList" class="side-list"></div>
       </section>
       <nav class="side-links" aria-label="Arcade links">
+        <a class="side-link" href="./account/">Account</a>
         <a class="side-link" href="./wiki/">Offline Wiki</a>
         <a class="side-link" href="./downloads/">Downloads</a>
-        <a class="side-link" href="./admin/">Admin Panel</a>
+        <a class="side-link" href="./admin/">Operator Tools</a>
       </nav>
     </aside>
     <main class="main">
@@ -1949,6 +1952,144 @@ write_public_index() {
       document.getElementById("searchInput").addEventListener("input", function (event) { state.query = String(event.target.value || ""); render(); });
       document.getElementById("genreSearch").addEventListener("input", function (event) { state.genreQuery = String(event.target.value || ""); render(); });
       document.getElementById("sortSelect").addEventListener("change", function (event) { state.sort = String(event.target.value || "recommended"); render(); });
+    })();
+  </script>
+</body>
+</html>
+HTML
+}
+
+write_account_index() {
+  local arcade_name_html
+  arcade_name_html="$(html_escape "$ARCADE_NAME_USE")"
+
+  cat > "$ACCOUNT_INDEX_FILE" <<HTML
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>${arcade_name_html} Account</title>
+  <style>
+    :root { color-scheme: dark; --bg: #090d10; --panel: #141b20; --panel-soft: #192229; --line: #303a40; --text: #f4f7f8; --muted: #a8b2b8; --green: #58d68d; --green-soft: rgba(88,214,141,.16); --warn: #f2c14e; --radius: 8px; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: linear-gradient(180deg, #101719, var(--bg)); color: var(--text); }
+    main { width: min(980px, calc(100vw - 24px)); margin: 0 auto; padding: 24px 0 40px; }
+    a { color: #dfffea; font-weight: 800; }
+    .top { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; flex-wrap: wrap; margin-bottom: 16px; }
+    h1 { margin: 0 0 6px; font-size: clamp(28px, 4vw, 46px); line-height: 1; }
+    .muted { color: var(--muted); line-height: 1.45; }
+    .button { min-height: 38px; border: 1px solid rgba(88,214,141,.42); border-radius: 6px; background: var(--green-soft); color: #dfffea; padding: 8px 12px; text-decoration: none; font-weight: 850; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
+    .button.secondary { border-color: var(--line); background: #151c20; color: var(--text); }
+    .grid { display: grid; grid-template-columns: minmax(260px, 0.9fr) minmax(320px, 1.4fr); gap: 14px; align-items: start; }
+    .card { border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); padding: 16px; }
+    .card h2 { margin: 0 0 12px; font-size: 18px; }
+    .fields { display: grid; gap: 9px; }
+    .field { display: grid; grid-template-columns: 130px minmax(0, 1fr); gap: 10px; border-top: 1px solid rgba(255,255,255,.07); padding-top: 9px; }
+    .field:first-child { border-top: 0; padding-top: 0; }
+    .label { color: var(--muted); font-size: 13px; }
+    .value { overflow-wrap: anywhere; }
+    .empty { border: 1px dashed var(--line); border-radius: var(--radius); padding: 16px; color: var(--muted); background: #111719; }
+    .recent-list { display: grid; gap: 10px; }
+    .recent-item { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; border: 1px solid var(--line); border-radius: 7px; background: var(--panel-soft); padding: 12px; text-decoration: none; color: var(--text); }
+    .recent-item strong { display: block; margin-bottom: 4px; }
+    .recent-meta { color: var(--muted); font-size: 13px; line-height: 1.35; }
+    .count { color: #dfffea; font-weight: 850; white-space: nowrap; }
+    .actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+    .notice { border-left: 4px solid var(--warn); background: rgba(242,193,78,.1); padding: 10px 12px; border-radius: 7px; color: #ffe5a4; }
+    @media (max-width: 760px) { .grid { grid-template-columns: 1fr; } .field { grid-template-columns: 1fr; gap: 3px; } .recent-item { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="top">
+      <div>
+        <h1>Account</h1>
+        <p class="muted">View the local player signed in on this browser and recent games synced to this arcade.</p>
+      </div>
+      <a class="button secondary" href="../">Back to Game Library</a>
+    </div>
+    <div class="grid">
+      <section class="card">
+        <h2>Player</h2>
+        <div id="accountState" class="empty">Checking this browser...</div>
+      </section>
+      <section class="card">
+        <h2>Recently played</h2>
+        <div id="recentState" class="empty">Checking recent games...</div>
+      </section>
+    </div>
+  </main>
+  <script>
+    (function () {
+      "use strict";
+      var accountStorageKey = "lanArcadeAccount.v1";
+      var accountApiBase = window.location.origin + "/arcade-api/";
+      function clear(el) { el.textContent = ""; }
+      function storedAccount() { try { var saved = JSON.parse(localStorage.getItem(accountStorageKey) || "null"); return saved && saved.token ? saved : null; } catch (e) { return null; } }
+      function forgetAccount() { try { localStorage.removeItem(accountStorageKey); } catch (e) {} window.location.reload(); }
+      function request(path, token) {
+        return fetch(accountApiBase + path, { cache: "no-store", headers: { "x-arcade-account-session": token } }).then(function (response) {
+          return response.text().then(function (raw) {
+            var body = raw ? JSON.parse(raw) : {};
+            if (!response.ok) throw new Error(body.error || "Request failed");
+            return body;
+          });
+        });
+      }
+      function field(label, value) {
+        var row = document.createElement("div"); row.className = "field";
+        var key = document.createElement("div"); key.className = "label"; key.textContent = label; row.appendChild(key);
+        var val = document.createElement("div"); val.className = "value"; val.textContent = value || "-"; row.appendChild(val);
+        return row;
+      }
+      function renderSignedOut() {
+        var accountEl = document.getElementById("accountState");
+        accountEl.className = "empty";
+        accountEl.innerHTML = "No account is signed in on this browser. Use the Player panel on the Game Library page to sign in or create a local account.";
+        var actions = document.createElement("div"); actions.className = "actions";
+        var back = document.createElement("a"); back.className = "button"; back.href = "../"; back.textContent = "Go to Game Library"; actions.appendChild(back);
+        accountEl.appendChild(actions);
+        var recentEl = document.getElementById("recentState"); recentEl.className = "empty"; recentEl.textContent = "Recent games are only synced after signing in.";
+      }
+      function renderAccount(account, player) {
+        var el = document.getElementById("accountState"); clear(el); el.className = "fields";
+        el.appendChild(field("Display name", account.displayName));
+        el.appendChild(field("Username", account.username));
+        el.appendChild(field("Local email", account.localEmail));
+        el.appendChild(field("Role", account.role));
+        el.appendChild(field("Status", account.status));
+        el.appendChild(field("Player", player ? player.displayName : "Not linked"));
+        el.appendChild(field("Last login", account.lastLoginAt ? new Date(account.lastLoginAt).toLocaleString() : "Not recorded"));
+        var note = document.createElement("div"); note.className = "notice"; note.textContent = "Password reset and email verification will be available here after the local mail workflow is connected."; el.appendChild(note);
+        var actions = document.createElement("div"); actions.className = "actions";
+        var signOut = document.createElement("button"); signOut.type = "button"; signOut.className = "button secondary"; signOut.textContent = "Sign out on this browser"; signOut.addEventListener("click", forgetAccount); actions.appendChild(signOut);
+        el.appendChild(actions);
+      }
+      function renderRecent(rows) {
+        var el = document.getElementById("recentState"); clear(el);
+        if (!rows.length) { el.className = "empty"; el.textContent = "No synced recent games yet."; return; }
+        el.className = "recent-list";
+        rows.forEach(function (item) {
+          var link = document.createElement("a"); link.className = "recent-item"; link.href = item.path || "../";
+          var main = document.createElement("div");
+          var title = document.createElement("strong"); title.textContent = item.title || item.gameId || "Game"; main.appendChild(title);
+          var meta = document.createElement("div"); meta.className = "recent-meta"; meta.textContent = [item.meta, item.lastPlayedAt ? new Date(item.lastPlayedAt).toLocaleString() : ""].filter(Boolean).join(" | "); main.appendChild(meta);
+          link.appendChild(main);
+          var count = document.createElement("span"); count.className = "count"; count.textContent = String(item.playCount || 1) + " play" + ((item.playCount || 1) === 1 ? "" : "s"); link.appendChild(count);
+          el.appendChild(link);
+        });
+      }
+      var saved = storedAccount();
+      if (!saved) { renderSignedOut(); return; }
+      request("auth/me", saved.token).then(function (body) {
+        renderAccount(body.account, body.player || null);
+        return request("account/activity/recent?limit=20", saved.token);
+      }).then(function (body) {
+        renderRecent(Array.isArray(body.activity) ? body.activity : []);
+      }).catch(function () {
+        forgetAccount();
+      });
     })();
   </script>
 </body>
@@ -3433,6 +3574,7 @@ echo "===== Building catalog and pages in $INDEX_DIR ====="
 build_catalog_json
 ensure_filters_file
 write_public_index
+write_account_index
 publish_companion_downloads
 write_wiki_index
 write_admin_cgi
@@ -3448,6 +3590,7 @@ if [ "$RUNNING_AS_ROOT" -eq 1 ]; then
   chown -R www-data:www-data "$INDEX_DIR"
 fi
 chmod 755 "$WIKI_DIR"
+chmod 755 "$ACCOUNT_DIR"
 chmod 755 "$ADMIN_DIR"
 chmod 755 "$DOWNLOADS_DIR"
 chmod 755 "$DOWNLOAD_SCREENSHOTS_DIR"
@@ -3455,6 +3598,7 @@ chmod 644 "$INDEX_FILE"
 chmod 644 "$CATALOG_FILE"
 chmod 644 "$FILTERS_FILE"
 chmod 644 "$WIKI_INDEX_FILE"
+chmod 644 "$ACCOUNT_INDEX_FILE"
 chmod 644 "$ADMIN_INDEX_FILE"
 chmod 644 "$DOWNLOADS_INDEX_FILE"
 chmod 755 "$ADMIN_CGI_FILE"
@@ -3471,6 +3615,6 @@ echo
 echo "Done."
 echo "Arcade: http://<your-server-ip>/mirrors/games/"
 echo "Wiki:   http://<your-server-ip>/mirrors/games/wiki/"
-echo "Admin:  http://<your-server-ip>/mirrors/games/admin/ (HTTP Basic Auth)"
+echo "Operator tools: http://<your-server-ip>/mirrors/games/admin/"
 echo "APK:    http://<your-server-ip>/mirrors/games/downloads/lan-arcade-companion-debug.apk"
 echo "Tank:   http://<your-server-ip>/mirrors/lan-tank-arena/ (service port ${LAN_TANK_PORT})"
