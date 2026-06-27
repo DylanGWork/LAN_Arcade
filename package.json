@@ -36,7 +36,8 @@
     "native:public:all": "python3 scripts/public_package_batch.py all",
     "native:public:smoke": "bash scripts/public_package_play_smoke.sh",
     "qa:library-platform": "python3 scripts/library_platform_audit.py",
-    "native:services": "python3 scripts/native_service_admin.py"
+    "native:services": "python3 scripts/native_service_admin.py",
+    "qa:library-discovery": "node qa/library-discovery-smoke.mjs"
   },
   "devDependencies": {
     "@types/node": "20.19.1",
