@@ -5,6 +5,20 @@
   const ROWS = 10;
   const SAVE_KEY = 'lanArcade.outpostSiege.save.v1';
   const BEST_KEY = 'lanArcade.outpostSiege.bestWave.v1';
+  const accountSaveSlot = window.LanArcadeAccountSaves ? window.LanArcadeAccountSaves.createSlot({
+    gameId: 'outpost-siege',
+    legacyKey: SAVE_KEY,
+    slot: 'main',
+    label: 'Outpost Siege run',
+    applyPayload: (payload, source) => {
+      localStorage.setItem(ACTIVE_BEST_KEY, String(payload.bestWave || 0));
+      state = loadGame();
+      updateUi();
+      if (source === 'server') showToast('Loaded account save.');
+    },
+  }) : null;
+  const ACTIVE_SAVE_KEY = accountSaveSlot ? accountSaveSlot.key : SAVE_KEY;
+  const ACTIVE_BEST_KEY = window.LanArcadeAccountSaves ? window.LanArcadeAccountSaves.localKey(BEST_KEY) : BEST_KEY;
 
   const TOWER_TYPES = {
     cannon: {
@@ -160,6 +174,7 @@
   resizeCanvas();
   updateUi();
   requestAnimationFrame(frame);
+  if (accountSaveSlot) accountSaveSlot.hydrate();
 
   function defaultState() {
     return {
@@ -180,7 +195,7 @@
       speed: 1,
       kills: 0,
       leaks: 0,
-      bestWave: Number.parseInt(localStorage.getItem(BEST_KEY) || '0', 10) || 0,
+      bestWave: Number.parseInt(localStorage.getItem(ACTIVE_BEST_KEY) || '0', 10) || 0,
       nextTowerId: 1,
       nextEnemyId: 1,
       nextEffectId: 1,
@@ -190,7 +205,7 @@
   function loadGame() {
     const fresh = defaultState();
     try {
-      const saved = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null');
+      const saved = JSON.parse(localStorage.getItem(ACTIVE_SAVE_KEY) || 'null');
       if (!saved || !Array.isArray(saved.towers)) return fresh;
       const restored = {
         ...fresh,
@@ -236,8 +251,9 @@
         level: tower.level,
       })),
     };
-    localStorage.setItem(SAVE_KEY, JSON.stringify(payload));
-    localStorage.setItem(BEST_KEY, String(state.bestWave));
+    localStorage.setItem(ACTIVE_SAVE_KEY, JSON.stringify(payload));
+    localStorage.setItem(ACTIVE_BEST_KEY, String(state.bestWave));
+    if (accountSaveSlot) accountSaveSlot.save(payload, { bestWave: state.bestWave });
   }
 
   function createTowerButtons() {

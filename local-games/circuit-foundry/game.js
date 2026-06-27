@@ -5,6 +5,20 @@
   const ROWS = 8;
   const SAVE_KEY = 'lanArcade.circuitFoundry.save.v1';
   const BEST_KEY = 'lanArcade.circuitFoundry.best.v1';
+  const accountSaveSlot = window.LanArcadeAccountSaves ? window.LanArcadeAccountSaves.createSlot({
+    gameId: 'circuit-foundry',
+    legacyKey: SAVE_KEY,
+    slot: 'main',
+    label: 'Circuit Foundry layout',
+    applyPayload: (payload, source) => {
+      localStorage.setItem(ACTIVE_BEST_KEY, String(payload.best || 0));
+      state = loadState();
+      updateUi();
+      if (source === 'server') showToast('Loaded account save.');
+    },
+  }) : null;
+  const ACTIVE_SAVE_KEY = accountSaveSlot ? accountSaveSlot.key : SAVE_KEY;
+  const ACTIVE_BEST_KEY = window.LanArcadeAccountSaves ? window.LanArcadeAccountSaves.localKey(BEST_KEY) : BEST_KEY;
   const DIRS = [
     { x: 1, y: 0, label: 'E' },
     { x: 0, y: 1, label: 'S' },
@@ -58,6 +72,7 @@
   installQaHooks();
   updateUi();
   requestAnimationFrame(frame);
+  if (accountSaveSlot) accountSaveSlot.hydrate();
 
   function defaultState() {
     return {
@@ -73,7 +88,7 @@
       machines: [],
       items: [],
       tick: 0,
-      best: Number.parseInt(localStorage.getItem(BEST_KEY) || '0', 10) || 0,
+      best: Number.parseInt(localStorage.getItem(ACTIVE_BEST_KEY) || '0', 10) || 0,
       nextMachineId: 1,
       nextItemId: 1,
     };
@@ -82,7 +97,7 @@
   function loadState() {
     const fresh = defaultState();
     try {
-      const saved = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null');
+      const saved = JSON.parse(localStorage.getItem(ACTIVE_SAVE_KEY) || 'null');
       if (!saved || !Array.isArray(saved.machines)) return fresh;
       const machines = saved.machines.map(cleanMachine).filter(Boolean);
       return {
@@ -117,8 +132,9 @@
       machines: state.machines,
       best: state.best,
     };
-    localStorage.setItem(SAVE_KEY, JSON.stringify(payload));
-    localStorage.setItem(BEST_KEY, String(state.best));
+    localStorage.setItem(ACTIVE_SAVE_KEY, JSON.stringify(payload));
+    localStorage.setItem(ACTIVE_BEST_KEY, String(state.best));
+    if (accountSaveSlot) accountSaveSlot.save(payload, { best: state.best });
   }
 
   function createToolButtons() {

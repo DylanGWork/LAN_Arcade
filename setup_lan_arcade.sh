@@ -195,6 +195,8 @@ DOWNLOADS_INDEX_FILE="$DOWNLOADS_DIR/index.html"
 DOWNLOAD_SCREENSHOTS_DIR="$DOWNLOADS_DIR/screenshots"
 ACCOUNT_DIR="$INDEX_DIR/account"
 ACCOUNT_INDEX_FILE="$ACCOUNT_DIR/index.html"
+SHARED_ASSETS_DIR="$MIRRORS_DIR/shared"
+LOCAL_SHARED_ASSETS_DIR="$SCRIPT_DIR/local-games/shared"
 COMPANION_APK_REPO_FILE="$SCRIPT_DIR/releases/android/lan-arcade-companion-debug.apk"
 DOC_ASSETS_DIR="$SCRIPT_DIR/docs/assets"
 ADMIN_DIR="$INDEX_DIR/admin"
@@ -3347,6 +3349,24 @@ else
   configure_admin_credentials
 fi
 
+deploy_shared_local_assets() {
+  if [ ! -d "$LOCAL_SHARED_ASSETS_DIR" ]; then
+    return
+  fi
+
+  echo "===== Deploying shared browser game assets into $SHARED_ASSETS_DIR ====="
+  mkdir -p "$SHARED_ASSETS_DIR"
+  if command -v rsync >/dev/null 2>&1; then
+    rsync -a --delete "$LOCAL_SHARED_ASSETS_DIR"/ "$SHARED_ASSETS_DIR"/
+  else
+    rm -rf "$SHARED_ASSETS_DIR"
+    mkdir -p "$SHARED_ASSETS_DIR"
+    shopt -s dotglob nullglob
+    cp -a "$LOCAL_SHARED_ASSETS_DIR"/* "$SHARED_ASSETS_DIR"/ 2>/dev/null || true
+    shopt -u dotglob nullglob
+  fi
+}
+
 deploy_local_bundled_games() {
   local GAME URL TARGET MARKER local_spec local_source_dir
 
@@ -3387,6 +3407,8 @@ deploy_local_bundled_games() {
     fi
   done
 }
+
+deploy_shared_local_assets
 
 # ---------- Mirror each game ----------
 if [ "$LAN_ARCADE_SKIP_MIRROR" = "1" ]; then

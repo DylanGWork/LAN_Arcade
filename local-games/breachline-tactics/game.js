@@ -5,6 +5,20 @@
   const ROWS = 8;
   const SAVE_KEY = 'lanArcade.breachlineTactics.save.v1';
   const BEST_KEY = 'lanArcade.breachlineTactics.bestDepth.v1';
+  const accountSaveSlot = window.LanArcadeAccountSaves ? window.LanArcadeAccountSaves.createSlot({
+    gameId: 'breachline-tactics',
+    legacyKey: SAVE_KEY,
+    slot: 'main',
+    label: 'Breachline Tactics run',
+    applyPayload: (payload, source) => {
+      localStorage.setItem(ACTIVE_BEST_KEY, String(payload.bestDepth || 1));
+      state = loadState();
+      updateUi();
+      if (source === 'server') showToast('Loaded account save.');
+    },
+  }) : null;
+  const ACTIVE_SAVE_KEY = accountSaveSlot ? accountSaveSlot.key : SAVE_KEY;
+  const ACTIVE_BEST_KEY = window.LanArcadeAccountSaves ? window.LanArcadeAccountSaves.localKey(BEST_KEY) : BEST_KEY;
 
   const OPERATORS = [
     { id: 'vanguard', name: 'Vanguard', color: '#f3bf58', hp: 7, range: 1, damage: 3, move: 3, role: 'Frontline' },
@@ -44,9 +58,10 @@
   installQaHooks();
   updateUi();
   requestAnimationFrame(frame);
+  if (accountSaveSlot) accountSaveSlot.hydrate();
 
   function defaultState() {
-    const bestDepth = Number.parseInt(localStorage.getItem(BEST_KEY) || '1', 10) || 1;
+    const bestDepth = Number.parseInt(localStorage.getItem(ACTIVE_BEST_KEY) || '1', 10) || 1;
     return {
       started: false,
       depth: 1,
@@ -69,7 +84,7 @@
   function loadState() {
     const fresh = defaultState();
     try {
-      const saved = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null');
+      const saved = JSON.parse(localStorage.getItem(ACTIVE_SAVE_KEY) || 'null');
       if (!saved || !Array.isArray(saved.units)) return fresh;
       return {
         ...fresh,
@@ -108,8 +123,9 @@
       enemies: state.enemies,
       obstacles: state.obstacles,
     };
-    localStorage.setItem(SAVE_KEY, JSON.stringify(payload));
-    localStorage.setItem(BEST_KEY, String(state.bestDepth));
+    localStorage.setItem(ACTIVE_SAVE_KEY, JSON.stringify(payload));
+    localStorage.setItem(ACTIVE_BEST_KEY, String(state.bestDepth));
+    if (accountSaveSlot) accountSaveSlot.save(payload, { bestDepth: state.bestDepth });
   }
 
   function bindEvents() {
