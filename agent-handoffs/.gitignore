@@ -1,0 +1,9 @@
+# Keep handoff coordination docs light in Git.
+# Bulky screenshots, logs, candidate media, and scratch scripts stay on the VM.
+**/screenshots/
+**/logs/
+**/artwork-candidates/
+**/work/
+**/status/
+**/inbox/
+**/artwork-candidates-online/

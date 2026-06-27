@@ -7,6 +7,9 @@ import type {
   AccountStatus,
   MailboxStatus,
   ArcadeAccount,
+  AccountFriend,
+  AccountMessage,
+  CreateAccountMessageRequest,
   LeaderboardEntry,
   Player,
   AccountSaveSlot,
@@ -31,6 +34,12 @@ export interface ArcadeDb {
   upsertAccountFavorite(accountId: string, input: RecordGameActivityRequest): FavoriteGame;
   deleteAccountFavorite(accountId: string, gameId: string): boolean;
   listAccountFavorites(accountId: string, options?: { limit?: number }): FavoriteGame[];
+  addAccountFriend(accountId: string, username: string): AccountFriend;
+  deleteAccountFriend(accountId: string, friendAccountId: string): boolean;
+  listAccountFriends(accountId: string, options?: { limit?: number }): AccountFriend[];
+  createAccountMessage(accountId: string, input: CreateAccountMessageRequest): AccountMessage;
+  listAccountMessages(accountId: string, options?: { limit?: number }): AccountMessage[];
+  markAccountMessageRead(accountId: string, messageId: string): AccountMessage | undefined;
   upsertAccountSave(accountId: string, input: UpsertAccountSaveRequest): AccountSaveSlot;
   getAccountSave(accountId: string, adapter: string, gameId: string, slot: string): AccountSaveSlot | undefined;
   listAccountSaves(accountId: string, options?: { adapter?: string; gameId?: string; limit?: number; includePayload?: boolean }): AccountSaveSlot[];
@@ -137,6 +146,34 @@ interface AccountFavoriteRow {
   deep_type: string;
   created_at: string;
   updated_at: string;
+}
+
+interface AccountFriendRow {
+  id: string;
+  account_id: string;
+  friend_account_id: string;
+  friend_username: string;
+  friend_display_name: string;
+  friend_local_email: string;
+  friend_role: AccountRole;
+  created_at: string;
+  last_seen_at: string | null;
+}
+
+interface AccountMessageRow {
+  id: string;
+  from_account_id: string;
+  to_account_id: string;
+  from_username: string;
+  from_display_name: string;
+  to_username: string;
+  to_display_name: string;
+  body: string;
+  game_id: string;
+  game_title: string;
+  game_path: string;
+  created_at: string;
+  read_at: string | null;
 }
 
 interface AccountSaveRow {
@@ -394,6 +431,127 @@ export function openArcadeDb(databasePath: string): ArcadeDb {
         ORDER BY updated_at DESC
         LIMIT ?
       `).all(accountId, limit).map((row) => toFavoriteGame(row as AccountFavoriteRow));
+    },
+    addAccountFriend(accountId, username) {
+      const friendUsername = normalizeUsername(username);
+      if (!friendUsername) throw new Error('Friend username is required');
+      const friend = connection.prepare(`
+        SELECT id, username, display_name, local_email, mailbox_status, email_verified_at, password_hash, role, status,
+               parent_account_id, created_at, updated_at, last_login_at
+        FROM accounts
+        WHERE username = ? AND status = 'active'
+      `).get(friendUsername) as AccountRecord | undefined;
+      if (!friend) throw new Error('Account not found');
+      if (friend.id === accountId) throw new Error('Cannot add yourself as a friend');
+      const now = new Date().toISOString();
+      const add = connection.transaction(() => {
+        connection.prepare(`
+          INSERT INTO account_friends (id, account_id, friend_account_id, created_at)
+          VALUES (?, ?, ?, ?)
+          ON CONFLICT(account_id, friend_account_id) DO NOTHING
+        `).run(crypto.randomUUID(), accountId, friend.id, now);
+        connection.prepare(`
+          INSERT INTO account_friends (id, account_id, friend_account_id, created_at)
+          VALUES (?, ?, ?, ?)
+          ON CONFLICT(account_id, friend_account_id) DO NOTHING
+        `).run(crypto.randomUUID(), friend.id, accountId, now);
+      });
+      add();
+      const row = connection.prepare(`
+        SELECT account_friends.id, account_friends.account_id, account_friends.friend_account_id,
+               friends.username AS friend_username, friends.display_name AS friend_display_name,
+               friends.local_email AS friend_local_email, friends.role AS friend_role,
+               account_friends.created_at, friends.last_login_at AS last_seen_at
+        FROM account_friends
+        JOIN accounts friends ON friends.id = account_friends.friend_account_id
+        WHERE account_friends.account_id = ? AND account_friends.friend_account_id = ?
+      `).get(accountId, friend.id) as AccountFriendRow | undefined;
+      if (!row) throw new Error('Friend was added but could not be loaded');
+      return toAccountFriend(row);
+    },
+    deleteAccountFriend(accountId, friendAccountId) {
+      const result = connection.prepare(`
+        DELETE FROM account_friends
+        WHERE (account_id = ? AND friend_account_id = ?) OR (account_id = ? AND friend_account_id = ?)
+      `).run(accountId, friendAccountId, friendAccountId, accountId);
+      return result.changes > 0;
+    },
+    listAccountFriends(accountId, options = {}) {
+      const limit = Math.min(Math.max(options.limit || 100, 1), 200);
+      return connection.prepare(`
+        SELECT account_friends.id, account_friends.account_id, account_friends.friend_account_id,
+               friends.username AS friend_username, friends.display_name AS friend_display_name,
+               friends.local_email AS friend_local_email, friends.role AS friend_role,
+               account_friends.created_at, friends.last_login_at AS last_seen_at
+        FROM account_friends
+        JOIN accounts friends ON friends.id = account_friends.friend_account_id
+        WHERE account_friends.account_id = ?
+        ORDER BY lower(friends.display_name)
+        LIMIT ?
+      `).all(accountId, limit).map((row) => toAccountFriend(row as AccountFriendRow));
+    },
+    createAccountMessage(accountId, input) {
+      const toUsername = normalizeUsername(input.toUsername);
+      const body = String(input.body || '').trim();
+      if (!toUsername) throw new Error('Recipient username is required');
+      if (!body) throw new Error('Message body is required');
+      const sender = connection.prepare(`
+        SELECT id, username, display_name, local_email, mailbox_status, email_verified_at, password_hash, role, status,
+               parent_account_id, created_at, updated_at, last_login_at
+        FROM accounts
+        WHERE id = ?
+      `).get(accountId) as AccountRecord | undefined;
+      const recipient = connection.prepare(`
+        SELECT id, username, display_name, local_email, mailbox_status, email_verified_at, password_hash, role, status,
+               parent_account_id, created_at, updated_at, last_login_at
+        FROM accounts
+        WHERE username = ? AND status = 'active'
+      `).get(toUsername) as AccountRecord | undefined;
+      if (!sender) throw new Error('Sender account not found');
+      if (!recipient) throw new Error('Recipient account not found');
+      const id = crypto.randomUUID();
+      const now = new Date().toISOString();
+      connection.prepare(`
+        INSERT INTO account_messages (
+          id, from_account_id, to_account_id, body, game_id, game_title, game_path, created_at, read_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULL)
+      `).run(
+        id,
+        accountId,
+        recipient.id,
+        body,
+        (input.gameId || '').trim(),
+        (input.gameTitle || '').trim(),
+        (input.gamePath || '').trim(),
+        now
+      );
+      const row = selectAccountMessage(connection, id, accountId);
+      if (!row) throw new Error('Message was sent but could not be loaded');
+      return toAccountMessage(row);
+    },
+    listAccountMessages(accountId, options = {}) {
+      const limit = Math.min(Math.max(options.limit || 50, 1), 200);
+      return connection.prepare(`
+        SELECT messages.id, messages.from_account_id, messages.to_account_id,
+               senders.username AS from_username, senders.display_name AS from_display_name,
+               recipients.username AS to_username, recipients.display_name AS to_display_name,
+               messages.body, messages.game_id, messages.game_title, messages.game_path,
+               messages.created_at, messages.read_at
+        FROM account_messages messages
+        JOIN accounts senders ON senders.id = messages.from_account_id
+        JOIN accounts recipients ON recipients.id = messages.to_account_id
+        WHERE messages.from_account_id = ? OR messages.to_account_id = ?
+        ORDER BY messages.created_at DESC
+        LIMIT ?
+      `).all(accountId, accountId, limit).map((row) => toAccountMessage(row as AccountMessageRow));
+    },
+    markAccountMessageRead(accountId, messageId) {
+      const now = new Date().toISOString();
+      connection.prepare(`
+        UPDATE account_messages SET read_at = COALESCE(read_at, ?) WHERE id = ? AND to_account_id = ?
+      `).run(now, messageId, accountId);
+      const row = selectAccountMessage(connection, messageId, accountId);
+      return row ? toAccountMessage(row) : undefined;
     },
     upsertAccountSave(accountId, input) {
       const now = new Date().toISOString();
@@ -669,6 +827,27 @@ function migrate(connection: Database.Database): void {
       UNIQUE(account_id, game_id)
     );
 
+    CREATE TABLE IF NOT EXISTS account_friends (
+      id TEXT PRIMARY KEY,
+      account_id TEXT NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+      friend_account_id TEXT NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+      created_at TEXT NOT NULL,
+      UNIQUE(account_id, friend_account_id),
+      CHECK(account_id <> friend_account_id)
+    );
+
+    CREATE TABLE IF NOT EXISTS account_messages (
+      id TEXT PRIMARY KEY,
+      from_account_id TEXT NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+      to_account_id TEXT NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+      body TEXT NOT NULL,
+      game_id TEXT NOT NULL DEFAULT '',
+      game_title TEXT NOT NULL DEFAULT '',
+      game_path TEXT NOT NULL DEFAULT '',
+      created_at TEXT NOT NULL,
+      read_at TEXT
+    );
+
     CREATE TABLE IF NOT EXISTS account_save_slots (
       id TEXT PRIMARY KEY,
       account_id TEXT NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
@@ -696,6 +875,12 @@ function migrate(connection: Database.Database): void {
       ON account_activity(account_id, last_played_at DESC);
     CREATE INDEX IF NOT EXISTS idx_account_favorites_account_updated
       ON account_favorites(account_id, updated_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_account_friends_account
+      ON account_friends(account_id, friend_account_id);
+    CREATE INDEX IF NOT EXISTS idx_account_messages_inbox
+      ON account_messages(to_account_id, created_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_account_messages_outbox
+      ON account_messages(from_account_id, created_at DESC);
     CREATE INDEX IF NOT EXISTS idx_account_save_slots_account_game
       ON account_save_slots(account_id, adapter, game_id, updated_at DESC);
   `);
@@ -798,6 +983,52 @@ function toFavoriteGame(row: AccountFavoriteRow): FavoriteGame {
     createdAt: row.created_at,
     updatedAt: row.updated_at
   };
+}
+
+function toAccountFriend(row: AccountFriendRow): AccountFriend {
+  return {
+    id: row.id,
+    accountId: row.account_id,
+    friendAccountId: row.friend_account_id,
+    username: row.friend_username,
+    displayName: row.friend_display_name,
+    localEmail: row.friend_local_email,
+    role: row.friend_role,
+    createdAt: row.created_at,
+    lastSeenAt: row.last_seen_at
+  };
+}
+
+function toAccountMessage(row: AccountMessageRow): AccountMessage {
+  return {
+    id: row.id,
+    fromAccountId: row.from_account_id,
+    toAccountId: row.to_account_id,
+    fromUsername: row.from_username,
+    fromDisplayName: row.from_display_name,
+    toUsername: row.to_username,
+    toDisplayName: row.to_display_name,
+    body: row.body,
+    gameId: row.game_id,
+    gameTitle: row.game_title,
+    gamePath: row.game_path,
+    createdAt: row.created_at,
+    readAt: row.read_at
+  };
+}
+
+function selectAccountMessage(connection: Database.Database, messageId: string, accountId: string): AccountMessageRow | undefined {
+  return connection.prepare(`
+    SELECT messages.id, messages.from_account_id, messages.to_account_id,
+           senders.username AS from_username, senders.display_name AS from_display_name,
+           recipients.username AS to_username, recipients.display_name AS to_display_name,
+           messages.body, messages.game_id, messages.game_title, messages.game_path,
+           messages.created_at, messages.read_at
+    FROM account_messages messages
+    JOIN accounts senders ON senders.id = messages.from_account_id
+    JOIN accounts recipients ON recipients.id = messages.to_account_id
+    WHERE messages.id = ? AND (messages.from_account_id = ? OR messages.to_account_id = ?)
+  `).get(messageId, accountId, accountId) as AccountMessageRow | undefined;
 }
 
 function toAccountSaveSlot(row: AccountSaveRow, includePayload: boolean): AccountSaveSlot {

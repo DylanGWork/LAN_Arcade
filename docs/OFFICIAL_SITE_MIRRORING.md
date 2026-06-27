@@ -69,3 +69,18 @@ A game hub can link to a mirrored official site/wiki/manual when:
 - the hub also has a short local quick-start in case the mirrored site is large or awkward.
 
 Do not treat a successful wget as gameplay proof. It only satisfies the offline information/manual part of intake.
+
+## Player-Facing Link Rule
+
+Do not call these pages `mirrors` on public player pages. Use labels such as:
+
+- `Open offline website`
+- `Open guides`
+- `Manuals and help`
+- `Official page and licensing`
+
+The operator/admin docs can still use `mirror` because that is the technical implementation.
+
+## Full-Flow Boundary
+
+A working offline website/wiki proves only that help content is available without internet. It does not prove the game can be installed, launched, joined, or played. Promotion still requires gameplay QA evidence.

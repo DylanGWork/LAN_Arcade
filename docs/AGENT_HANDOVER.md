@@ -1,5 +1,11 @@
 # Library Search, Classic PC, And Wording Lessons - 2026-06-27
 
+# Git Identity And Contributor Attribution - 2026-06-28
+
+GitHub showed an unrelated `dylan` account as a contributor because some commits used author email `dylan@users.noreply.github.com`, which GitHub resolved to that account. GitHub collaborator permission check for username `dylan` on `DylanGWork/LAN_Arcade` returned `read`; `DylanGWork` returned `admin`. Treat this as an attribution leak, not evidence of repo write access.
+
+Before committing, run `npm run qa:git-identity`. The VM repo should use `DylanGWork LAN Arcade Agent <dylan.gannan@pestsense.com>`. `.mailmap` maps known bad historical local/agent emails for local history views, but GitHub's public contributor graph may still require an explicit history rewrite if Dylan wants the old attribution removed completely.
+
 Dylan flagged that SimAnt did not appear in the main library search even though it was playable inside the Classic PC shelf. Root cause: `/mirrors/games/` searched only top-level catalog cards. The library generator now keeps large ROM/DOS/board collections nested by default, but title search loads nested manifests and returns direct playable entries for matching games. Guests still get browser-local Recently played via `localStorage`; signed-in accounts also use server-backed recent activity through `/arcade-api/account/activity`.
 
 User-facing language needs stricter separation from intake/admin language. Public pages should not expose confusing states such as `source-ready`, `package missing`, `candidate`, or vague `top-level cards` wording. Use action-oriented labels: `Play`, `Open shelf`, `Ready to play`, `Needs local files`, `Download game ZIP`, and `Review before play`. Keep technical states in manifests, intake docs, admin pages, and QA reports.
@@ -906,3 +912,23 @@ node qa/pillage-first-attack-briefing-smoke.mjs      # qa/reports/pillage-first-
 ```
 
 The focused attack briefing smoke treats React minified error `#418` as a known Rally Point route-level hydration warning because it also appears on untouched send-troops tabs. It still fails on missing UI terms, blocked network requests, failed LAN responses, console errors, or any other page error.
+
+## Platform Cleanup / Social Foundation - 2026-06-28
+
+Active phase review: `docs/PHASE23_PLATFORM_CLEANUP_REVIEW_2026-06-28.md`.
+
+Key changes:
+
+- Git identity guardrail: run `npm run qa:git-identity` before commits.
+- Public library wording should be player-facing; technical intake labels belong in operator/admin areas.
+- Classic PC search reaches packaged games such as SimAnt directly.
+- Arcade API live container now includes `account-friends` and `account-messages`.
+- User-data backup helper: `npm run backup:user-data`; latest smoke backup: `/home/dylan/backups/lan-arcade/user-data/20260627T152916Z`.
+- Docs mirror validation report folder: `qa/reports/phase23-docs-mirror/`; FreeCiv docs were repaired no-network to remove a Twitter widget reference.
+- Deployment modes are documented in `docs/DEPLOYMENT_MODES.md`: Full GannanNet mode uses the local mail server; Camping/Pi mode must remain usable without email.
+
+Parallel handoff workspaces:
+
+- `agent-handoffs/phase2-media-artwork/HANDOVER.md`
+- `agent-handoffs/phase5-gameplay-qa/HANDOVER.md`
+- Review doc for these handoffs: `docs/PHASE24_MEDIA_AND_GAMEPLAY_QA_REVIEW_2026-06-28.md`.

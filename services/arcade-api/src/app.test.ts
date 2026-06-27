@@ -193,6 +193,66 @@ test('signed-in accounts can save, list, and remove favorite games', async () =>
   });
 });
 
+test('signed-in accounts can add friends and exchange local messages', async () => {
+  const fixture = tempFixture();
+  await withServer(fixture, async (baseUrl) => {
+    const dylan = await request<{ token: string; account: { id: string; username: string } }>(baseUrl, '/accounts', {
+      method: 'POST',
+      body: JSON.stringify({ username: 'Dylan', displayName: 'Dylan', password: 'correct-horse-battery' })
+    });
+    const riley = await request<{ token: string; account: { id: string; username: string } }>(baseUrl, '/accounts', {
+      method: 'POST',
+      body: JSON.stringify({ username: 'Riley', displayName: 'Riley', password: 'correct-horse-battery' })
+    });
+
+    const added = await request<{ friend: { friendAccountId: string; username: string; displayName: string } }>(baseUrl, '/account/friends', {
+      method: 'POST',
+      headers: { 'x-arcade-account-session': dylan.token },
+      body: JSON.stringify({ username: 'RILEY' })
+    });
+    assert.equal(added.friend.friendAccountId, riley.account.id);
+    assert.equal(added.friend.username, 'riley');
+
+    const dylanFriends = await request<{ friends: Array<{ friendAccountId: string; username: string }> }>(baseUrl, '/account/friends', {
+      headers: { 'x-arcade-account-session': dylan.token }
+    });
+    const rileyFriends = await request<{ friends: Array<{ friendAccountId: string; username: string }> }>(baseUrl, '/account/friends', {
+      headers: { 'x-arcade-account-session': riley.token }
+    });
+    assert.equal(dylanFriends.friends[0].friendAccountId, riley.account.id);
+    assert.equal(rileyFriends.friends[0].friendAccountId, dylan.account.id);
+
+    const sent = await request<{ message: { id: string; fromUsername: string; toUsername: string; body: string; gameTitle: string } }>(baseUrl, '/account/messages', {
+      method: 'POST',
+      headers: { 'x-arcade-account-session': dylan.token },
+      body: JSON.stringify({
+        toUsername: 'riley',
+        body: 'Come play SimAnt',
+        gameId: 'simant-ma',
+        gameTitle: 'SimAnt',
+        gamePath: '../private-dos-vault/play.html?id=simant-ma'
+      })
+    });
+    assert.equal(sent.message.fromUsername, 'dylan');
+    assert.equal(sent.message.toUsername, 'riley');
+    assert.equal(sent.message.gameTitle, 'SimAnt');
+
+    const messages = await request<{ messages: Array<{ id: string; body: string; gameId: string; readAt: string | null }> }>(baseUrl, '/account/messages', {
+      headers: { 'x-arcade-account-session': riley.token }
+    });
+    assert.equal(messages.messages.length, 1);
+    assert.equal(messages.messages[0].body, 'Come play SimAnt');
+    assert.equal(messages.messages[0].gameId, 'simant-ma');
+    assert.equal(messages.messages[0].readAt, null);
+
+    const read = await request<{ message: { readAt: string | null } }>(baseUrl, `/account/messages/${encodeURIComponent(sent.message.id)}/read`, {
+      method: 'PUT',
+      headers: { 'x-arcade-account-session': riley.token }
+    });
+    assert.ok(read.message.readAt);
+  });
+});
+
 test('signed-in accounts can store and retrieve isolated save slots', async () => {
   const fixture = tempFixture();
   await withServer(fixture, async (baseUrl) => {

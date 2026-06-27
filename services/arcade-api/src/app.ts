@@ -31,6 +31,18 @@ const loginSchema = z.object({
   password: z.string().min(1).max(256)
 });
 
+const addFriendSchema = z.object({
+  username: z.string().trim().min(1).max(64)
+});
+
+const createMessageSchema = z.object({
+  toUsername: z.string().trim().min(1).max(64),
+  body: z.string().trim().min(1).max(1000),
+  gameId: z.string().trim().max(180).default(''),
+  gameTitle: z.string().trim().max(180).default(''),
+  gamePath: z.string().trim().max(600).default('')
+});
+
 const accountActivitySchema = z.object({
   id: z.string().trim().min(1).max(180),
   title: z.string().trim().min(1).max(180),
@@ -126,7 +138,7 @@ async function handleRequest(
       name: config.arcadeName,
       apiVersion: '0.2.0',
       generatedAt: new Date().toISOString(),
-      capabilities: ['catalog', 'profiles', 'accounts', 'account-sessions', 'account-activity', 'account-favorites', 'account-save-vault', 'local-email-addresses', 'account-email-state', 'scores', 'leaderboards', 'daily-challenges']
+      capabilities: ['catalog', 'profiles', 'accounts', 'account-sessions', 'account-activity', 'account-favorites', 'account-friends', 'account-messages', 'account-save-vault', 'local-email-addresses', 'account-email-state', 'scores', 'leaderboards', 'daily-challenges']
     });
     return;
   }
@@ -235,6 +247,67 @@ async function handleRequest(
     const session = readAccountSession(request, db);
     if (!session) return sendJson(response, 401, { error: 'Missing or invalid account session' });
     sendJson(response, 200, { removed: db.deleteAccountFavorite(session.account_id, decodeURIComponent(favoriteMatch[1])) });
+    return;
+  }
+
+
+  if (method === 'GET' && pathname === '/account/friends') {
+    const session = readAccountSession(request, db);
+    if (!session) return sendJson(response, 401, { error: 'Missing or invalid account session' });
+    const limit = url.searchParams.get('limit') ? Number.parseInt(url.searchParams.get('limit') || '100', 10) : 100;
+    sendJson(response, 200, { friends: db.listAccountFriends(session.account_id, { limit }) });
+    return;
+  }
+
+  if (method === 'POST' && pathname === '/account/friends') {
+    const session = readAccountSession(request, db);
+    if (!session) return sendJson(response, 401, { error: 'Missing or invalid account session' });
+    const parsed = addFriendSchema.safeParse(await readJson(request));
+    if (!parsed.success) return sendJson(response, 400, { error: 'Invalid friend payload', details: parsed.error.flatten() });
+    try {
+      sendJson(response, 201, { friend: db.addAccountFriend(session.account_id, parsed.data.username) });
+    } catch (error) {
+      sendJson(response, 404, { error: error instanceof Error ? error.message : 'Could not add friend' });
+    }
+    return;
+  }
+
+  const friendMatch = pathname.match(/^\/account\/friends\/([^/]+)$/);
+  if (method === 'DELETE' && friendMatch) {
+    const session = readAccountSession(request, db);
+    if (!session) return sendJson(response, 401, { error: 'Missing or invalid account session' });
+    sendJson(response, 200, { removed: db.deleteAccountFriend(session.account_id, decodeURIComponent(friendMatch[1])) });
+    return;
+  }
+
+  if (method === 'GET' && pathname === '/account/messages') {
+    const session = readAccountSession(request, db);
+    if (!session) return sendJson(response, 401, { error: 'Missing or invalid account session' });
+    const limit = url.searchParams.get('limit') ? Number.parseInt(url.searchParams.get('limit') || '50', 10) : 50;
+    sendJson(response, 200, { messages: db.listAccountMessages(session.account_id, { limit }) });
+    return;
+  }
+
+  if (method === 'POST' && pathname === '/account/messages') {
+    const session = readAccountSession(request, db);
+    if (!session) return sendJson(response, 401, { error: 'Missing or invalid account session' });
+    const parsed = createMessageSchema.safeParse(await readJson(request));
+    if (!parsed.success) return sendJson(response, 400, { error: 'Invalid message payload', details: parsed.error.flatten() });
+    try {
+      sendJson(response, 201, { message: db.createAccountMessage(session.account_id, parsed.data) });
+    } catch (error) {
+      sendJson(response, 404, { error: error instanceof Error ? error.message : 'Could not send message' });
+    }
+    return;
+  }
+
+  const messageReadMatch = pathname.match(/^\/account\/messages\/([^/]+)\/read$/);
+  if (method === 'PUT' && messageReadMatch) {
+    const session = readAccountSession(request, db);
+    if (!session) return sendJson(response, 401, { error: 'Missing or invalid account session' });
+    const message = db.markAccountMessageRead(session.account_id, decodeURIComponent(messageReadMatch[1]));
+    if (!message) return sendJson(response, 404, { error: 'Message not found' });
+    sendJson(response, 200, { message });
     return;
   }
 
@@ -366,7 +439,7 @@ function readAccountSession(request: IncomingMessage, db: ArcadeDb) {
 
 function setCommonHeaders(response: ServerResponse): void {
   response.setHeader('access-control-allow-origin', '*');
-  response.setHeader('access-control-allow-methods', 'GET,POST,PUT,OPTIONS');
+  response.setHeader('access-control-allow-methods', 'GET,POST,PUT,DELETE,OPTIONS');
   response.setHeader('access-control-allow-headers', 'content-type,x-arcade-session,x-arcade-account-session');
   response.setHeader('cache-control', 'no-store');
 }

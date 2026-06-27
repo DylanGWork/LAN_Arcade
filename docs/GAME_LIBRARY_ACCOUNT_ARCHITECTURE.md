@@ -1,7 +1,26 @@
 # LAN Arcade Game Library Account And Email Architecture
 
-Last updated: 2026-06-21
-Status: planning only; no account integration implemented yet.
+Last updated: 2026-06-28
+Status: foundation in progress; full save migration is not implemented yet.
+
+
+## 2026-06-28 Implementation Update
+
+Confirmed live account primitives now exist in the Arcade API:
+
+- account creation, sessions, local email metadata, favourites, recent activity, and save vault;
+- friends and local messages/invites;
+- `/arcade-api/server-info` capabilities include `account-friends` and `account-messages`.
+
+These are not yet a complete Steam-style social layer. Treat them as the account foundation for later presence, game invites, parental controls, and save synchronization. Browser/emulator saves still need per-launcher proof before claiming family-safe isolation.
+
+User data backup helper:
+
+```bash
+npm run backup:user-data
+```
+
+The helper writes timestamped snapshots under `/home/dylan/backups/lan-arcade/user-data/` and intentionally avoids mail-server secrets.
 
 ## Compatibility Assessment
 

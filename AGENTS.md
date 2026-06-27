@@ -45,6 +45,10 @@ Do not stop Docker globally.
 ## Development Rules
 
 - Check `git status` before edits.
+- When Dylan says VM-only, do edits, tests, and generated artifacts on GannanNet over SSH. Do not create local temp scripts or run local browser-control helpers unless he explicitly asks.
+- Before every commit, run `npm run qa:git-identity` or manually verify `git config user.name` and `git config user.email`.
+- Approved LAN Arcade commit identity on GannanNet is currently `DylanGWork LAN Arcade Agent <dylan.gannan@pestsense.com>`. Do not use VM host-derived emails such as `dylan@GannanNet.GannanNet`.
+- If GitHub shows a surprising contributor, first check commit author emails and repo collaborator permissions. GitHub contributor attribution can come from commit metadata even when the account has no write access.
 - Do not revert Dylan's or another agent's changes.
 - Keep deployment changes backed up.
 - Use the existing QA scripts where practical.

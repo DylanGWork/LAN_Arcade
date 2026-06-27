@@ -761,7 +761,7 @@ build_catalog_json() {
       title="$(echo "$dir_name" | tr '-' ' ')"
       icon="Play"
       meta="HTML5 / Offline"
-      desc="Offline-friendly browser game mirrored in the '$dir_name' folder."
+      desc="Offline-friendly browser game saved in the '$dir_name' folder."
       tags="Offline"
     fi
 
@@ -1226,7 +1226,7 @@ write_public_index() {
       </section>
       <nav class="side-links" aria-label="Arcade links">
         <a class="side-link" href="./account/">Account</a>
-        <a class="side-link" href="./wiki/">Offline Wiki</a>
+        <a class="side-link" href="./wiki/">Guides & Manuals</a>
         <a class="side-link" href="./downloads/">Downloads</a>
         <a class="side-link" href="./admin/">Operator Tools</a>
       </nav>
@@ -1235,7 +1235,7 @@ write_public_index() {
       <header class="topbar">
         <div class="headline">
           <h2>Game Library</h2>
-          <p>Find something playable by device, people, platform shelf, or hosted LAN service from one offline catalogue.</p>
+          <p>Find something playable by device, people, collection, or local multiplayer session from one offline game library.</p>
         </div>
         <label class="control">
           <span>Search</span>
@@ -1253,11 +1253,11 @@ write_public_index() {
       </header>
       <div id="status" class="status-row" aria-live="polite"></div>
       <section class="shelf" id="recentShelf" hidden>
-        <div class="shelf-head"><h3>Recently played</h3><span id="recentShelfNote" class="shelf-note">Saved on this browser</span></div>
+        <div class="shelf-head"><h3>Recently played</h3><span id="recentShelfNote" class="shelf-note">Saved on this device</span></div>
         <div id="recentGrid" class="featured-grid"></div>
       </section>
       <section class="shelf" id="favoriteShelf" hidden>
-        <div class="shelf-head"><h3>Favourites</h3><span id="favoriteShelfNote" class="shelf-note">Saved on this browser</span></div>
+        <div class="shelf-head"><h3>Favourites</h3><span id="favoriteShelfNote" class="shelf-note">Saved on this device</span></div>
         <div id="favoriteGrid" class="featured-grid"></div>
       </section>
       <p class="catalog-note">Search includes games inside the Game Boy and Classic PC shelves when you type a title. Large collections open as shelves so the home screen stays readable.</p>
@@ -1282,15 +1282,15 @@ write_public_index() {
         { id: "guest", label: "Guest quick-play", note: "Family, casual, and low-setup choices" },
         { id: "pi", label: "Camping / Pi-friendly", note: "Lightweight picks for modest devices" },
         { id: "lan", label: "LAN multiplayer", note: "Multiplayer games and hosted sessions" },
-        { id: "emulation", label: "Retro shelves", note: "Game Boy, classic PC, and emulator collections" },
-        { id: "native", label: "Installed & LAN games", note: "Games that use installers, desktop clients, or hosted LAN sessions" },
+        { id: "emulation", label: "Retro & emulators", note: "Game Boy, classic PC, and emulator collections" },
+        { id: "native", label: "Installable & LAN games", note: "Games that use installers, desktop clients, or local multiplayer sessions" },
         { id: "research", label: "Needs setup", note: "Games waiting for files, fixes, or play testing" }
       ];
       var shelves = [
-        { id: "game-boy-wave-1", label: "Curated Game Boy Picks", note: "201 ready games", href: "../private-rom-wave-1/" },
-        { id: "emulator-library", label: "Emulator Library", note: "All retro shelves", href: "../emulator-library/" },
+        { id: "game-boy-wave-1", label: "Curated Game Boy Picks", note: "201 playable games", href: "../private-rom-wave-1/" },
+        { id: "emulator-library", label: "Emulator Library", note: "All retro collections", href: "../emulator-library/" },
         { id: "game-boy-vault", label: "743 Game Boy Games", note: "Ready in browser", href: "../private-rom-vault/" },
-        { id: "classic-pc-games", label: "Classic PC Games", note: "15 ready / 28 total", href: "../private-dos-vault/?v=dos28-20260622b" },
+        { id: "classic-pc-games", label: "Classic PC Games", note: "15 playable / 28 total", href: "../private-dos-vault/?v=dos28-20260622b" },
         { id: "board-games-wave-1", label: "Board Game Shelf", note: "200 board games", href: "../board-games-wave-1/" },
         { id: "ready-shelf", label: "Ready now", note: "Quick filter", action: "profile", value: "ready" },
         { id: "guest-shelf", label: "Guest friendly", note: "Quick filter", action: "profile", value: "guest" },
@@ -1300,11 +1300,11 @@ write_public_index() {
         { id: "research-shelf", label: "Needs setup", note: "Quick filter", action: "profile", value: "research" }
       ];
       var internalShelfStats = [
-        [743, "Game Boy vault games"],
+        [743, "Game Boy games"],
         [201, "curated Game Boy picks"],
         [200, "board games"],
         [28, "classic PC games"],
-        [15, "ready Classic PC games"]
+        [15, "playable Classic PC games"]
       ];
       var deepSearchSources = [
         { id: "classic-pc", label: "Classic PC Games", type: "dos", manifest: "../private-dos-vault/manifest.json", basePath: "../private-dos-vault/" },
@@ -1358,7 +1358,7 @@ write_public_index() {
           title: String(game.title || game.id || "Game"),
           icon: String(game.icon || "Play").slice(0, 4),
           meta: String(game.meta || "Offline game"),
-          description: String(game.description || "Offline-friendly game mirrored on this LAN."),
+          description: String(game.description || "Offline-friendly game saved on this arcade."),
           tags: toStringArray(game.tags).slice(0, 6),
           categories: toStringArray(game.categories).slice(0, 8),
           path: gameUrl(game),
@@ -1441,7 +1441,7 @@ write_public_index() {
           title: String(activity.title || activity.gameId || "Game"),
           icon: String(activity.title || activity.gameId || "Play").replace(/[^A-Za-z0-9]/g, "").slice(0, 4) || "Play",
           meta: String(activity.meta || "Offline game"),
-          description: String(activity.description || "Offline-friendly game mirrored on this LAN."),
+          description: String(activity.description || "Offline-friendly game saved on this arcade."),
           tags: toStringArray(activity.tags).slice(0, 6),
           categories: toStringArray(activity.categories).slice(0, 8),
           path: String(activity.path || ""),
@@ -1691,20 +1691,20 @@ write_public_index() {
         return "Browser ready";
       }
       function readinessLabel(game) {
-        if (game.deepType === "dos") return game.path && game.path.indexOf("play.html") >= 0 ? "Ready to play" : "Open shelf";
+        if (game.deepType === "dos") return game.path && game.path.indexOf("play.html") >= 0 ? "Ready to play" : "Open collection";
         if (game.deepType === "rom") return "Ready offline";
         if (hasText(game, ["restore needed"])) return "Needs files";
         if (hasText(game, ["blocked", "waiting"])) return "Needs setup";
         if (isResearchEntry(game)) return "Needs setup";
         if (isServerService(game)) return "Start on demand";
         if (isNativeOrServerGame(game)) return "Client install";
-        if (isCollection(game)) return "Shelf ready";
+        if (isCollection(game)) return "Collection ready";
         if (hasCategory(game, "private")) return "Private";
         return "Ready offline";
       }
       function readinessTone(game) {
         var label = readinessLabel(game);
-        if (label === "Ready offline" || label === "Ready to play" || label === "Shelf ready") return "ready";
+        if (label === "Ready offline" || label === "Ready to play" || label === "Collection ready") return "ready";
         if (label === "Needs setup" || label === "Needs files") return "warn";
         return "";
       }
@@ -1732,8 +1732,8 @@ write_public_index() {
       function primaryActionLabel(game) {
         if (game.deepType === "dos" && game.path && game.path.indexOf("play.html") >= 0) return "Play";
         if (game.deepType === "rom") return "Play";
-        if (isResearchEntry(game)) return "Review";
-        if (isCollection(game)) return "Open shelf";
+        if (isResearchEntry(game)) return "View details";
+        if (isCollection(game)) return "Open collection";
         if (isServerService(game)) return "Start / join";
         if (isNativeOrServerGame(game)) return "Install / play";
         return "Play";
@@ -1841,7 +1841,15 @@ write_public_index() {
         return sorted;
       }
       function gameUrl(game) { return game.path ? String(game.path) : "../" + encodeURIComponent(String(game.id || "")) + "/"; }
-      function shortPath(url) { return url.replace(/^\.\.\//, "/mirrors/"); }
+      function launchHint(game) {
+        if (game.deepType === "dos") return game.path && game.path.indexOf("play.html") >= 0 ? "browser play" : "classic PC collection";
+        if (game.deepType === "rom") return "browser emulator";
+        if (game.deepType === "board") return "rules and table notes";
+        if (isCollection(game)) return "collection";
+        if (isServerService(game)) return "local server";
+        if (isNativeOrServerGame(game)) return "desktop install";
+        return "browser play";
+      }
       function makeMedia(game) {
         var media = document.createElement("div"); media.className = "media";
         if (game.preview) {
@@ -1894,12 +1902,12 @@ write_public_index() {
         var body = document.createElement("div"); body.className = "card-body";
         var title = document.createElement("h4"); title.className = "card-title"; title.textContent = String(game.title || game.id || "Unknown"); body.appendChild(title);
         var meta = document.createElement("div"); meta.className = "meta"; meta.textContent = String(game.meta || "Offline game"); body.appendChild(meta);
-        var desc = document.createElement("p"); desc.className = "desc"; desc.textContent = String(game.description || "Offline-friendly game mirrored on this LAN."); body.appendChild(desc);
+        var desc = document.createElement("p"); desc.className = "desc"; desc.textContent = String(game.description || "Offline-friendly game saved on this arcade."); body.appendChild(desc);
         body.appendChild(makeTags(game, featured ? 4 : 3));
         body.appendChild(makeDetailChips(game));
         var launchRow = document.createElement("div"); launchRow.className = "launch-row";
         var launch = document.createElement("span"); launch.className = "launch"; launch.textContent = primaryActionLabel(game); launchRow.appendChild(launch);
-        var path = document.createElement("span"); path.className = "path"; path.textContent = shortPath(gameUrl(game)); path.title = shortPath(gameUrl(game)); launchRow.appendChild(path);
+        var path = document.createElement("span"); path.className = "path"; path.textContent = launchHint(game); path.title = gameUrl(game); launchRow.appendChild(path);
         body.appendChild(launchRow);
         link.appendChild(body);
         card.appendChild(link);
@@ -1920,7 +1928,7 @@ write_public_index() {
         var recentSource = state.account && state.account.account && state.serverRecentGames.length ? state.serverRecentGames : loadRecentGames();
         var recent = recentSource.slice(0, 3);
         var note = document.getElementById("recentShelfNote");
-        if (note) note.textContent = state.account && state.account.account ? "Synced for " + (state.account.account.displayName || state.account.account.username) + " on this arcade" : "Saved on this browser";
+        if (note) note.textContent = state.account && state.account.account ? "Synced for " + (state.account.account.displayName || state.account.account.username) + " on this arcade" : "Saved on this device";
         clear(grid);
         recent.forEach(function (game) { grid.appendChild(makeCard(game, true)); });
         shelf.hidden = recent.length === 0 || String(state.query || "").trim() || state.category;
@@ -1931,7 +1939,7 @@ write_public_index() {
         if (!shelf || !grid) return;
         var favorites = currentFavoriteGames().slice(0, 3);
         var note = document.getElementById("favoriteShelfNote");
-        if (note) note.textContent = state.account && state.account.account ? "Synced for " + (state.account.account.displayName || state.account.account.username) + " on this arcade" : "Saved on this browser";
+        if (note) note.textContent = state.account && state.account.account ? "Synced for " + (state.account.account.displayName || state.account.account.username) + " on this arcade" : "Saved on this device";
         clear(grid);
         favorites.forEach(function (game) { grid.appendChild(makeCard(game, true)); });
         shelf.hidden = favorites.length === 0 || String(state.query || "").trim() || state.category;
@@ -2109,6 +2117,10 @@ write_account_index() {
     .recent-item { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; border: 1px solid var(--line); border-radius: 7px; background: var(--panel-soft); padding: 12px; text-decoration: none; color: var(--text); }
     .recent-item strong { display: block; margin-bottom: 4px; }
     .recent-meta { color: var(--muted); font-size: 13px; line-height: 1.35; }
+    input, textarea { width: 100%; border: 1px solid var(--line); border-radius: 6px; background: #0f1519; color: var(--text); padding: 9px 10px; font: inherit; }
+    textarea { min-height: 86px; resize: vertical; }
+    .inline-form { display: grid; gap: 8px; margin-top: 12px; }
+    .message-body { color: var(--text); margin-top: 6px; line-height: 1.4; overflow-wrap: anywhere; }
     .wide { grid-column: 1 / -1; }
     .count { color: #dfffea; font-weight: 850; white-space: nowrap; }
     .actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
@@ -2134,6 +2146,14 @@ write_account_index() {
         <h2>Recently played</h2>
         <div id="recentState" class="empty">Checking recent games...</div>
       </section>
+      <section class="card">
+        <h2>Friends</h2>
+        <div id="friendState" class="empty">Checking friends...</div>
+      </section>
+      <section class="card wide">
+        <h2>Messages & invites</h2>
+        <div id="messageState" class="empty">Checking messages...</div>
+      </section>
       <section class="card wide">
         <h2>Save vault</h2>
         <div id="saveState" class="empty">Checking synced saves...</div>
@@ -2148,8 +2168,11 @@ write_account_index() {
       function clear(el) { el.textContent = ""; }
       function storedAccount() { try { var saved = JSON.parse(localStorage.getItem(accountStorageKey) || "null"); return saved && saved.token ? saved : null; } catch (e) { return null; } }
       function forgetAccount() { try { localStorage.removeItem(accountStorageKey); } catch (e) {} window.location.reload(); }
-      function request(path, token) {
-        return fetch(accountApiBase + path, { cache: "no-store", headers: { "x-arcade-account-session": token } }).then(function (response) {
+      function request(path, token, options) {
+        var requestOptions = options || {};
+        requestOptions.headers = Object.assign({ "x-arcade-account-session": token, "content-type": "application/json" }, requestOptions.headers || {});
+        requestOptions.cache = "no-store";
+        return fetch(accountApiBase + path, requestOptions).then(function (response) {
           return response.text().then(function (raw) {
             var body = raw ? JSON.parse(raw) : {};
             if (!response.ok) throw new Error(body.error || "Request failed");
@@ -2182,6 +2205,8 @@ write_account_index() {
         var back = document.createElement("a"); back.className = "button"; back.href = "../"; back.textContent = "Go to Game Library"; actions.appendChild(back);
         accountEl.appendChild(actions);
         var recentEl = document.getElementById("recentState"); recentEl.className = "empty"; recentEl.textContent = "Recent games are only synced after signing in.";
+        var friendEl = document.getElementById("friendState"); friendEl.className = "empty"; friendEl.textContent = "Friends are available after signing in.";
+        var messageEl = document.getElementById("messageState"); messageEl.className = "empty"; messageEl.textContent = "Messages and game invites are available after signing in.";
         var saveEl = document.getElementById("saveState"); saveEl.className = "empty"; saveEl.textContent = "Synced saves will appear after signing in and playing save-aware games.";
       }
       function renderAccount(account, player) {
@@ -2214,6 +2239,65 @@ write_account_index() {
           el.appendChild(link);
         });
       }
+
+      function renderFriends(rows, token) {
+        var el = document.getElementById("friendState"); clear(el);
+        var list = Array.isArray(rows) ? rows : [];
+        el.className = "recent-list";
+        if (!list.length) {
+          var empty = document.createElement("div"); empty.className = "empty"; empty.textContent = "No friends yet. Add another local arcade username to make invites easier."; el.appendChild(empty);
+        }
+        list.forEach(function (friend) {
+          var row = document.createElement("div"); row.className = "recent-item";
+          var main = document.createElement("div");
+          var title = document.createElement("strong"); title.textContent = friend.displayName || friend.username; main.appendChild(title);
+          var meta = document.createElement("div"); meta.className = "recent-meta"; meta.textContent = ["@" + friend.username, friend.lastSeenAt ? "last seen " + new Date(friend.lastSeenAt).toLocaleString() : "not seen yet"].join(" - "); main.appendChild(meta);
+          row.appendChild(main);
+          el.appendChild(row);
+        });
+        var form = document.createElement("form"); form.className = "inline-form";
+        var input = document.createElement("input"); input.placeholder = "Friend username"; input.autocomplete = "username"; form.appendChild(input);
+        var button = document.createElement("button"); button.type = "submit"; button.className = "button"; button.textContent = "Add friend"; form.appendChild(button);
+        var status = document.createElement("div"); status.className = "recent-meta"; form.appendChild(status);
+        form.addEventListener("submit", function (event) {
+          event.preventDefault();
+          status.textContent = "Adding...";
+          request("account/friends", token, { method: "POST", body: JSON.stringify({ username: input.value }) }).then(function () { window.location.reload(); }).catch(function (error) { status.textContent = error.message || "Could not add friend"; });
+        });
+        el.appendChild(form);
+      }
+      function renderMessages(rows, token, account) {
+        var el = document.getElementById("messageState"); clear(el);
+        var list = Array.isArray(rows) ? rows : [];
+        el.className = "recent-list";
+        if (!list.length) {
+          var empty = document.createElement("div"); empty.className = "empty"; empty.textContent = "No messages yet."; el.appendChild(empty);
+        }
+        list.slice(0, 12).forEach(function (message) {
+          var row = document.createElement("div"); row.className = "recent-item";
+          var main = document.createElement("div");
+          var title = document.createElement("strong");
+          var inbound = account && message.toUsername === account.username;
+          title.textContent = (inbound ? "From " + message.fromDisplayName : "To " + message.toDisplayName) + (message.gameTitle ? " - " + message.gameTitle : "");
+          main.appendChild(title);
+          var meta = document.createElement("div"); meta.className = "recent-meta"; meta.textContent = message.createdAt ? new Date(message.createdAt).toLocaleString() : ""; main.appendChild(meta);
+          var body = document.createElement("div"); body.className = "message-body"; body.textContent = message.body || ""; main.appendChild(body);
+          row.appendChild(main);
+          if (message.gamePath) { var play = document.createElement("a"); play.className = "button"; play.href = message.gamePath; play.textContent = "Open"; row.appendChild(play); }
+          el.appendChild(row);
+        });
+        var form = document.createElement("form"); form.className = "inline-form";
+        var to = document.createElement("input"); to.placeholder = "Username"; to.autocomplete = "username"; form.appendChild(to);
+        var body = document.createElement("textarea"); body.placeholder = "Message or game invite"; form.appendChild(body);
+        var button = document.createElement("button"); button.type = "submit"; button.className = "button"; button.textContent = "Send message"; form.appendChild(button);
+        var status = document.createElement("div"); status.className = "recent-meta"; form.appendChild(status);
+        form.addEventListener("submit", function (event) {
+          event.preventDefault();
+          status.textContent = "Sending...";
+          request("account/messages", token, { method: "POST", body: JSON.stringify({ toUsername: to.value, body: body.value }) }).then(function () { window.location.reload(); }).catch(function (error) { status.textContent = error.message || "Could not send message"; });
+        });
+        el.appendChild(form);
+      }
       function renderSaves(rows) {
         var el = document.getElementById("saveState"); clear(el);
         if (!rows.length) { el.className = "empty"; el.textContent = "No synced saves yet. Browser games, emulators, and DOS games will appear here as their save adapters are connected."; return; }
@@ -2240,11 +2324,15 @@ write_account_index() {
         renderAccount(body.account, body.player || null);
         return Promise.all([
           request("account/activity/recent?limit=20", saved.token),
+          request("account/friends?limit=50", saved.token),
+          request("account/messages?limit=50", saved.token),
           request("account/saves?limit=20", saved.token)
         ]);
       }).then(function (results) {
         renderRecent(Array.isArray(results[0].activity) ? results[0].activity : []);
-        renderSaves(Array.isArray(results[1].saves) ? results[1].saves : []);
+        renderFriends(Array.isArray(results[1].friends) ? results[1].friends : [], saved.token);
+        renderMessages(Array.isArray(results[2].messages) ? results[2].messages : [], saved.token, saved.account || null);
+        renderSaves(Array.isArray(results[3].saves) ? results[3].saves : []);
       }).catch(function () {
         forgetAccount();
       });
@@ -2307,7 +2395,7 @@ publish_companion_downloads() {
     <p class="muted">Local files and setup notes for phones and tablets on this offline network.</p>
     <div class="top-actions">
       <a class="button-link" href="../">Back to Arcade</a>
-      <a class="button-link" href="../wiki/">Offline Wiki</a>
+      <a class="button-link" href="../wiki/">Guides & Manuals</a>
       <a class="button-link primary" href="./lan-arcade-companion-debug.apk">Download Android APK</a>
     </div>
 

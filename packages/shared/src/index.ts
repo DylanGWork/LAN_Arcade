@@ -123,6 +123,46 @@ export interface FavoriteGame {
   updatedAt: string;
 }
 
+export interface AccountFriend {
+  id: string;
+  accountId: string;
+  friendAccountId: string;
+  username: string;
+  displayName: string;
+  localEmail: string;
+  role: AccountRole;
+  createdAt: string;
+  lastSeenAt: string | null;
+}
+
+export interface AccountMessage {
+  id: string;
+  fromAccountId: string;
+  toAccountId: string;
+  fromUsername: string;
+  fromDisplayName: string;
+  toUsername: string;
+  toDisplayName: string;
+  body: string;
+  gameId: string;
+  gameTitle: string;
+  gamePath: string;
+  createdAt: string;
+  readAt: string | null;
+}
+
+export interface AddFriendRequest {
+  username: string;
+}
+
+export interface CreateAccountMessageRequest {
+  toUsername: string;
+  body: string;
+  gameId?: string;
+  gameTitle?: string;
+  gamePath?: string;
+}
+
 export type SavePayloadEncoding = 'json' | 'text' | 'base64';
 
 export interface AccountSaveSlot {
