@@ -1994,6 +1994,7 @@ write_account_index() {
     .recent-item { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; border: 1px solid var(--line); border-radius: 7px; background: var(--panel-soft); padding: 12px; text-decoration: none; color: var(--text); }
     .recent-item strong { display: block; margin-bottom: 4px; }
     .recent-meta { color: var(--muted); font-size: 13px; line-height: 1.35; }
+    .wide { grid-column: 1 / -1; }
     .count { color: #dfffea; font-weight: 850; white-space: nowrap; }
     .actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
     .notice { border-left: 4px solid var(--warn); background: rgba(242,193,78,.1); padding: 10px 12px; border-radius: 7px; color: #ffe5a4; }
@@ -2017,6 +2018,10 @@ write_account_index() {
       <section class="card">
         <h2>Recently played</h2>
         <div id="recentState" class="empty">Checking recent games...</div>
+      </section>
+      <section class="card wide">
+        <h2>Save vault</h2>
+        <div id="saveState" class="empty">Checking synced saves...</div>
       </section>
     </div>
   </main>
@@ -2051,6 +2056,7 @@ write_account_index() {
         var back = document.createElement("a"); back.className = "button"; back.href = "../"; back.textContent = "Go to Game Library"; actions.appendChild(back);
         accountEl.appendChild(actions);
         var recentEl = document.getElementById("recentState"); recentEl.className = "empty"; recentEl.textContent = "Recent games are only synced after signing in.";
+        var saveEl = document.getElementById("saveState"); saveEl.className = "empty"; saveEl.textContent = "Synced saves will appear after signing in and playing save-aware games.";
       }
       function renderAccount(account, player) {
         var el = document.getElementById("accountState"); clear(el); el.className = "fields";
@@ -2080,13 +2086,37 @@ write_account_index() {
           el.appendChild(link);
         });
       }
+      function renderSaves(rows) {
+        var el = document.getElementById("saveState"); clear(el);
+        if (!rows.length) { el.className = "empty"; el.textContent = "No synced saves yet. Browser games, emulators, and DOS games will appear here as their save adapters are connected."; return; }
+        el.className = "recent-list";
+        rows.forEach(function (item) {
+          var row = document.createElement("div"); row.className = "recent-item";
+          var main = document.createElement("div");
+          var title = document.createElement("strong"); title.textContent = item.label || item.slot || "Save slot"; main.appendChild(title);
+          var meta = document.createElement("div"); meta.className = "recent-meta"; meta.textContent = [item.adapter, item.gameId, item.slot, item.updatedAt ? new Date(item.updatedAt).toLocaleString() : ""].filter(Boolean).join(" | "); main.appendChild(meta);
+          row.appendChild(main);
+          var size = document.createElement("span"); size.className = "count"; size.textContent = formatBytes(item.sizeBytes || 0); row.appendChild(size);
+          el.appendChild(row);
+        });
+      }
+      function formatBytes(value) {
+        var bytes = Number(value) || 0;
+        if (bytes < 1024) return String(bytes) + " B";
+        if (bytes < 1024 * 1024) return String(Math.round(bytes / 1024)) + " KB";
+        return String((bytes / 1024 / 1024).toFixed(1)) + " MB";
+      }
       var saved = storedAccount();
       if (!saved) { renderSignedOut(); return; }
       request("auth/me", saved.token).then(function (body) {
         renderAccount(body.account, body.player || null);
-        return request("account/activity/recent?limit=20", saved.token);
-      }).then(function (body) {
-        renderRecent(Array.isArray(body.activity) ? body.activity : []);
+        return Promise.all([
+          request("account/activity/recent?limit=20", saved.token),
+          request("account/saves?limit=20", saved.token)
+        ]);
+      }).then(function (results) {
+        renderRecent(Array.isArray(results[0].activity) ? results[0].activity : []);
+        renderSaves(Array.isArray(results[1].saves) ? results[1].saves : []);
       }).catch(function () {
         forgetAccount();
       });
