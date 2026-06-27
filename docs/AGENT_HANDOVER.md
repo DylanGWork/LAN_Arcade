@@ -1,6 +1,6 @@
 # Library Search, Classic PC, And Wording Lessons - 2026-06-27
 
-Dylan flagged that SimAnt did not appear in the main library search even though it was playable inside the Classic PC shelf. Root cause: `/mirrors/games/` searched only top-level catalog cards. The library generator now keeps large ROM/DOS/board collections nested by default, but title search loads nested manifests and returns direct playable entries for matching games. It also keeps a browser-local Recently played shelf via `localStorage`; this is not yet account-backed.
+Dylan flagged that SimAnt did not appear in the main library search even though it was playable inside the Classic PC shelf. Root cause: `/mirrors/games/` searched only top-level catalog cards. The library generator now keeps large ROM/DOS/board collections nested by default, but title search loads nested manifests and returns direct playable entries for matching games. Guests still get browser-local Recently played via `localStorage`; signed-in accounts also use server-backed recent activity through `/arcade-api/account/activity`.
 
 User-facing language needs stricter separation from intake/admin language. Public pages should not expose confusing states such as `source-ready`, `package missing`, `candidate`, or vague `top-level cards` wording. Use action-oriented labels: `Play`, `Open shelf`, `Ready to play`, `Needs local files`, `Download game ZIP`, and `Review before play`. Keep technical states in manifests, intake docs, admin pages, and QA reports.
 
@@ -8,7 +8,7 @@ Classic PC/DOS entries have multiple independent states: metadata listed, source
 
 The SimAnt memory investigation showed that tiny DOS games can still cost roughly 700 MB in browser because the js-dos/WebAssembly runtime dominates memory. Use worker/canvas mode and unload cleanup in the Classic PC player. For low-power laptops, local DOSBox from the downloaded game ZIP remains the safer fallback.
 
-Regression checks used after the search/recently-played fix: `npm run qa:static`, LAN-origin Playwright search for `ant` and `simant`, direct SimAnt launch, Recently played persistence, and mobile/narrow no-overflow check.
+Regression checks after any public library/search/recently-played change: `npm run qa:static` and `npm run qa:library-discovery`. Add mobile/narrow no-overflow checks when layout or CSS changed.
 
 # Pillage First Raid Loot Patch - 2026-06-20
 

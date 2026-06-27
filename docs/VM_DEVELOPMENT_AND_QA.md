@@ -566,21 +566,16 @@ Lessons from the June 2026 Classic PC/Game Library regressions:
 - Keep user-facing pages in player language. Intake states such as `source-ready`, `candidate`, `package missing`, `partial`, and `blocked` are useful for admin/intake views, but the public library should say what the player can do next: `Play`, `Open shelf`, `Download game ZIP`, `Needs local files`, or `Review before play`.
 - Classic PC/DOS entries have separate states: listed metadata, local ZIP package, browser `.jsdos` bundle, QA smoke result, and manual/website mirror. Do not collapse these into one ambiguous status.
 - Browser DOS emulation can use hundreds of MB per tab even for tiny games. The Classic PC player should use js-dos worker/canvas mode, avoid direct WebGL where possible, call the player stop hook on unload, and document local DOSBox as the fallback for weak laptops.
-- Recently played currently uses browser `localStorage`; it is useful for a single browser but is not a multi-user/account-backed history. Do not claim cross-device or family-account persistence until the account/save architecture is implemented.
+- Recently played has two modes: guests use browser `localStorage`; signed-in accounts use the account API and should be treated as the stronger cross-browser source where the account session is active. Do not claim full cross-device save persistence for emulator/DOS/native games until their specific save adapters are implemented.
 
-Minimum checks after changing the public library/search layer:
+Minimum checks after changing the public library/search/recently-played layer:
 
 ```bash
 npm run qa:static
-node - <<'NODE'
-// Use Playwright or an existing harness to verify at least:
-// 1. /mirrors/games/ loads on the LAN origin.
-// 2. A nested title search, e.g. simant, returns a direct playable card.
-// 3. Opening that card reaches the playable page.
-// 4. Returning to /mirrors/games/ shows it in Recently played when applicable.
-// 5. Mobile/narrow viewport has no horizontal overflow.
-NODE
+npm run qa:library-discovery
 ```
+
+`qa:library-discovery` is the required regression for the nested-shelf search path. It verifies that a `simant` search returns the direct Classic PC play card, that stale operator wording such as `top-level cards` and `Native / services` is absent, and that browser-local Recently played appears after launch. Use additional mobile/narrow Playwright checks when layout or CSS changed.
 
 ## Pillage First SPA Fallback And Deploy Safety
 
