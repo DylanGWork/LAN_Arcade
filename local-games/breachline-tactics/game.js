@@ -9,6 +9,7 @@
     gameId: 'breachline-tactics',
     legacyKey: SAVE_KEY,
     slot: 'main',
+    statusElementId: 'accountSaveStatus',
     label: 'Breachline Tactics run',
     applyPayload: (payload, source) => {
       localStorage.setItem(ACTIVE_BEST_KEY, String(payload.bestDepth || 1));

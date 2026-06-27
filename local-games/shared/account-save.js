@@ -46,6 +46,7 @@
   }
 
   function createSlot(options) {
+    const statusElementId = options.statusElementId || '';
     const adapter = options.adapter || DEFAULT_ADAPTER;
     const slot = options.slot || 'main';
     const legacyKey = options.legacyKey;
@@ -60,13 +61,29 @@
     if (!legacyKey || !gameId) throw new Error('createSlot requires gameId and legacyKey');
     claimLegacySave(legacyKey, key);
 
+    function setStatus(type, message) {
+      if (!statusElementId) return;
+      const element = document.getElementById(statusElementId);
+      if (!element) return;
+      element.textContent = message;
+      element.dataset.saveState = type;
+    }
+
     function notify(type, message, details) {
+      if (type === 'guest') setStatus('guest', 'Save: Guest browser');
+      if (type === 'account') setStatus('account', message);
+      if (type === 'loaded' || type === 'synced') setStatus('synced', 'Save: Account synced');
+      if (type === 'pending') setStatus('pending', 'Save: Syncing');
+      if (type === 'error') setStatus('error', 'Save: Browser fallback');
       if (typeof options.onStatus === 'function') options.onStatus({ type, message, details });
       if (type === 'error') console.warn(message, details || '');
     }
 
+    notify(token ? 'account' : 'guest', token && account && account.account ? `Save: ${account.account.displayName || account.account.username}` : 'Save: Guest browser');
+
     async function putRaw(rawPayload, metadata) {
       if (!token) return null;
+      notify('pending', 'Save: Syncing');
       return apiRequest('account/saves', {
         method: 'PUT',
         headers: {
@@ -82,6 +99,9 @@
           payload: rawPayload,
           metadata: Object.assign({ legacyKey, localKey: key }, metadata || {}),
         }),
+      }).then((body) => {
+        notify('synced', 'Save: Account synced');
+        return body;
       });
     }
 

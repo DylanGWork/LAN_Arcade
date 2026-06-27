@@ -9,6 +9,7 @@
     gameId: 'circuit-foundry',
     legacyKey: SAVE_KEY,
     slot: 'main',
+    statusElementId: 'accountSaveStatus',
     label: 'Circuit Foundry layout',
     applyPayload: (payload, source) => {
       localStorage.setItem(ACTIVE_BEST_KEY, String(payload.best || 0));

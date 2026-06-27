@@ -9,6 +9,7 @@
     gameId: 'outpost-siege',
     legacyKey: SAVE_KEY,
     slot: 'main',
+    statusElementId: 'accountSaveStatus',
     label: 'Outpost Siege run',
     applyPayload: (payload, source) => {
       localStorage.setItem(ACTIVE_BEST_KEY, String(payload.bestWave || 0));
