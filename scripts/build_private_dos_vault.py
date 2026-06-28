@@ -43,7 +43,7 @@ PACKAGE_CONFIGS = {
     'incredible-machine-1-ma': dict(cmd='TIM.EXE', root='work/start-dosroot-*', status='source-ready'),
     'oregon-trail-deluxe-ma': dict(cmd='OREGON.EXE', root='work/start-dosroot-*', status='source-ready'),
     'prince-of-persia-ma': dict(cmd='PRINCE.EXE', root='work/start-dosroot-*', status='source-ready'),
-    'lemmings-ma': dict(cmd='LEMMINGS.BAT', root='work/start-dosroot-*', status='blocked', summary='Browser launch currently crashes after machine selection in the local PC emulator. Keep the files for Download ZIP or local DOSBox testing; do not treat this as ready until a gameplay audit passes.'),
+    'lemmings-ma': dict(cmd='lemvga.com /e', root='work/start-dosroot-*', status='source-ready', dosbox=dict(machine='ega', memsize=4, core='normal', cycles='3000', nosound=True), summary='Ready in browser using the stable EGA launch path. The VGA launch path crashes this browser emulator, so this page intentionally starts the EGA version.'),
     'dune-ii-ma': dict(cmd='DUNE2.EXE', root='work/start-dosroot-*', status='source-ready'),
     'simant-ma': dict(cmd='SIMANT.EXE', root='work/start-dosroot-*', status='source-ready'),
     'rogue-ma': dict(cmd='ROGUE.EXE', root='work/start-dosroot-*', status='source-ready'),
@@ -169,7 +169,16 @@ def stage_game(game, stage):
         if not src: return None
     cp_contents(src, root)
     (root/'PLAY.BAT').write_text('@echo off\r\n' + game['cmd'] + '\r\n', encoding='ascii')
-    conf_lines = ['[sdl]', 'autolock=false', '[dosbox]', 'machine=svga_s3', 'memsize=32', '[render]', 'aspect=true', '[cpu]', 'core=auto', 'cycles=auto', '[autoexec]', '@echo off', 'mount c .', 'c:', 'PLAY.BAT']
+    dosbox = game.get('dosbox', {})
+    conf_lines = [
+        '[sdl]', 'autolock=false',
+        '[dosbox]', f'machine={dosbox.get("machine", "svga_s3")}', f'memsize={dosbox.get("memsize", 32)}',
+        '[render]', 'aspect=true',
+        '[cpu]', f'core={dosbox.get("core", "auto")}', f'cycles={dosbox.get("cycles", "auto")}',
+    ]
+    if dosbox.get('nosound'):
+        conf_lines += ['[mixer]', 'nosound=true']
+    conf_lines += ['[autoexec]', '@echo off', 'mount c .', 'c:', 'PLAY.BAT']
     (root/'dosbox.conf').write_text('\r\n'.join(conf_lines) + '\r\n', encoding='ascii')
     return root
 
