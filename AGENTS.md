@@ -53,6 +53,7 @@ Do not stop Docker globally.
 - Keep deployment changes backed up.
 - Use the existing QA scripts where practical.
 - Keep the arcade offline-friendly: no trackers, signups, remote fonts, or required internet dependencies in playable games.
+- Public player-facing pages must not contain external `http(s)` links, images, scripts, forms, fonts, embeds, or visible source URLs. Keep upstream/source URLs in non-public operator manifests, attribution files, or operator docs; expose only local saved websites/guides/downloads to players. Run `npm run qa:offline-links` after deployment changes that touch public HTML.
 - Prefer local/original games or fully mirrored assets.
 - If adding agent-facing context, update `docs/AGENT_HANDOVER.md`.
 

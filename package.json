@@ -44,7 +44,8 @@
     "qa:git-identity": "bash scripts/check_git_identity.sh",
     "backup:user-data": "bash scripts/backup_arcade_user_data.sh",
     "qa:easy-launchers": "python3 scripts/plan_easy_launchers.py",
-    "dos:vault:smoke": "node scripts/playtest_private_dos_vault.mjs"
+    "dos:vault:smoke": "node scripts/playtest_private_dos_vault.mjs",
+    "qa:offline-links": "python3 scripts/audit_public_external_links.py --root ${MIRRORS_DIR:-/var/www/html/mirrors}"
   },
   "devDependencies": {
     "@types/node": "20.19.1",

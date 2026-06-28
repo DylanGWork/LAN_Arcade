@@ -3912,6 +3912,11 @@ publish_companion_downloads
 write_wiki_index
 write_admin_cgi
 write_admin_index
+if [ -x "$SCRIPT_DIR/scripts/sanitize_public_external_links.py" ] && command -v python3 >/dev/null 2>&1; then
+  python3 "$SCRIPT_DIR/scripts/sanitize_public_external_links.py" --root "$MIRRORS_DIR" --report "$SCRIPT_DIR/qa/reports/offline-links/sanitize-latest.json" || echo "WARN public external-link sanitizer reported problems."
+else
+  echo "WARN public external-link sanitizer is unavailable."
+fi
 if [ "$LAN_ARCADE_SKIP_ADMIN_AUTH" = "1" ]; then
   echo "Skipping Apache admin auth because LAN_ARCADE_SKIP_ADMIN_AUTH=1"
 else

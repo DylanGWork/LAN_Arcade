@@ -43,7 +43,7 @@ PACKAGE_CONFIGS = {
     'incredible-machine-1-ma': dict(cmd='TIM.EXE', root='work/start-dosroot-*', status='source-ready'),
     'oregon-trail-deluxe-ma': dict(cmd='OREGON.EXE', root='work/start-dosroot-*', status='source-ready'),
     'prince-of-persia-ma': dict(cmd='PRINCE.EXE', root='work/start-dosroot-*', status='source-ready'),
-    'lemmings-ma': dict(cmd='lemvga.com /e', root='work/start-dosroot-*', status='blocked', dosbox=dict(machine='ega', memsize=4, core='normal', cycles='3000', nosound=True), summary='Browser play is not ready: this package reaches the Lemmings menus and Level 1 briefing, but the current browser emulator crashes with a memory-bounds backend panic when real gameplay starts. Download the game ZIP and use local DOSBox for now.', controls=['Browser play is disabled until a gameplay-level audit passes', 'Use Download game ZIP with local DOSBox if you want to try it now', 'Do not mark this ready from a title-screen-only smoke test']),
+    'lemmings-ma': dict(cmd='lemvga.com /e', root='work/start-dosroot-*', status='blocked', dosbox=dict(machine='ega', memsize=4, core='normal', cycles='3000', nosound=True), summary='Browser play is not ready: this package reaches the Lemmings menus and Level 1 briefing, but the current browser emulator crashes with a memory-bounds backend panic when real gameplay starts. Windows cannot run the DOS EXE/BAT files directly; use the ZIP only with a local DOSBox install until a one-click launcher is added.', controls=['Browser play is disabled until a gameplay-level audit passes', 'Windows cannot run the included DOS EXE/BAT files directly', 'Use Download game ZIP only with a local DOSBox install for now', 'Do not mark this ready from a title-screen-only smoke test']),
     'dune-ii-ma': dict(cmd='DUNE2.EXE', root='work/start-dosroot-*', status='source-ready'),
     'simant-ma': dict(cmd='SIMANT.EXE', root='work/start-dosroot-*', status='source-ready'),
     'rogue-ma': dict(cmd='ROGUE.EXE', root='work/start-dosroot-*', status='source-ready'),
@@ -267,7 +267,7 @@ def build(dest):
                         'If a DOS menu appears, choose PLAY.BAT',
                     ]
             runtime = 'Browser classic PC emulator' if root else g.get('runtime', 'Browser classic PC emulator')
-            entry=dict(id=g['id'], title=g['title'], platform='Classic PC', genre=row.get('genre') or g.get('genre', 'PC classic'), status=status, sourceUrl=row.get('source_url') or g.get('source',''), summary=summary, qaReport=report, controls=controls, manuals=[], screenshots=[], packageUrl='', packageSha256='', packageBytes=0, bundleUrl='', bundleSha256='', bundleBytes=0, browserCore='js-dos' if 'cmd' in g else '', runtime=runtime, availability=g.get('availability',''), downloadEvidence=g.get('evidence',''), sourceState='source-missing')
+            entry=dict(id=g['id'], title=g['title'], platform='Classic PC', genre=row.get('genre') or g.get('genre', 'PC classic'), status=status, sourceReference='saved-for-operators' if (row.get('source_url') or g.get('source','')) else '', summary=summary, qaReport=report, controls=controls, manuals=[], screenshots=[], packageUrl='', packageSha256='', packageBytes=0, bundleUrl='', bundleSha256='', bundleBytes=0, browserCore='js-dos' if 'cmd' in g else '', runtime=runtime, availability=g.get('availability',''), downloadEvidence=g.get('evidence',''), sourceState='source-missing')
             if root:
                 target = dest / 'packages' / f'{g["id"]}.zip'
                 zip_root(root, target)
@@ -282,6 +282,30 @@ def build(dest):
 def label(status):
     return STATUS_LABELS.get(status, status)
 
+
+
+def write_info_pages(dest, games):
+    info_dir = dest / 'info'
+    info_dir.mkdir(parents=True, exist_ok=True)
+    for g in games:
+        title = html.escape(g['title'])
+        status = html.escape(label(g.get('status', 'candidate')))
+        summary = html.escape(g.get('summary') or 'This game is listed for the arcade, but the local play path is not ready yet.')
+        genre = html.escape(g.get('genre') or 'classic PC game')
+        package_link = ''
+        if g.get('packageUrl'):
+            package_link = f'<p><a class="button" href="../{html.escape(g["packageUrl"])}">Download local game ZIP</a></p>'
+        manuals = ''.join(f'<li><a href="../{html.escape(m["url"])}">{html.escape(m["name"])}</a></li>' for m in g.get('manuals', [])) or '<li>No manual saved yet.</li>'
+        if g.get('status') == 'blocked':
+            play_note = '<p class="warn">Browser play is not ready for this game. Keep it out of guest-ready lists until a real gameplay check passes.</p>'
+        elif g.get('bundleUrl') or g.get('packageUrl'):
+            play_note = f'<p><a class="button" href="../play.html?id={html.escape(g["id"])}">Try in browser</a></p>'
+        else:
+            play_note = '<p class="warn">Local game files are still needed before this can be played here.</p>'
+        page = f'''<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>{title} - Classic PC Games</title><style>
+:root{{color-scheme:dark;--bg:#080d12;--panel:#121922;--line:#314357;--text:#eef6ff;--muted:#a8b8cc;--amber:#ffca55}}*{{box-sizing:border-box}}body{{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,sans-serif}}main{{width:min(880px,94vw);margin:auto;padding:30px 0 44px}}.panel{{border:1px solid var(--line);background:var(--panel);border-radius:8px;padding:16px;margin:14px 0}}a.button,a.back{{color:var(--text);background:#182230;border:1px solid var(--line);border-radius:7px;padding:9px 11px;text-decoration:none;font-weight:850;display:inline-flex;margin:4px 4px 4px 0}}p,li{{color:var(--muted);line-height:1.5}}.warn{{border-left:4px solid var(--amber);background:#18150b;border-radius:7px;padding:10px;color:#f2ddb7}}code{{background:#05080c;border:1px solid var(--line);border-radius:5px;padding:2px 5px;color:#f5d581}}</style></head><body><main><a class="back" href="../">Back to Classic PC Games</a><h1>{title}</h1><p>Classic PC - {genre} - {status}</p><section class="panel"><h2>Can I play it here?</h2>{play_note}<p>{summary}</p>{package_link}</section><section class="panel"><h2>How to use downloaded DOS games</h2><p>Modern 64-bit Windows will not run old DOS <code>.EXE</code> or <code>.BAT</code> files directly. If browser play is not ready, install a DOSBox-compatible emulator on the device, unzip the local game package, mount that folder in DOSBox, then run the listed game command from this arcade page.</p></section><section class="panel"><h2>Saved manuals</h2><ul>{manuals}</ul></section><section class="panel"><h2>Source reference</h2><p>Source details are saved in repo intake and operator notes. Player pages stay local-only.</p></section></main></body></html>'''
+        (info_dir / f'{g["id"]}.html').write_text(page, encoding='utf-8')
+
 def write_index(dest, games):
     cards=[]
     for g in games:
@@ -295,7 +319,7 @@ def write_index(dest, games):
             play = f'<a class="primary" href="play.html?id={html.escape(g["id"])}">Play</a>'
         else:
             play = '<span class="disabled">Game files needed</span>'
-        source = f'<a href="{html.escape(g["sourceUrl"])}">Official page</a>' if g.get('sourceUrl') else ''
+        source = f'<a href="info/{html.escape(g["id"])}.html">Game info</a>'
         manuals = ''.join(f'<a href="{html.escape(m["url"])}">{html.escape(m["name"])} </a>' for m in g['manuals']) or '<span>No manual available yet</span>'
         text = html.escape((g['title']+' '+g['genre']+' '+g['summary']+' '+g.get('runtime','')).lower())
         cards.append(f'''<article class="card" data-status="{html.escape(g["status"])}" data-text="{text}">
@@ -353,7 +377,7 @@ async function boot(){
   if(g.packageUrl)links.push('<a href="'+esc(g.packageUrl)+'">Download game ZIP</a>');
   if(g.bundleUrl)links.push('<a href="'+esc(g.bundleUrl)+'">Browser play bundle</a>');
   for(const man of g.manuals||[])links.push('<a href="'+esc(man.url)+'">'+esc(man.name)+'</a>');
-  if(g.sourceUrl)links.push('<a href="'+esc(g.sourceUrl)+'">Official page</a>');
+  links.push('<a href="info/'+esc(g.id)+'.html">Game info</a>');
   files.innerHTML=links.join('');
   browser.textContent='Runs in the browser using the arcade local classic PC emulator. No internet is needed after this page loads. Browser play can use a lot of memory; on low-power laptops, use Download game ZIP and run it in a local DOSBox install instead.';
   const fullscreenButton=document.getElementById('fullscreenButton');
@@ -404,7 +428,7 @@ def main():
         staged = Path(tmp) / 'new'
         staged.mkdir()
         games=build(staged)
-        write_index(staged,games); write_play(staged)
+        write_index(staged,games); write_play(staged); write_info_pages(staged,games)
         manifest=dict(name='Classic PC Games', generatedAt=time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()), privateOnly=True, containsGameArchives=any(g.get('packageUrl') for g in games), runtime='Browser classic PC emulator', notes='Generated on GannanNet from private intake; do not commit generated game packages. Browser play uses local js-dos bundles where packaged; planned game entries need game files before gameplay testing.', counts={k:sum(1 for g in games if g.get('status')==k) for k in STATUS_KEYS}, packagedCount=sum(1 for g in games if g.get('packageUrl')), games=games)
         (staged/'manifest.json').write_text(json.dumps(manifest, indent=2), encoding='utf-8')
         (staged/'.lan-arcade-ready').touch()
