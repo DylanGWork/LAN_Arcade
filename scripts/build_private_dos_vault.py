@@ -43,7 +43,7 @@ PACKAGE_CONFIGS = {
     'incredible-machine-1-ma': dict(cmd='TIM.EXE', root='work/start-dosroot-*', status='source-ready'),
     'oregon-trail-deluxe-ma': dict(cmd='OREGON.EXE', root='work/start-dosroot-*', status='source-ready'),
     'prince-of-persia-ma': dict(cmd='PRINCE.EXE', root='work/start-dosroot-*', status='source-ready'),
-    'lemmings-ma': dict(cmd='LEMMINGS.BAT', root='work/start-dosroot-*', status='source-ready'),
+    'lemmings-ma': dict(cmd='LEMMINGS.BAT', root='work/start-dosroot-*', status='blocked', summary='Browser launch currently crashes after machine selection in the local PC emulator. Keep the files for Download ZIP or local DOSBox testing; do not treat this as ready until a gameplay audit passes.'),
     'dune-ii-ma': dict(cmd='DUNE2.EXE', root='work/start-dosroot-*', status='source-ready'),
     'simant-ma': dict(cmd='SIMANT.EXE', root='work/start-dosroot-*', status='source-ready'),
     'rogue-ma': dict(cmd='ROGUE.EXE', root='work/start-dosroot-*', status='source-ready'),
@@ -277,7 +277,14 @@ def write_index(dest, games):
     for g in games:
         shot = g['screenshots'][0]['url'] if g['screenshots'] else ''
         media = f'<img src="{html.escape(shot)}" alt="{html.escape(g["title"])} screenshot">' if shot else '<div class="placeholder">DOS</div>'
-        play = f'<a class="primary" href="play.html?id={html.escape(g["id"])}">Play</a>' if (g.get('bundleUrl') or g.get('packageUrl')) else '<span class="disabled">Game files needed</span>'
+        if g.get('status') == 'blocked':
+            play = '<span class="disabled">Needs troubleshooting</span>'
+            if g.get('packageUrl'):
+                play += f'<a href="{html.escape(g["packageUrl"])}">Download ZIP</a>'
+        elif (g.get('bundleUrl') or g.get('packageUrl')):
+            play = f'<a class="primary" href="play.html?id={html.escape(g["id"])}">Play</a>'
+        else:
+            play = '<span class="disabled">Game files needed</span>'
         source = f'<a href="{html.escape(g["sourceUrl"])}">Official page</a>' if g.get('sourceUrl') else ''
         manuals = ''.join(f'<a href="{html.escape(m["url"])}">{html.escape(m["name"])} </a>' for m in g['manuals']) or '<span>No manual available yet</span>'
         text = html.escape((g['title']+' '+g['genre']+' '+g['summary']+' '+g.get('runtime','')).lower())
@@ -300,7 +307,7 @@ const q=document.querySelector('#q'),cards=[...document.querySelectorAll('.card'
 
 def write_play(dest):
     page='''<!doctype html><html lang="en"><head><meta charset="utf-8"><meta http-equiv="Cache-Control" content="no-store, max-age=0"><meta http-equiv="Pragma" content="no-cache"><meta http-equiv="Expires" content="0"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Classic PC Game Player</title><link rel="stylesheet" href="../js-dos-runtime/__JSDOS_VERSION__/js-dos.css"><style>
-:root{color-scheme:dark;--bg:#070b10;--panel:#121922;--line:#314357;--text:#eef6ff;--muted:#a8b8cc;--amber:#ffca55}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,sans-serif}main{width:min(1280px,96vw);margin:auto;padding:16px 0 28px}.top{display:flex;justify-content:space-between;gap:12px}.top-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-start}button{color:var(--text);background:#182230;border:1px solid var(--line);border-radius:7px;padding:9px 11px;text-decoration:none;font-weight:850;display:inline-flex;margin:4px;cursor:pointer}.layout{display:grid;grid-template-columns:1fr 310px;gap:14px}.player{background:#020609;border:1px solid var(--line);border-radius:8px;overflow:hidden}#game{height:min(74vh,720px);min-height:430px}.panel{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:14px}a{color:var(--text);background:#182230;border:1px solid var(--line);border-radius:7px;padding:9px 11px;text-decoration:none;font-weight:850;display:inline-flex;margin:4px}.warn{border-left:4px solid var(--amber);background:#18150b;border-radius:7px;padding:10px;color:#f2ddb7}.key{border:1px solid var(--line);border-radius:7px;padding:8px;margin:6px 0;background:#0e151f}p{color:var(--muted);line-height:1.45}.dosbox-container,.emulator-root{width:100%;height:100%}@media(max-width:900px){main{width:96vw}.layout{grid-template-columns:1fr}#game{height:62vh;min-height:340px}.top{display:block}.top a{width:100%;justify-content:center}}
+:root{color-scheme:dark;--bg:#070b10;--panel:#121922;--line:#314357;--text:#eef6ff;--muted:#a8b8cc;--amber:#ffca55}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,sans-serif}main{width:min(1280px,96vw);margin:auto;padding:16px 0 28px}.top{display:flex;justify-content:space-between;gap:12px}.top-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-start}button{color:var(--text);background:#182230;border:1px solid var(--line);border-radius:7px;padding:9px 11px;text-decoration:none;font-weight:850;display:inline-flex;margin:4px;cursor:pointer}.layout{display:grid;grid-template-columns:1fr 310px;gap:14px}.player{background:#020609;border:1px solid var(--line);border-radius:8px;overflow:hidden}#game{height:min(74vh,720px);min-height:430px}.player:fullscreen{width:100vw;height:100vh;border:0;border-radius:0;display:flex;align-items:center;justify-content:center;background:#000}.player:fullscreen #game{width:100vw;height:100vh;min-height:0}.player:fullscreen .dosbox-container,.player:fullscreen .emulator-root,.player:fullscreen canvas{width:100vw!important;height:100vh!important;max-width:100vw;max-height:100vh;object-fit:contain;image-rendering:pixelated}.panel{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:14px}a{color:var(--text);background:#182230;border:1px solid var(--line);border-radius:7px;padding:9px 11px;text-decoration:none;font-weight:850;display:inline-flex;margin:4px}.warn{border-left:4px solid var(--amber);background:#18150b;border-radius:7px;padding:10px;color:#f2ddb7}.key{border:1px solid var(--line);border-radius:7px;padding:8px;margin:6px 0;background:#0e151f}p{color:var(--muted);line-height:1.45}.dosbox-container,.emulator-root{width:100%;height:100%}@media(max-width:900px){main{width:96vw}.layout{grid-template-columns:1fr}#game{height:62vh;min-height:340px}.top{display:block}.top a{width:100%;justify-content:center}}
 </style><script src="../js-dos-runtime/__JSDOS_VERSION__/js-dos.js"></script></head><body><main><div class="top"><div><h1 id="title">Classic PC Game Player</h1><p id="meta"></p></div><div class="top-actions"><button id="fullscreenButton" type="button">Fullscreen</button><a href="./">Back to Classic PC Games</a></div></div><div class="layout"><section class="player"><div id="game"></div></section><aside class="panel"><p id="summary"></p><div class="warn">Click inside the game first. If a DOS menu appears, choose PLAY.BAT.</div><h2>Controls</h2><div id="controls"></div><h2>Offline Game Files</h2><div id="files"></div><h2>How this runs</h2><p id="browser"></p></aside></div></main><script>
 function esc(v){const s=document.createElement('span');s.textContent=v||'';return s.innerHTML}
 function ensureStorageShim(){
@@ -340,7 +347,7 @@ async function boot(){
   files.innerHTML=links.join('');
   browser.textContent='Runs in the browser using the arcade local classic PC emulator. No internet is needed after this page loads. Browser play can use a lot of memory; on low-power laptops, use Download game ZIP and run it in a local DOSBox install instead.';
   const fullscreenButton=document.getElementById('fullscreenButton');
-  if(fullscreenButton)fullscreenButton.onclick=()=>{const target=document.querySelector('.player')||gameEl;if(target.requestFullscreen)target.requestFullscreen().catch(()=>{});};
+  if(fullscreenButton)fullscreenButton.onclick=async()=>{const target=document.querySelector('.player')||gameEl;if(target.requestFullscreen){await target.requestFullscreen().catch(()=>{});setTimeout(()=>window.dispatchEvent(new Event('resize')),120);}};
   if(!playUrl){gameEl.innerHTML='<p style="padding:20px">This game needs local files before it can be played here.</p>';return}
   if(typeof Dos!=='function'){gameEl.innerHTML='<p style="padding:20px;color:#ffb4ae">The local js-dos runtime did not load.</p>';return}
   ensureStorageShim();
