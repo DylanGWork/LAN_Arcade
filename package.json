@@ -45,9 +45,10 @@
     "backup:user-data": "bash scripts/backup_arcade_user_data.sh",
     "qa:easy-launchers": "python3 scripts/plan_easy_launchers.py",
     "dos:vault:smoke": "node scripts/playtest_private_dos_vault.mjs",
-    "qa:offline-links": "python3 scripts/audit_public_external_links.py --root ${MIRRORS_DIR:-/var/www/html/mirrors}",
+    "qa:offline-links": "python3 scripts/audit_public_external_links.py --root ${MIRRORS_DIR:-/var/www/html/mirrors} && npm run qa:blocked-guides",
     "lemmings:build": "python3 scripts/build_lemmings_ts.py",
-    "qa:lemmings": "node qa/lemmings-ts-smoke.mjs"
+    "qa:lemmings": "node qa/lemmings-ts-smoke.mjs",
+    "qa:blocked-guides": "python3 scripts/audit_blocked_public_guides.py --root ${MIRRORS_DIR:-/var/www/html/mirrors}"
   },
   "devDependencies": {
     "@types/node": "20.19.1",
