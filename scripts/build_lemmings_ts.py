@@ -24,6 +24,139 @@ CACHE = Path("/srv/lan-arcade/native-downloads/runtimes/lemmings-ts") / VERSION 
 DATA_ROOT = Path("/srv/lan-arcade/native-downloads/intake/private-tycoon/lemmings-ma")
 DEST = Path("/var/www/html/mirrors/lemmings")
 PUBLIC_BASE = "/mirrors/lemmings/"
+HELP_CSS = r"""
+<style>
+  body {
+    margin: 0;
+    background: #071019;
+    color: #e8f2ff;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+  .lan-lemmings-shell {
+    width: min(1180px, calc(100vw - 32px));
+    margin: 0 auto;
+    padding: 20px 16px 28px;
+  }
+  .lan-lemmings-header {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+  .lan-lemmings-title {
+    margin: 0;
+    font-size: 24px;
+    line-height: 1.1;
+  }
+  .lan-lemmings-back {
+    color: #9af2b6;
+    text-decoration: none;
+    font-weight: 700;
+  }
+  .lan-lemmings-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 820px) minmax(260px, 1fr);
+    gap: 16px;
+    align-items: start;
+  }
+  #app {
+    overflow: auto;
+    border: 1px solid #294053;
+    border-radius: 8px;
+    background: #02070c;
+  }
+  .lan-lemmings-help {
+    border: 1px solid #294053;
+    border-radius: 8px;
+    background: #101b27;
+    padding: 14px;
+    font-size: 14px;
+    line-height: 1.45;
+  }
+  .lan-lemmings-help h2,
+  .lan-lemmings-help h3 {
+    margin: 0 0 8px;
+  }
+  .lan-lemmings-help h2 {
+    font-size: 18px;
+  }
+  .lan-lemmings-help h3 {
+    margin-top: 14px;
+    font-size: 15px;
+  }
+  .lan-lemmings-help ol,
+  .lan-lemmings-help ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .lan-lemmings-help li + li {
+    margin-top: 6px;
+  }
+  .lan-lemmings-note {
+    border-left: 4px solid #f1c75b;
+    background: #251d08;
+    padding: 9px 10px;
+    margin-top: 12px;
+  }
+  .lan-lemmings-keys {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    margin-top: 8px;
+  }
+  .lan-lemmings-keys div {
+    border: 1px solid #30475d;
+    border-radius: 6px;
+    padding: 6px 8px;
+    background: #0a1420;
+  }
+  @media (max-width: 920px) {
+    .lan-lemmings-layout {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+"""
+
+HELP_HTML = r"""
+<main class="lan-lemmings-shell">
+  <header class="lan-lemmings-header">
+    <h1 class="lan-lemmings-title">Lemmings</h1>
+    <a class="lan-lemmings-back" href="/mirrors/games/">Back to Game Library</a>
+  </header>
+  <div class="lan-lemmings-layout">
+    <div id="app"></div>
+    <aside class="lan-lemmings-help" aria-label="How to play Lemmings">
+      <h2>How to play</h2>
+      <ol>
+        <li>Click <strong>Start</strong> to begin the level.</li>
+        <li>Pick a skill from the icon row at the bottom of the game screen.</li>
+        <li>Click an individual lemming to apply that skill to that lemming.</li>
+      </ol>
+      <div class="lan-lemmings-note">
+        The bottom icons are skills, not checkboxes. Selecting one only chooses your next tool; it does not act until you click a lemming.
+      </div>
+      <h3>Level 1 hint: Just dig!</h3>
+      <p>Select the skill with <strong>10</strong> uses available. That is Digger. Then click one walking lemming on solid ground so it digs through to the exit path.</p>
+      <h3>Skill order</h3>
+      <div class="lan-lemmings-keys">
+        <div>Climber</div><div>Floater</div>
+        <div>Bomber</div><div>Blocker</div>
+        <div>Builder</div><div>Basher</div>
+        <div>Miner</div><div>Digger</div>
+      </div>
+      <h3>What the counters mean</h3>
+      <ul>
+        <li><strong>OUT</strong>: lemmings released.</li>
+        <li><strong>IN</strong>: lemmings saved.</li>
+        <li><strong>TIME</strong>: time left.</li>
+      </ul>
+    </aside>
+  </div>
+</main>
+"""
+
 REQUIRED_DATA = [
     "ADLIB.DAT",
     "GROUND0O.DAT", "GROUND1O.DAT", "GROUND2O.DAT", "GROUND3O.DAT", "GROUND4O.DAT",
@@ -63,6 +196,14 @@ def latest_data_root() -> Path:
     return hits[-1]
 
 
+def inject_help_shell(text: str) -> str:
+    text = text.replace("</head>", HELP_CSS + "</head>", 1)
+    app_div = '<div id="app"></div>'
+    if app_div not in text:
+        raise SystemExit("Could not find Lemmings.ts app mount point")
+    return text.replace(app_div, HELP_HTML, 1)
+
+
 def patch_index(app_root: Path) -> None:
     index = app_root / "index.html"
     text = index.read_text(encoding="utf-8")
@@ -76,6 +217,7 @@ def patch_index(app_root: Path) -> None:
     }
     for old, new in replacements.items():
         text = text.replace(old, new)
+    text = inject_help_shell(text)
     index.write_text(text, encoding="utf-8")
 
 

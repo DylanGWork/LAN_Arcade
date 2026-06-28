@@ -42,6 +42,7 @@ async function runScenario(name, openFn) {
       buttons: Array.from(document.querySelectorAll("button"))
         .map((button) => button.textContent?.trim())
         .filter(Boolean),
+      helpTextPresent: document.body.innerText.includes("The bottom icons are skills, not checkboxes"),
     };
   });
 
@@ -58,6 +59,7 @@ async function runScenario(name, openFn) {
     pageErrorCount: pageErrors.length,
     badResponseCount: badResponses.length,
     canvasCount: summary.canvasCount,
+    helpTextPresent: summary.helpTextPresent,
     canvasSize: summary.canvasSize,
     url: summary.url,
     report: `${reportDir}/${name}.json`,
@@ -84,6 +86,6 @@ results.push(
 );
 
 console.log(JSON.stringify(results, null, 2));
-if (results.some((result) => result.externalCount || result.pageErrorCount || result.badResponseCount || result.canvasCount === 0)) {
+if (results.some((result) => result.externalCount || result.pageErrorCount || result.badResponseCount || result.canvasCount === 0 || !result.helpTextPresent)) {
   process.exit(1);
 }
