@@ -1,0 +1,2915 @@
+{
+  "generatedAt": "2026-06-28T03:29:01.783074+00:00",
+  "catalog": "/var/www/html/mirrors/games/catalog.json",
+  "launcherAdapters": "/home/dylan/LAN_Arcade/config/launcher-adapters.json",
+  "classicPcShelf": {
+    "listed": 28,
+    "playable": 15,
+    "waiting": 13,
+    "samplePlayable": [
+      "SimCity Classic DOS",
+      "SimFarm",
+      "Sid Meier's Railroad Tycoon Deluxe",
+      "Firestorm: The Forest Fire Simulation Program",
+      "A-Train",
+      "Black Gold / Oil Imperium",
+      "The Incredible Machine",
+      "Oregon Trail Deluxe",
+      "Prince of Persia",
+      "Lemmings",
+      "Dune II: The Building of a Dynasty",
+      "SimAnt"
+    ]
+  },
+  "counts": {
+    "byCurrentAdapter": {
+      "desktop-client": 33,
+      "linux-package": 74,
+      "needs-setup": 3,
+      "research-shelf": 1
+    },
+    "byRecommendedAdapter": {
+      "desktop-client": 33,
+      "browser-emulator": 4,
+      "browser-stream": 72,
+      "collection": 1,
+      "setup-needed": 1
+    },
+    "byPriority": {
+      "high": 19,
+      "medium": 90,
+      "low": 2
+    },
+    "byEffort": {
+      "medium": 98,
+      "high": 12,
+      "unknown": 1
+    }
+  },
+  "total": 111,
+  "queue": [
+    {
+      "id": "zero-ad-lan",
+      "title": "0 A.D. LAN Hub",
+      "currentAdapter": "desktop-client",
+      "recommendedAdapter": "desktop-client",
+      "fallbackAdapter": "browser-stream",
+      "priority": "high",
+      "effort": "medium",
+      "readyNow": false,
+      "primaryAction": "Install / play",
+      "path": "../zero-ad-lan/",
+      "tags": [
+        "Strategy",
+        "RTS",
+        "Native"
+      ],
+      "categories": [
+        "multiplayer",
+        "strategy",
+        "simulation",
+        "management",
+        "age-13-plus"
+      ],
+      "playerProblem": "Client downloads exist, but the page does not yet behave like a simple launcher.",
+      "nextAction": "Replace raw download choices with one clear Windows/Linux install path, then smoke test first playable action."
+    },
+    {
+      "id": "wesnoth-lan",
+      "title": "Battle for Wesnoth LAN Hub",
+      "currentAdapter": "desktop-client",
+      "recommendedAdapter": "desktop-client",
+      "fallbackAdapter": "browser-stream",
+      "priority": "high",
+      "effort": "medium",
+      "readyNow": false,
+      "primaryAction": "Install / play",
+      "path": "../wesnoth-lan/",
+      "tags": [
+        "Strategy",
+        "Tactics",
+        "Native"
+      ],
+      "categories": [
+        "multiplayer",
+        "strategy",
+        "tactical",
+        "age-10-plus",
+        "family"
+      ],
+      "playerProblem": "Client downloads exist, but the page does not yet behave like a simple launcher.",
+      "nextAction": "Replace raw download choices with one clear Windows/Linux install path, then smoke test first playable action."
+    },
+    {
+      "id": "beneath-a-steel-sky-scummvm",
+      "title": "Beneath a Steel Sky",
+      "currentAdapter": "linux-package",
+      "recommendedAdapter": "browser-emulator",
+      "fallbackAdapter": "desktop-client",
+      "priority": "high",
+      "effort": "medium",
+      "readyNow": false,
+      "primaryAction": "Setup notes",
+      "path": "../beneath-a-steel-sky-scummvm/",
+      "tags": [
+        "Adventure",
+        "ScummVM",
+        "Freeware"
+      ],
+      "categories": [
+        "adventure",
+        "retro",
+        "scummvm",
+        "puzzle",
+        "age-13-plus"
+      ],
+      "playerProblem": "The game page is understandable, but normal players still cannot just click Play from a browser.",
+      "nextAction": "Build a ScummVM browser/player adapter or one-click ScummVM bundle; keep Linux package files as fallback."
+    },
+    {
+      "id": "cataclysm-dda-lan",
+      "title": "Cataclysm DDA LAN Hub",
+      "currentAdapter": "desktop-client",
+      "recommendedAdapter": "desktop-client",
+      "fallbackAdapter": "browser-stream",
+      "priority": "high",
+      "effort": "medium",
+      "readyNow": false,
+      "primaryAction": "Install / play",
+      "path": "../cataclysm-dda-lan/",
+      "tags": [
+        "Roguelike",
+        "Survival",
+        "Native"
+      ],
+      "categories": [
+        "roguelike",
+        "simulation",
+        "strategy",
+        "survival",
+        "age-13-plus"
+      ],
+      "playerProblem": "Client downloads exist, but the page does not yet behave like a simple launcher.",
+      "nextAction": "Replace raw download choices with one clear Windows/Linux install path, then smoke test first playable action."
+    },
+    {
+      "id": "drascula-scummvm",
+      "title": "Drascula: The Vampire Strikes Back",
+      "currentAdapter": "needs-setup",
+      "recommendedAdapter": "browser-emulator",
+      "fallbackAdapter": "desktop-client",
+      "priority": "high",
+      "effort": "medium",
+      "readyNow": false,
+      "primaryAction": "View details",
+      "path": "../drascula-scummvm/",
+      "tags": [
+        "Adventure",
+        "ScummVM",
+        "Freeware"
+      ],
+      "categories": [
+        "adventure",
+        "retro",
+        "scummvm",
+        "puzzle",
+        "age-13-plus"
+      ],
+      "playerProblem": "The game page is understandable, but normal players still cannot just click Play from a browser.",
+      "nextAction": "Build a ScummVM browser/player adapter or one-click ScummVM bundle; keep Linux package files as fallback."
+    },
+    {
+      "id": "flight-amazon-queen-scummvm",
+      "title": "Flight of the Amazon Queen",
+      "currentAdapter": "linux-package",
+      "recommendedAdapter": "browser-emulator",
+      "fallbackAdapter": "desktop-client",
+      "priority": "high",
+      "effort": "medium",
+      "readyNow": false,
+      "primaryAction": "Setup notes",
+      "path": "../flight-amazon-queen-scummvm/",
+      "tags": [
+        "Adventure",
+        "ScummVM",
+        "Freeware"
+      ],
+      "categories": [
+        "adventure",
+        "retro",
+        "scummvm",
+        "puzzle",
+        "age-10-plus"
+      ],
+      "playerProblem": "The game page is understandable, but normal players still cannot just click Play from a browser.",
+      "nextAction": "Build a ScummVM browser/player adapter or one-click ScummVM bundle; keep Linux package files as fallback."
+    },
+    {
+      "id": "freecol-lan",
+      "title": "FreeCol LAN Hub",
+      "currentAdapter": "desktop-client",
+      "recommendedAdapter": "desktop-client",
+      "fallbackAdapter": "browser-stream",
+      "priority": "high",
+      "effort": "medium",
+      "readyNow": false,
+      "primaryAction": "Install / play",
+      "path": "../freecol-lan/",
+      "tags": [
+        "Strategy",
+        "Historical",
+        "Native"
+      ],
+      "categories": [
+        "strategy",
+        "simulation",
+        "management",
+        "age-13-plus"
+      ],
+      "playerProblem": "Client downloads exist, but the page does not yet behave like a simple launcher.",
+      "nextAction": "Replace raw download choices with one clear Windows/Linux install path, then smoke test first playable action."
+    },
+    {
+      "id": "freedoom-lan",
+      "title": "Freedoom LAN Hub",
+      "currentAdapter": "desktop-client",
+      "recommendedAdapter": "desktop-client",
+      "fallbackAdapter": "browser-stream",
+      "priority": "high",
+      "effort": "medium",
+      "readyNow": false,
+      "primaryAction": "Install / play",
+      "path": "../freedoom-lan/",
+      "tags": [
+        "Action",
+        "Retro",
+        "Native"
+      ],
+      "categories": [
+        "action",
+        "arcade",
+        "retro",
+        "fps",
+        "age-13-plus"
+      ],
+      "playerProblem": "Client downloads exist, but the page does not yet behave like a simple launcher.",
+      "nextAction": "Replace raw download choices with one clear Windows/Linux install path, then smoke test first playable action."
+    },
+    {
+      "id": "freeorion-lan",
+      "title": "FreeOrion LAN Hub",
+      "currentAdapter": "desktop-client",
+      "recommendedAdapter": "desktop-client",
+      "fallbackAdapter": "browser-stream",
+      "priority": "high",
+      "effort": "medium",
+      "readyNow": false,
+      "primaryAction": "Install / play",
+      "path": "../freeorion-lan/",
+      "tags": [
+        "Strategy",
+        "4X",
+        "Native"
+      ],
+      "categories": [
+        "multiplayer",
+        "strategy",
+        "simulation",
+        "space",
+        "age-10-plus"
+      ],
+      "playerProblem": "Client downloads exist, but the page does not yet behave like a simple launcher.",
+      "nextAction": "Replace raw download choices with one clear Windows/Linux install path, then smoke test first playable action."
+    },
+    {
+      "id": "hedgewars-lan",
+      "title": "Hedgewars LAN Hub",
+      "currentAdapter": "desktop-client",
+      "recommendedAdapter": "desktop-client",
+      "fallbackAdapter": "browser-stream",
+      "priority": "high",
+      "effort": "medium",
+      "readyNow": false,
+      "primaryAction": "Install / play",
+      "path": "../hedgewars-lan/",
+      "tags": [
+        "Strategy",
+        "Tactical",
+        "Native"
+      ],
+      "categories": [
+        "multiplayer",
+        "strategy",
+        "tactical",
+        "arcade",
+        "family",
+        "age-10-plus"
+      ],
+      "playerProblem": "Client downloads exist, but the page does not yet behave like a simple launcher.",
+      "nextAction": "Replace raw download choices with one clear Windows/Linux install path, then smoke test first playable action."
+    },
+    {
+      "id": "lincity-ng-lan",
+      "title": "LinCity-NG",
+      "currentAdapter": "desktop-client",
+      "recommendedAdapter": "desktop-client",
+      "fallbackAdapter": "browser-stream",
+      "priority": "high",
+      "effort": "medium",
+      "readyNow": false,
+      "primaryAction": "Install / play",
+      "path": "../lincity-ng-lan/",
+      "tags": [
+        "City Builder",
+        "Simulation",
+        "Native"
+      ],
+      "categories": [
+        "simulation",
+        "management",
+        "city-builder",
+        "strategy",
+        "age-10-plus"
+      ],
+      "playerProblem": "Client downloads exist, but the page does not yet behave like a simple launcher.",
+      "nextAction": "Replace raw download choices with one clear Windows/Linux install path, then smoke test first playable action."
+    },
+    {
+      "id": "lure-temptress-scummvm",
+      "title": "Lure of the Temptress",
+      "currentAdapter": "needs-setup",
+      "recommendedAdapter": "browser-emulator",
+      "fallbackAdapter": "desktop-client",
+      "priority": "high",
+      "effort": "medium",
+      "readyNow": false,
+      "primaryAction": "View details",
+      "path": "../lure-temptress-scummvm/",
+      "tags": [
+        "Adventure",
+        "ScummVM",
+        "Freeware"
+      ],
+      "categories": [
+        "adventure",
+        "retro",
+        "scummvm",
+        "puzzle",
+        "fantasy",
+        "age-10-plus"
+      ],
+      "playerProblem": "The game page is understandable, but normal players still cannot just click Play from a browser.",
+      "nextAction": "Build a ScummVM browser/player adapter or one-click ScummVM bundle; keep Linux package files as fallback."
+    },
+    {
+      "id": "scorched3d-lan",
+      "title": "Scorched3D",
+      "currentAdapter": "linux-package",
+      "recommendedAdapter": "browser-stream",
+      "fallbackAdapter": "linux-package",
+      "priority": "high",
+      "effort": "medium",
+      "readyNow": false,
+      "primaryAction": "Setup notes",
+      "path": "../scorched3d-lan/",
+      "tags": [
+        "Strategy",
+        "Artillery",
+        "Native"
+      ],
+      "categories": [
+        "strategy",
+        "tactical",
+        "arcade",
+        "multiplayer",
+        "age-10-plus"
+      ],
+      "playerProblem": "Only Debian/Linux offline install files are available; this is not a normal guest launch flow.",
+      "nextAction": "Pilot browser-streamed VM session for this Linux game, or demote it to install notes until a simple launcher exists."
+    },
+    {
+      "id": "warmux-lan",
+      "title": "WarMUX",
+      "currentAdapter": "linux-package",
+      "recommendedAdapter": "browser-stream",
+      "fallbackAdapter": "linux-package",
+      "priority": "high",
+      "effort": "medium",
+      "readyNow": false,
+      "primaryAction": "Setup notes",
+      "path": "../warmux-lan/",
+      "tags": [
+        "Strategy",
+        "Artillery",
+        "Native"
+      ],
+      "categories": [
+        "strategy",
+        "tactical",
+        "arcade",
+        "multiplayer",
+        "family",
+        "age-10-plus"
+      ],
+      "playerProblem": "Only Debian/Linux offline install files are available; this is not a normal guest launch flow.",
+      "nextAction": "Pilot browser-streamed VM session for this Linux game, or demote it to install notes until a simple launcher exists."
+    },
+    {
+      "id": "micropolis-lan",
+      "title": "Micropolis",
+      "currentAdapter": "linux-package",
+      "recommendedAdapter": "browser-stream",
+      "fallbackAdapter": "linux-package",
+      "priority": "high",
+      "effort": "high",
+      "readyNow": false,
+      "primaryAction": "Setup notes",
+      "path": "../micropolis-lan/",
+      "tags": [
+        "City Builder",
+        "Simulation",
+        "Native"
+      ],
+      "categories": [
+        "simulation",
+        "management",
+        "city-builder",
+        "strategy",
+        "age-10-plus"
+      ],
+      "playerProblem": "Only Debian/Linux offline install files are available; this is not a normal guest launch flow.",
+      "nextAction": "Pilot browser-streamed VM session for this Linux game, or demote it to install notes until a simple launcher exists."
+    },
+    {
+      "id": "naev-lan",
+      "title": "Naev",
+      "currentAdapter": "linux-package",
+      "recommendedAdapter": "browser-stream",
+      "fallbackAdapter": "linux-package",
+      "priority": "high",
+      "effort": "high",
+      "readyNow": false,
+      "primaryAction": "Setup notes",
+      "path": "../naev-lan/",
+      "tags": [
+        "RPG",
+        "Space",
+        "Native"
+      ],
+      "categories": [
+        "rpg",
+        "space",
+        "simulation",
+        "action",
+        "age-10-plus"
+      ],
+      "playerProblem": "Only Debian/Linux offline install files are available; this is not a normal guest launch flow.",
+      "nextAction": "Pilot browser-streamed VM session for this Linux game, or demote it to install notes until a simple launcher exists."
+    },
+    {
+      "id": "nethack-x11-lan",
+      "title": "NetHack X11",
+      "currentAdapter": "linux-package",
+      "recommendedAdapter": "browser-stream",
+      "fallbackAdapter": "linux-package",
+      "priority": "high",
+      "effort": "high",
+      "readyNow": false,
+      "primaryAction": "Setup notes",
+      "path": "../nethack-x11-lan/",
+      "tags": [
+        "Roguelike",
+        "RPG",
+        "Native"
+      ],
+      "categories": [
+        "roguelite",
+        "rpg",
+        "fantasy",
+        "strategy",
+        "age-13-plus"
+      ],
+      "playerProblem": "Only Debian/Linux offline install files are available; this is not a normal guest launch flow.",
+      "nextAction": "Pilot browser-streamed VM session for this Linux game, or demote it to install notes until a simple launcher exists."
+    },
+    {
+      "id": "opencity-lan",
+      "title": "OpenCity",
+      "currentAdapter": "linux-package",
+      "recommendedAdapter": "browser-stream",
+      "fallbackAdapter": "linux-package",
+      "priority": "high",
+      "effort": "high",
+      "readyNow": false,
+      "primaryAction": "Setup notes",
+      "path": "../opencity-lan/",
+      "tags": [
+        "City Builder",
+        "Simulation",
+        "Native"
+      ],
+      "categories": [
+        "simulation",
+        "management",
+        "city-builder",
+        "strategy",
+        "age-10-plus"
+      ],
+      "playerProblem": "Only Debian/Linux offline install files are available; this is not a normal guest launch flow.",
+      "nextAction": "Pilot browser-streamed VM session for this Linux game, or demote it to install notes until a simple launcher exists."
+    },
+    {
+      "id": "ufoai-lan",
+      "title": "UFO: Alien Invasion",
+      "currentAdapter": "linux-package",
+      "recommendedAdapter": "browser-stream",
+      "fallbackAdapter": "linux-package",
+      "priority": "high",
+      "effort": "high",
+      "readyNow": false,
+      "primaryAction": "Setup notes",
+      "path": "../ufoai-lan/",
+      "tags": [
+        "Strategy",
+        "Tactical",
+        "Native"
+      ],
+      "categories": [
+        "strategy",
+        "tactical",
+        "simulation",
+        "science",
+        "age-13-plus"
+      ],
+      "playerProblem": "Only Debian/Linux offline install files are available; this is not a normal guest launch flow.",
+      "nextAction": "Pilot browser-streamed VM session for this Linux game, or demote it to install notes until a simple launcher exists."
+    },
+    {
+      "id": "abe-lan",
+      "title": "Abe's Amazing Adventure",
+      "currentAdapter": "linux-package",
+      "recommendedAdapter": "browser-stream",
+      "fallbackAdapter": "linux-package",
+      "priority": "medium",
+      "effort": "medium",
+      "readyNow": false,
+      "primaryAction": "Setup notes",
+      "path": "../abe-lan/",
+      "tags": [
+        "Platformer",
+        "Arcade",
+        "Retro"
+      ],
+      "categories": [
+        "arcade",
+        "platformer",
+        "retro",
+        "family",
+        "age-10-plus"
+      ],
+      "playerProblem": "Only Debian/Linux offline install files are available; this is not a normal guest launch flow.",
+      "nextAction": "Pilot browser-streamed VM session for this Linux game, or demote it to install notes until a simple launcher exists."
+    },
+    {
+      "id": "airstrike-lan",
+      "title": "Airstrike",
+      "currentAdapter": "linux-package",
+      "recommendedAdapter": "browser-stream",
+      "fallbackAdapter": "linux-package",
+      "priority": "medium",
+      "effort": "medium",
+      "readyNow": false,
+      "primaryAction": "Setup notes",
+      "path": "../airstrike-lan/",
+      "tags": [
+        "Arcade",
+        "Action",
+        "Local Multiplayer"
+      ],
+      "categories": [
+        "arcade",
+        "action",
+        "multiplayer",
+        "retro",
+        "age-10-plus"
+      ],
+      "playerProblem": "Only Debian/Linux offline install files are available; this is not a normal guest launch flow.",
+      "nextAction": "Pilot browser-streamed VM session for this Linux game, or demote it to install notes until a simple launcher exists."
+    },
+    {
+      "id": "alex4-lan",
+      "title": "Alex the Allegator 4",
+      "currentAdapter": "linux-package",
+      "recommendedAdapter": "browser-stream",
+      "fallbackAdapter": "linux-package",
+      "priority": "medium",
+      "effort": "medium",
+      "readyNow": false,
+      "primaryAction": "Setup notes",
+      "path": "../alex4-lan/",
+      "tags": [
+        "Platformer",
+        "Family",
+        "Retro"
+      ],
+      "categories": [
+        "arcade",
+        "platformer",
+        "family",
+        "casual",
+        "age-5-plus"
+      ],
+      "playerProblem": "Only Debian/Linux offline install files are available; this is not a normal guest launch flow.",
+      "nextAction": "Pilot browser-streamed VM session for this Linux game, or demote it to install notes until a simple launcher exists."
+    },
+    {
+      "id": "alienblaster-lan",
+      "title": "Alien Blaster",
+      "currentAdapter": "linux-package",
+      "recommendedAdapter": "browser-stream",
+      "fallbackAdapter": "linux-package",
+      "priority": "medium",
+      "effort": "medium",
+      "readyNow": false,
+      "primaryAction": "Setup notes",
+      "path": "../alienblaster-lan/",
+      "tags": [
+        "Arcade",
+        "Shooter",
+        "Action"
+      ],
+      "categories": [
+        "arcade",
+        "action",
+        "multiplayer",
+        "age-10-plus"
+      ],
+      "playerProblem": "Only Debian/Linux offline install files are available; this is not a normal guest launch flow.",
+      "nextAction": "Pilot browser-streamed VM session for this Linux game, or demote it to install notes until a simple launcher exists."
+    },
+    {
+      "id": "amphetamine-lan",
+      "title": "Amphetamine",
+      "currentAdapter": "linux-package",
+      "recommendedAdapter": "browser-stream",
+      "fallbackAdapter": "linux-package",
+      "priority": "medium",
+      "effort": "medium",
+      "readyNow": false,
+      "primaryAction": "Setup notes",
+      "path": "../amphetamine-lan/",
+      "tags": [
+        "Platformer",
+        "Action",
+        "Retro"
+      ],
+      "categories": [
+        "arcade",
+        "platformer",
+        "action",
+        "age-10-plus"
+      ],
+      "playerProblem": "Only Debian/Linux offline install files are available; this is not a normal guest launch flow.",
+      "nextAction": "Pilot browser-streamed VM session for this Linux game, or demote it to install notes until a simple launcher exists."
+    },
+    {
+      "id": "atlantik-lan",
+      "title": "Atlantik / monopd",
+      "currentAdapter": "desktop-client",
+      "recommendedAdapter": "desktop-client",
+      "fallbackAdapter": "browser-stream",
+      "priority": "medium",
+      "effort": "medium",
+      "readyNow": false,
+      "primaryAction": "Install / play",
+      "path": "../atlantik-lan/",
+      "tags": [
+        "Board Game",
+        "Strategy",
+        "Native"
+      ],
+      "categories": [
+        "board-game",
+        "strategy",
+        "multiplayer",
+        "family",
+        "casual",
+        "age-10-plus"
+      ],
+      "playerProblem": "Client downloads exist, but the page does not yet behave like a simple launcher.",
+      "nextAction": "Replace raw download choices with one clear Windows/Linux install path, then smoke test first playable action."
+    },
+    {
+      "id": "berusky-lan",
+      "title": "Berusky",
+      "currentAdapter": "linux-package",
+      "recommendedAdapter": "browser-stream",
+      "fallbackAdapter": "linux-package",
+      "priority": "medium",
+      "effort": "medium",
+      "readyNow": false,
+      "primaryAction": "Setup notes",
+      "path": "../berusky-lan/",
+      "tags": [
+        "Puzzle",
+        "Logic",
+        "Family"
+      ],
+      "categories": [
+        "puzzle",
+        "strategy",
+        "family",
+        "age-10-plus"
+      ],
+      "playerProblem": "Only Debian/Linux offline install files are available; this is not a normal guest launch flow.",
+      "nextAction": "Pilot browser-streamed VM session for this Linux game, or demote it to install notes until a simple launcher exists."
+    },
+    {
+      "id": "biloba-lan",
+      "title": "Biloba",
+      "currentAdapter": "desktop-client",
+      "recommendedAdapter": "desktop-client",
+      "fallbackAdapter": "browser-stream",
+      "priority": "medium",
+      "effort": "medium",
+      "readyNow": false,
+      "primaryAction": "Install / play",
+      "path": "../biloba-lan/",
+      "tags": [
+        "Board Game",
+        "Strategy",
+        "Native"
+      ],
+      "categories": [
+        "board-game",
+        "strategy",
+        "family",
+        "casual",
+        "age-10-plus"
+      ],
+      "playerProblem": "Client downloads exist, but the page does not yet behave like a simple launcher.",
+      "nextAction": "Replace raw download choices with one clear Windows/Linux install path, then smoke test first playable action."
+    },
+    {
+      "id": "blobandconquer-lan",
+      "title": "Blob And Conquer",
+      "currentAdapter": "linux-package",
+      "recommendedAdapter": "browser-stream",
+      "fallbackAdapter": "linux-package",
+      "priority": "medium",
+      "effort": "medium",
+      "readyNow": false,
+      "primaryAction": "Setup notes",
+      "path": "../blobandconquer-lan/",
+      "tags": [
+        "Action",
+        "Platformer",
+        "3D"
+      ],
+      "categories": [
+        "action",
+        "arcade",
+        "platformer",
+        "age-10-plus"
+      ],
+      "playerProblem": "Only Debian/Linux offline install files are available; this is not a normal guest launch flow.",
+      "nextAction": "Pilot browser-streamed VM session for this Linux game, or demote it to install notes until a simple launcher exists."
+    },
+    {
+      "id": "blobwars-lan",
+      "title": "Blob Wars: Metal Blob Solid",
+      "currentAdapter": "linux-package",
+      "recommendedAdapter": "browser-stream",
+      "fallbackAdapter": "linux-package",
+      "priority": "medium",
+      "effort": "medium",
+      "readyNow": false,
+      "primaryAction": "Setup notes",
+      "path": "../blobwars-lan/",
+      "tags": [
+        "Action",
+        "Platformer",
+        "Retro"
+      ],
+      "categories": [
+        "action",
+        "arcade",
+        "platformer",
+        "age-10-plus"
+      ],
+      "playerProblem": "Only Debian/Linux offline install files are available; this is not a normal guest launch flow.",
+      "nextAction": "Pilot browser-streamed VM session for this Linux game, or demote it to install notes until a simple launcher exists."
+    },
+    {
+      "id": "bloboats-lan",
+      "title": "Bloboats",
+      "currentAdapter": "linux-package",
+      "recommendedAdapter": "browser-stream",
+      "fallbackAdapter": "linux-package",
+      "priority": "medium",
+      "effort": "medium",
+      "readyNow": false,
+      "primaryAction": "Setup notes",
+      "path": "../bloboats-lan/",
+      "tags": [
+        "Racing",
+        "Physics",
+        "Arcade"
+      ],
+      "categories": [
+        "racing",
+        "arcade",
+        "action",
+        "family",
+        "age-10-plus"
+      ],
+      "playerProblem": "Only Debian/Linux offline install files are available; this is not a normal guest launch flow.",
+      "nextAction": "Pilot browser-streamed VM session for this Linux game, or demote it to install notes until a simple launcher exists."
+    },
+    {
+      "id": "blockattack-lan",
+      "title": "Block Attack",
+      "currentAdapter": "linux-package",
+      "recommendedAdapter": "browser-stream",
+      "fallbackAdapter": "linux-package",
+      "priority": "medium",
+      "effort": "medium",
+      "readyNow": false,
+      "primaryAction": "Setup notes",
+      "path": "../blockattack-lan/",
+      "tags": [
+        "Puzzle",
+        "Arcade",
+        "Family"
+      ],
+      "categories": [
+        "puzzle",
+        "arcade",
+        "family",
+        "casual",
+        "age-5-plus"
+      ],
+      "playerProblem": "Only Debian/Linux offline install files are available; this is not a normal guest launch flow.",
+      "nextAction": "Pilot browser-streamed VM session for this Linux game, or demote it to install notes until a simple launcher exists."
+    },
+    {
+      "id": "bovo-lan",
+      "title": "Bovo Gomoku",
+      "currentAdapter": "desktop-client",
+      "recommendedAdapter": "desktop-client",
+      "fallbackAdapter": "browser-stream",
+      "priority": "medium",
+      "effort": "medium",
+      "readyNow": false,
+      "primaryAction": "Install / play",
+      "path": "../bovo-lan/",
+      "tags": [
+        "Board Game",
+        "Strategy",
+        "Native"
+      ],
+      "categories": [
+        "board-game",
+        "strategy",
+        "family",
+        "casual",
+        "age-10-plus"
+      ],
+      "playerProblem": "Client downloads exist, but the page does not yet behave like a simple launcher.",
+      "nextAction": "Replace raw download choices with one clear Windows/Linux install path, then smoke test first playable action."
+    },
+    {
+      "id": "bumprace-lan",
+      "title": "BumpRace",
+      "currentAdapter": "linux-package",
+      "recommendedAdapter": "browser-stream",
+      "fallbackAdapter": "linux-package",
+      "priority": "medium",
+      "effort": "medium",
+      "readyNow": false,
+      "primaryAction": "Setup notes",
+      "path": "../bumprace-lan/",
+      "tags": [
+        "Racing",
+        "Arcade",
+        "Local Multiplayer"
+      ],
+      "categories": [
+        "racing",
+        "arcade",
+        "multiplayer",
+        "family",
+        "age-5-plus"
+      ],
+      "playerProblem": "Only Debian/Linux offline install files are available; this is not a normal guest launch flow.",
+      "nextAction": "Pilot browser-streamed VM session for this Linux game, or demote it to install notes until a simple launcher exists."
+    },
+    {
+      "id": "burgerspace-lan",
+      "title": "BurgerSpace",
+      "currentAdapter": "linux-package",
+      "recommendedAdapter": "browser-stream",
+      "fallbackAdapter": "linux-package",
+      "priority": "medium",
+      "effort": "medium",
+      "readyNow": false,
+      "primaryAction": "Setup notes",
+      "path": "../burgerspace-lan/",
+      "tags": [
+        "Arcade",
+        "Retro",
+        "Family"
+      ],
+      "categories": [
+        "arcade",
+        "retro",
+        "family",
+        "casual",
+        "age-5-plus"
+      ],
+      "playerProblem": "Only Debian/Linux offline install files are available; this is not a normal guest launch flow.",
+      "nextAction": "Pilot browser-streamed VM session for this Linux game, or demote it to install notes until a simple launcher exists."
+    },
+    {
+      "id": "caveexpress-lan",
+      "title": "CaveExpress",
+      "currentAdapter": "linux-package",
+      "recommendedAdapter": "browser-stream",
+      "fallbackAdapter": "linux-package",
+      "priority": "medium",
+      "effort": "medium",
+      "readyNow": false,
+      "primaryAction": "Setup notes",
+      "path": "../caveexpress-lan/",
+      "tags": [
+        "Arcade",
+        "Physics",
+        "Family"
+      ],
+      "categories": [
+        "arcade",
+        "puzzle",
+        "action",
+        "family",
+        "age-10-plus"
+      ],
+      "playerProblem": "Only Debian/Linux offline install files are available; this is not a normal guest launch flow.",
+      "nextAction": "Pilot browser-streamed VM session for this Linux game, or demote it to install notes until a simple launcher exists."
+    },
+    {
+      "id": "cavepacker-lan",
+      "title": "CavePacker",
+      "currentAdapter": "linux-package",
+      "recommendedAdapter": "browser-stream",
+      "fallbackAdapter": "linux-package",
+      "priority": "medium",
+      "effort": "medium",
+      "readyNow": false,
+      "primaryAction": "Setup notes",
+      "path": "../cavepacker-lan/",
+      "tags": [
+        "Puzzle",
+        "Strategy",
+        "Family"
+      ],
+      "categories": [
+        "puzzle",
+        "strategy",
+        "multiplayer",
+        "family",
+        "age-10-plus"
+      ],
+      "playerProblem": "Only Debian/Linux offline install files are available; this is not a normal guest launch flow.",
+      "nextAction": "Pilot browser-streamed VM session for this Linux game, or demote it to install notes until a simple launcher exists."
+    },
+    {
+      "id": "chromium-bsu-lan",
+      "title": "Chromium B.S.U.",
+      "currentAdapter": "linux-package",
+      "recommendedAdapter": "browser-stream",
+      "fallbackAdapter": "linux-package",
+      "priority": "medium",
+      "effort": "medium",
+      "readyNow": false,
+      "primaryAction": "Setup notes",
+      "path": "../chromium-bsu-lan/",
+      "tags": [
+        "Arcade",
+        "Shooter",
+        "Native"
+      ],
+      "categories": [
+        "arcade",
+        "action",
+        "age-10-plus"
+      ],
+      "playerProblem": "Only Debian/Linux offline install files are available; this is not a normal guest launch flow.",
+      "nextAction": "Pilot browser-streamed VM session for this Linux game, or demote it to install notes until a simple launcher exists."
+    },
+    {
+      "id": "circuslinux-lan",
+      "title": "Circus Linux!",
+      "currentAdapter": "linux-package",
+      "recommendedAdapter": "browser-stream",
+      "fallbackAdapter": "linux-package",
+      "priority": "medium",
+      "effort": "medium",
+      "readyNow": false,
+      "primaryAction": "Setup notes",
+      "path": "../circuslinux-lan/",
+      "tags": [
+        "Arcade",
+        "Family",
+        "Kids"
+      ],
+      "categories": [
+        "arcade",
+        "family",
+        "casual",
+        "age-5-plus"
+      ],
+      "playerProblem": "Only Debian/Linux offline install files are available; this is not a normal guest launch flow.",
+      "nextAction": "Pilot browser-streamed VM session for this Linux game, or demote it to install notes until a simple launcher exists."
+    },
+    {
+      "id": "cultivation-lan",
+      "title": "Cultivation",
+      "currentAdapter": "linux-package",
+      "recommendedAdapter": "browser-stream",
+      "fallbackAdapter": "linux-package",
+      "priority": "medium",
+      "effort": "medium",
+      "readyNow": false,
+      "primaryAction": "Setup notes",
+      "path": "../cultivation-lan/",
+      "tags": [
+        "Simulation",
+        "Garden",
+        "Strategy"
+      ],
+      "categories": [
+        "simulation",
+        "strategy",
+        "science",
+        "family",
+        "age-10-plus"
+      ],
+      "playerProblem": "Only Debian/Linux offline install files are available; this is not a normal guest launch flow.",
+      "nextAction": "Pilot browser-streamed VM session for this Linux game, or demote it to install notes until a simple launcher exists."
+    },
+    {
+      "id": "crawl-tiles-lan",
+      "title": "Dungeon Crawl Stone Soup",
+      "currentAdapter": "desktop-client",
+      "recommendedAdapter": "desktop-client",
+      "fallbackAdapter": "browser-stream",
+      "priority": "medium",
+      "effort": "medium",
+      "readyNow": false,
+      "primaryAction": "Install / play",
+      "path": "../crawl-tiles-lan/",
+      "tags": [
+        "Roguelike",
+        "RPG",
+        "Native"
+      ],
+      "categories": [
+        "roguelite",
+        "rpg",
+        "fantasy",
+        "strategy",
+        "age-13-plus"
+      ],
+      "playerProblem": "Client downloads exist, but the page does not yet behave like a simple launcher.",
+      "nextAction": "Replace raw download choices with one clear Windows/Linux install path, then smoke test first playable action."
+    },
+    {
+      "id": "endless-sky-lan",
+      "title": "Endless Sky LAN Hub",
+      "currentAdapter": "desktop-client",
+      "recommendedAdapter": "desktop-client",
+      "fallbackAdapter": "browser-stream",
+      "priority": "medium",
+      "effort": "medium",
+      "readyNow": false,
+      "primaryAction": "Install / play",
+      "path": "../endless-sky-lan/",
+      "tags": [
+        "RPG",
+        "Space",
+        "Native"
+      ],
+      "categories": [
+        "rpg",
+        "adventure",
+        "space",
+        "simulation",
+        "age-10-plus"
+      ],
+      "playerProblem": "Client downloads exist, but the page does not yet behave like a simple launcher.",
+      "nextAction": "Replace raw download choices with one clear Windows/Linux install path, then smoke test first playable action."
+    },
+    {
+      "id": "enemylines3-lan",
+      "title": "Enemy Lines 3",
+      "currentAdapter": "linux-package",
+      "recommendedAdapter": "browser-stream",
+      "fallbackAdapter": "linux-package",
+      "priority": "medium",
+      "effort": "medium",
+      "readyNow": false,
+      "primaryAction": "Setup notes",
+      "path": "../enemylines3-lan/",
+      "tags": [
+        "FPS",
+        "Action",
+        "3D"
+      ],
+      "categories": [
+        "action",
+        "arcade",
+        "age-13-plus"
+      ],
+      "playerProblem": "Only Debian/Linux offline install files are available; this is not a normal guest launch flow.",
+      "nextAction": "Pilot browser-streamed VM session for this Linux game, or demote it to install notes until a simple launcher exists."
+    },
+    {
+      "id": "enemylines7-lan",
+      "title": "Enemy Lines 7",
+      "currentAdapter": "linux-package",
+      "recommendedAdapter": "browser-stream",
+      "fallbackAdapter": "linux-package",
+      "priority": "medium",
+      "effort": "medium",
+      "readyNow": false,
+      "primaryAction": "Setup notes",
+      "path": "../enemylines7-lan/",
+      "tags": [
+        "FPS",
+        "Action",
+        "3D"
+      ],
+      "categories": [
+        "action",
+        "arcade",
+        "age-13-plus"
+      ],
+      "playerProblem": "Only Debian/Linux offline install files are available; this is not a normal guest launch flow.",
+      "nextAction": "Pilot browser-streamed VM session for this Linux game, or demote it to install notes until a simple launcher exists."
+    },
+    {
+      "id": "enigma-lan",
+      "title": "Enigma",
+      "currentAdapter": "linux-package",
+      "recommendedAdapter": "browser-stream",
+      "fallbackAdapter": "linux-package",
+      "priority": "medium",
+      "effort": "medium",
+      "readyNow": false,
+      "primaryAction": "Setup notes",
+      "path": "../enigma-lan/",
+      "tags": [
+        "Puzzle",
+        "Native"
+      ],
+      "categories": [
+        "puzzle",
+        "strategy",
+        "science",
+        "age-10-plus"
+      ],
+      "playerProblem": "Only Debian/Linux offline install files are available; this is not a normal guest launch flow.",
+      "nextAction": "Pilot browser-streamed VM session for this Linux game, or demote it to install notes until a simple launcher exists."
+    },
+    {
+      "id": "epiphany-lan",
+      "title": "Epiphany",
+      "currentAdapter": "linux-package",
+      "recommendedAdapter": "browser-stream",
+      "fallbackAdapter": "linux-package",
+      "priority": "medium",
+      "effort": "medium",
+      "readyNow": false,
+      "primaryAction": "Setup notes",
+      "path": "../epiphany-lan/",
+      "tags": [
+        "Puzzle",
+        "Arcade",
+        "Retro"
+      ],
+      "categories": [
+        "puzzle",
+        "arcade",
+        "retro",
+        "family",
+        "age-10-plus"
+      ],
+      "playerProblem": "Only Debian/Linux offline install files are available; this is not a normal guest launch flow.",
+      "nextAction": "Pilot browser-streamed VM session for this Linux game, or demote it to install notes until a simple launcher exists."
+    },
+    {
+      "id": "extremetuxracer-lan",
+      "title": "Extreme Tux Racer",
+      "currentAdapter": "linux-package",
+      "recommendedAdapter": "browser-stream",
+      "fallbackAdapter": "linux-package",
+      "priority": "medium",
+      "effort": "medium",
+      "readyNow": false,
+      "primaryAction": "Setup notes",
+      "path": "../extremetuxracer-lan/",
+      "tags": [
+        "Racing",
+        "Family",
+        "3D"
+      ],
+      "categories": [
+        "racing",
+        "arcade",
+        "family",
+        "casual",
+        "age-5-plus"
+      ],
+      "playerProblem": "Only Debian/Linux offline install files are available; this is not a normal guest launch flow.",
+      "nextAction": "Pilot browser-streamed VM session for this Linux game, or demote it to install notes until a simple launcher exists."
+    },
+    {
+      "id": "fillets-ng-lan",
+      "title": "Fish Fillets NG",
+      "currentAdapter": "linux-package",
+      "recommendedAdapter": "browser-stream",
+      "fallbackAdapter": "linux-package",
+      "priority": "medium",
+      "effort": "medium",
+      "readyNow": false,
+      "primaryAction": "Setup notes",
+      "path": "../fillets-ng-lan/",
+      "tags": [
+        "Puzzle",
+        "Native"
+      ],
+      "categories": [
+        "puzzle",
+        "strategy",
+        "family",
+        "age-10-plus"
+      ],
+      "playerProblem": "Only Debian/Linux offline install files are available; this is not a normal guest launch flow.",
+      "nextAction": "Pilot browser-streamed VM session for this Linux game, or demote it to install notes until a simple launcher exists."
+    },
+    {
+      "id": "flare-lan",
+      "title": "Flare",
+      "currentAdapter": "desktop-client",
+      "recommendedAdapter": "desktop-client",
+      "fallbackAdapter": "browser-stream",
+      "priority": "medium",
+      "effort": "medium",
+      "readyNow": false,
+      "primaryAction": "Install / play",
+      "path": "../flare-lan/",
+      "tags": [
+        "RPG",
+        "Fantasy",
+        "Native"
+      ],
+      "categories": [
+        "rpg",
+        "action",
+        "adventure",
+        "fantasy",
+        "age-10-plus"
+      ],
+      "playerProblem": "Client downloads exist, but the page does not yet behave like a simple launcher.",
+      "nextAction": "Replace raw download choices with one clear Windows/Linux install path, then smoke test first playable action."
+    },
+    {
+      "id": "flobopuyo-lan",
+      "title": "FloboPuyo",
+      "currentAdapter": "linux-package",
+      "recommendedAdapter": "browser-stream",
+      "fallbackAdapter": "linux-package",
+      "priority": "medium",
+      "effort": "medium",
+      "readyNow": false,
+      "primaryAction": "Setup notes",
+      "path": "../flobopuyo-lan/",
+      "tags": [
+        "Puzzle",
+        "Arcade",
+        "Family"
+      ],
+      "categories": [
+        "puzzle",
+        "arcade",
+        "multiplayer",
+        "family",
+        "age-5-plus"
+      ],
+      "playerProblem": "Only Debian/Linux offline install files are available; this is not a normal guest launch flow.",
+      "nextAction": "Pilot browser-streamed VM session for this Linux game, or demote it to install notes until a simple launcher exists."
+    },
+    {
+      "id": "foobillardplus-lan",
+      "title": "FooBillard++",
+      "currentAdapter": "linux-package",
+      "recommendedAdapter": "browser-stream",
+      "fallbackAdapter": "linux-package",
+      "priority": "medium",
+      "effort": "medium",
+      "readyNow": false,
+      "primaryAction": "Setup notes",
+      "path": "../foobillardplus-lan/",
+      "tags": [
+        "Sports",
+        "Arcade",
+        "3D"
+      ],
+      "categories": [
+        "arcade",
+        "simulation",
+        "family",
+        "casual",
+        "age-10-plus"
+      ],
+      "playerProblem": "Only Debian/Linux offline install files are available; this is not a normal guest launch flow.",
+      "nextAction": "Pilot browser-streamed VM session for this Linux game, or demote it to install notes until a simple launcher exists."
+    },
+    {
+      "id": "frozen-bubble-lan",
+      "title": "Frozen Bubble",
+      "currentAdapter": "linux-package",
+      "recommendedAdapter": "browser-stream",
+      "fallbackAdapter": "linux-package",
+      "priority": "medium",
+      "effort": "medium",
+      "readyNow": false,
+      "primaryAction": "Setup notes",
+      "path": "../frozen-bubble-lan/",
+      "tags": [
+        "Puzzle",
+        "Family",
+        "Native"
+      ],
+      "categories": [
+        "puzzle",
+        "arcade",
+        "family",
+        "casual",
+        "age-5-plus"
+      ],
+      "playerProblem": "Only Debian/Linux offline install files are available; this is not a normal guest launch flow.",
+      "nextAction": "Pilot browser-streamed VM session for this Linux game, or demote it to install notes until a simple launcher exists."
+    },
+    {
+      "id": "gamine-lan",
+      "title": "Gamine",
+      "currentAdapter": "linux-package",
+      "recommendedAdapter": "browser-stream",
+      "fallbackAdapter": "linux-package",
+      "priority": "medium",
+      "effort": "medium",
+      "readyNow": false,
+      "primaryAction": "Setup notes",
+      "path": "../gamine-lan/",
+      "tags": [
+        "Kids",
+        "Family",
+        "Casual"
+      ],
+      "categories": [
+        "educational",
+        "arcade",
+        "family",
+        "casual",
+        "age-5-plus"
+      ],
+      "playerProblem": "Only Debian/Linux offline install files are available; this is not a normal guest launch flow.",
+      "nextAction": "Pilot browser-streamed VM session for this Linux game, or demote it to install notes until a simple launcher exists."
+    },
+    {
+      "id": "garden-coloured-lights-lan",
+      "title": "Garden of Coloured Lights",
+      "currentAdapter": "linux-package",
+      "recommendedAdapter": "browser-stream",
+      "fallbackAdapter": "linux-package",
+      "priority": "medium",
+      "effort": "medium",
+      "readyNow": false,
+      "primaryAction": "Setup notes",
+      "path": "../garden-coloured-lights-lan/",
+      "tags": [
+        "Arcade",
+        "Shooter",
+        "Music"
+      ],
+      "categories": [
+        "arcade",
+        "action",
+        "age-10-plus"
+      ],
+      "playerProblem": "Only Debian/Linux offline install files are available; this is not a normal guest launch flow.",
+      "nextAction": "Pilot browser-streamed VM session for this Linux game, or demote it to install notes until a simple launcher exists."
+    },
+    {
+      "id": "geki2-lan",
+      "title": "Geki 2",
+      "currentAdapter": "linux-package",
+      "recommendedAdapter": "browser-stream",
+      "fallbackAdapter": "linux-package",
+      "priority": "medium",
+      "effort": "medium",
+      "readyNow": false,
+      "primaryAction": "Setup notes",
+      "path": "../geki2-lan/",
+      "tags": [
+        "Arcade",
+        "Shooter",
+        "Retro"
+      ],
+      "categories": [
+        "arcade",
+        "action",
+        "retro",
+        "age-10-plus"
+      ],
+      "playerProblem": "Only Debian/Linux offline install files are available; this is not a normal guest launch flow.",
+      "nextAction": "Pilot browser-streamed VM session for this Linux game, or demote it to install notes until a simple launcher exists."
+    },
+    {
+      "id": "geki3-lan",
+      "title": "Geki 3",
+      "currentAdapter": "linux-package",
+      "recommendedAdapter": "browser-stream",
+      "fallbackAdapter": "linux-package",
+      "priority": "medium",
+      "effort": "medium",
+      "readyNow": false,
+      "primaryAction": "Setup notes",
+      "path": "../geki3-lan/",
+      "tags": [
+        "Arcade",
+        "Shooter",
+        "Retro"
+      ],
+      "categories": [
+        "arcade",
+        "action",
+        "retro",
+        "age-10-plus"
+      ],
+      "playerProblem": "Only Debian/Linux offline install files are available; this is not a normal guest launch flow.",
+      "nextAction": "Pilot browser-streamed VM session for this Linux game, or demote it to install notes until a simple launcher exists."
+    },
+    {
+      "id": "gnubg-lan",
+      "title": "GNU Backgammon",
+      "currentAdapter": "desktop-client",
+      "recommendedAdapter": "desktop-client",
+      "fallbackAdapter": "browser-stream",
+      "priority": "medium",
+      "effort": "medium",
+      "readyNow": false,
+      "primaryAction": "Install / play",
+      "path": "../gnubg-lan/",
+      "tags": [
+        "Board Game",
+        "Strategy",
+        "Native"
+      ],
+      "categories": [
+        "board-game",
+        "strategy",
+        "family",
+        "casual",
+        "age-10-plus"
+      ],
+      "playerProblem": "Client downloads exist, but the page does not yet behave like a simple launcher.",
+      "nextAction": "Replace raw download choices with one clear Windows/Linux install path, then smoke test first playable action."
+    },
+    {
+      "id": "gnujump-lan",
+      "title": "GNUjump",
+      "currentAdapter": "linux-package",
+      "recommendedAdapter": "browser-stream",
+      "fallbackAdapter": "linux-package",
+      "priority": "medium",
+      "effort": "medium",
+      "readyNow": false,
+      "primaryAction": "Setup notes",
+      "path": "../gnujump-lan/",
+      "tags": [
+        "Arcade",
+        "Platformer",
+        "Family"
+      ],
+      "categories": [
+        "arcade",
+        "platformer",
+        "family",
+        "casual",
+        "age-5-plus"
+      ],
+      "playerProblem": "Only Debian/Linux offline install files are available; this is not a normal guest launch flow.",
+      "nextAction": "Pilot browser-streamed VM session for this Linux game, or demote it to install notes until a simple launcher exists."
+    },
+    {
+      "id": "gav-lan",
+      "title": "GPL Arcade Volleyball",
+      "currentAdapter": "linux-package",
+      "recommendedAdapter": "browser-stream",
+      "fallbackAdapter": "linux-package",
+      "priority": "medium",
+      "effort": "medium",
+      "readyNow": false,
+      "primaryAction": "Setup notes",
+      "path": "../gav-lan/",
+      "tags": [
+        "Sports",
+        "Arcade",
+        "Family"
+      ],
+      "categories": [
+        "arcade",
+        "multiplayer",
+        "family",
+        "casual",
+        "age-5-plus"
+      ],
+      "playerProblem": "Only Debian/Linux offline install files are available; this is not a normal guest launch flow.",
+      "nextAction": "Pilot browser-streamed VM session for this Linux game, or demote it to install notes until a simple launcher exists."
+    },
+    {
+      "id": "heroes-lan",
+      "title": "Heroes",
+      "currentAdapter": "linux-package",
+      "recommendedAdapter": "browser-stream",
+      "fallbackAdapter": "linux-package",
+      "priority": "medium",
+      "effort": "medium",
+      "readyNow": false,
+      "primaryAction": "Setup notes",
+      "path": "../heroes-lan/",
+      "tags": [
+        "Arcade",
+        "Retro",
+        "Multiplayer"
+      ],
+      "categories": [
+        "arcade",
+        "action",
+        "multiplayer",
+        "retro",
+        "age-10-plus"
+      ],
+      "playerProblem": "Only Debian/Linux offline install files are available; this is not a normal guest launch flow.",
+      "nextAction": "Pilot browser-streamed VM session for this Linux game, or demote it to install notes until a simple launcher exists."
+    },
+    {
+      "id": "holotz-castle-lan",
+      "title": "Holotz Castle",
+      "currentAdapter": "linux-package",
+      "recommendedAdapter": "browser-stream",
+      "fallbackAdapter": "linux-package",
+      "priority": "medium",
+      "effort": "medium",
+      "readyNow": false,
+      "primaryAction": "Setup notes",
+      "path": "../holotz-castle-lan/",
+      "tags": [
+        "Platformer",
+        "Puzzle",
+        "Retro"
+      ],
+      "categories": [
+        "arcade",
+        "platformer",
+        "puzzle",
+        "age-10-plus"
+      ],
+      "playerProblem": "Only Debian/Linux offline install files are available; this is not a normal guest launch flow.",
+      "nextAction": "Pilot browser-streamed VM session for this Linux game, or demote it to install notes until a simple launcher exists."
+    },
+    {
+      "id": "kfourinline-lan",
+      "title": "KFourInLine",
+      "currentAdapter": "desktop-client",
+      "recommendedAdapter": "desktop-client",
+      "fallbackAdapter": "browser-stream",
+      "priority": "medium",
+      "effort": "medium",
+      "readyNow": false,
+      "primaryAction": "Install / play",
+      "path": "../kfourinline-lan/",
+      "tags": [
+        "Board Game",
+        "Strategy",
+        "Native"
+      ],
+      "categories": [
+        "board-game",
+        "strategy",
+        "family",
+        "casual",
+        "age-5-plus"
+      ],
+      "playerProblem": "Client downloads exist, but the page does not yet behave like a simple launcher.",
+      "nextAction": "Replace raw download choices with one clear Windows/Linux install path, then smoke test first playable action."
+    },
+    {
+      "id": "kigo-lan",
+      "title": "Kigo + GNU Go",
+      "currentAdapter": "desktop-client",
+      "recommendedAdapter": "desktop-client",
+      "fallbackAdapter": "browser-stream",
+      "priority": "medium",
+      "effort": "medium",
+      "readyNow": false,
+      "primaryAction": "Install / play",
+      "path": "../kigo-lan/",
+      "tags": [
+        "Board Game",
+        "Strategy",
+        "Native"
+      ],
+      "categories": [
+        "board-game",
+        "strategy",
+        "tactical",
+        "family",
+        "age-10-plus"
+      ],
+      "playerProblem": "Client downloads exist, but the page does not yet behave like a simple launcher.",
+      "nextAction": "Replace raw download choices with one clear Windows/Linux install path, then smoke test first playable action."
+    },
+    {
+      "id": "knavalbattle-lan",
+      "title": "KNavalBattle",
+      "currentAdapter": "desktop-client",
+      "recommendedAdapter": "desktop-client",
+      "fallbackAdapter": "browser-stream",
+      "priority": "medium",
+      "effort": "medium",
+      "readyNow": false,
+      "primaryAction": "Install / play",
+      "path": "../knavalbattle-lan/",
+      "tags": [
+        "Board Game",
+        "Strategy",
+        "Native"
+      ],
+      "categories": [
+        "board-game",
+        "strategy",
+        "multiplayer",
+        "family",
+        "casual",
+        "age-10-plus"
+      ],
+      "playerProblem": "Client downloads exist, but the page does not yet behave like a simple launcher.",
+      "nextAction": "Replace raw download choices with one clear Windows/Linux install path, then smoke test first playable action."
+    },
+    {
+      "id": "kobodeluxe-lan",
+      "title": "Kobo Deluxe",
+      "currentAdapter": "linux-package",
+      "recommendedAdapter": "browser-stream",
+      "fallbackAdapter": "linux-package",
+      "priority": "medium",
+      "effort": "medium",
+      "readyNow": false,
+      "primaryAction": "Setup notes",
+      "path": "../kobodeluxe-lan/",
+      "tags": [
+        "Arcade",
+        "Shooter",
+        "Native"
+      ],
+      "categories": [
+        "arcade",
+        "action",
+        "retro",
+        "age-10-plus"
+      ],
+      "playerProblem": "Only Debian/Linux offline install files are available; this is not a normal guest launch flow.",
+      "nextAction": "Pilot browser-streamed VM session for this Linux game, or demote it to install notes until a simple launcher exists."
+    },
+    {
+      "id": "krank-lan",
+      "title": "Krank",
+      "currentAdapter": "linux-package",
+      "recommendedAdapter": "browser-stream",
+      "fallbackAdapter": "linux-package",
+      "priority": "medium",
+      "effort": "medium",
+      "readyNow": false,
+      "primaryAction": "Setup notes",
+      "path": "../krank-lan/",
+      "tags": [
+        "Puzzle",
+        "Dexterity",
+        "Casual"
+      ],
+      "categories": [
+        "puzzle",
+        "arcade",
+        "casual",
+        "family",
+        "age-10-plus"
+      ],
+      "playerProblem": "Only Debian/Linux offline install files are available; this is not a normal guest launch flow.",
+      "nextAction": "Pilot browser-streamed VM session for this Linux game, or demote it to install notes until a simple launcher exists."
+    },
+    {
+      "id": "kraptor-lan",
+      "title": "Kraptor",
+      "currentAdapter": "linux-package",
+      "recommendedAdapter": "browser-stream",
+      "fallbackAdapter": "linux-package",
+      "priority": "medium",
+      "effort": "medium",
+      "readyNow": false,
+      "primaryAction": "Setup notes",
+      "path": "../kraptor-lan/",
+      "tags": [
+        "Arcade",
+        "Shooter",
+        "Action"
+      ],
+      "categories": [
+        "arcade",
+        "action",
+        "age-10-plus"
+      ],
+      "playerProblem": "Only Debian/Linux offline install files are available; this is not a normal guest launch flow.",
+      "nextAction": "Pilot browser-streamed VM session for this Linux game, or demote it to install notes until a simple launcher exists."
+    },
+    {
+      "id": "kreversi-lan",
+      "title": "KReversi",
+      "currentAdapter": "desktop-client",
+      "recommendedAdapter": "desktop-client",
+      "fallbackAdapter": "browser-stream",
+      "priority": "medium",
+      "effort": "medium",
+      "readyNow": false,
+      "primaryAction": "Install / play",
+      "path": "../kreversi-lan/",
+      "tags": [
+        "Board Game",
+        "Strategy",
+        "Native"
+      ],
+      "categories": [
+        "board-game",
+        "strategy",
+        "family",
+        "casual",
+        "age-10-plus"
+      ],
+      "playerProblem": "Client downloads exist, but the page does not yet behave like a simple launcher.",
+      "nextAction": "Replace raw download choices with one clear Windows/Linux install path, then smoke test first playable action."
+    },
+    {
+      "id": "ksirk-lan",
+      "title": "KsirK",
+      "currentAdapter": "desktop-client",
+      "recommendedAdapter": "desktop-client",
+      "fallbackAdapter": "browser-stream",
+      "priority": "medium",
+      "effort": "medium",
+      "readyNow": false,
+      "primaryAction": "Install / play",
+      "path": "../ksirk-lan/",
+      "tags": [
+        "Board Game",
+        "Strategy",
+        "Native"
+      ],
+      "categories": [
+        "board-game",
+        "strategy",
+        "tactical",
+        "family",
+        "age-10-plus"
+      ],
+      "playerProblem": "Client downloads exist, but the page does not yet behave like a simple launcher.",
+      "nextAction": "Replace raw download choices with one clear Windows/Linux install path, then smoke test first playable action."
+    },
+    {
+      "id": "lbreakouthd-lan",
+      "title": "LBreakoutHD",
+      "currentAdapter": "linux-package",
+      "recommendedAdapter": "browser-stream",
+      "fallbackAdapter": "linux-package",
+      "priority": "medium",
+      "effort": "medium",
+      "readyNow": false,
+      "primaryAction": "Setup notes",
+      "path": "../lbreakouthd-lan/",
+      "tags": [
+        "Arcade",
+        "Puzzle",
+        "Native"
+      ],
+      "categories": [
+        "arcade",
+        "puzzle",
+        "family",
+        "casual",
+        "age-5-plus"
+      ],
+      "playerProblem": "Only Debian/Linux offline install files are available; this is not a normal guest launch flow.",
+      "nextAction": "Pilot browser-streamed VM session for this Linux game, or demote it to install notes until a simple launcher exists."
+    },
+    {
+      "id": "lierolibre-lan",
+      "title": "LieroLibre",
+      "currentAdapter": "linux-package",
+      "recommendedAdapter": "browser-stream",
+      "fallbackAdapter": "linux-package",
+      "priority": "medium",
+      "effort": "medium",
+      "readyNow": false,
+      "primaryAction": "Setup notes",
+      "path": "../lierolibre-lan/",
+      "tags": [
+        "Action",
+        "Arcade",
+        "Local Multiplayer"
+      ],
+      "categories": [
+        "arcade",
+        "action",
+        "multiplayer",
+        "age-10-plus"
+      ],
+      "playerProblem": "Only Debian/Linux offline install files are available; this is not a normal guest launch flow.",
+      "nextAction": "Pilot browser-streamed VM session for this Linux game, or demote it to install notes until a simple launcher exists."
+    },
+    {
+      "id": "ltris-lan",
+      "title": "LTris",
+      "currentAdapter": "linux-package",
+      "recommendedAdapter": "browser-stream",
+      "fallbackAdapter": "linux-package",
+      "priority": "medium",
+      "effort": "medium",
+      "readyNow": false,
+      "primaryAction": "Setup notes",
+      "path": "../ltris-lan/",
+      "tags": [
+        "Puzzle",
+        "Arcade",
+        "Family"
+      ],
+      "categories": [
+        "puzzle",
+        "arcade",
+        "retro",
+        "family",
+        "age-5-plus"
+      ],
+      "playerProblem": "Only Debian/Linux offline install files are available; this is not a normal guest launch flow.",
+      "nextAction": "Pilot browser-streamed VM session for this Linux game, or demote it to install notes until a simple launcher exists."
+    },
+    {
+      "id": "marsshooter-lan",
+      "title": "M.A.R.S. Shooter",
+      "currentAdapter": "linux-package",
+      "recommendedAdapter": "browser-stream",
+      "fallbackAdapter": "linux-package",
+      "priority": "medium",
+      "effort": "medium",
+      "readyNow": false,
+      "primaryAction": "Setup notes",
+      "path": "../marsshooter-lan/",
+      "tags": [
+        "Space",
+        "Shooter",
+        "Arcade"
+      ],
+      "categories": [
+        "space",
+        "arcade",
+        "action",
+        "multiplayer",
+        "age-10-plus"
+      ],
+      "playerProblem": "Only Debian/Linux offline install files are available; this is not a normal guest launch flow.",
+      "nextAction": "Pilot browser-streamed VM session for this Linux game, or demote it to install notes until a simple launcher exists."
+    },
+    {
+      "id": "megaglest-lan",
+      "title": "MegaGlest",
+      "currentAdapter": "desktop-client",
+      "recommendedAdapter": "desktop-client",
+      "fallbackAdapter": "browser-stream",
+      "priority": "medium",
+      "effort": "medium",
+      "readyNow": false,
+      "primaryAction": "Install / play",
+      "path": "../megaglest-lan/",
+      "tags": [
+        "Strategy",
+        "RTS",
+        "Native"
+      ],
+      "categories": [
+        "strategy",
+        "action",
+        "multiplayer",
+        "fantasy",
+        "age-10-plus"
+      ],
+      "playerProblem": "Client downloads exist, but the page does not yet behave like a simple launcher.",
+      "nextAction": "Replace raw download choices with one clear Windows/Linux install path, then smoke test first playable action."
+    },
+    {
+      "id": "moon-lander-lan",
+      "title": "Moon Lander",
+      "currentAdapter": "linux-package",
+      "recommendedAdapter": "browser-stream",
+      "fallbackAdapter": "linux-package",
+      "priority": "medium",
+      "effort": "medium",
+      "readyNow": false,
+      "primaryAction": "Setup notes",
+      "path": "../moon-lander-lan/",
+      "tags": [
+        "Arcade",
+        "Physics",
+        "Family"
+      ],
+      "categories": [
+        "arcade",
+        "simulation",
+        "family",
+        "casual",
+        "age-10-plus"
+      ],
+      "playerProblem": "Only Debian/Linux offline install files are available; this is not a normal guest launch flow.",
+      "nextAction": "Pilot browser-streamed VM session for this Linux game, or demote it to install notes until a simple launcher exists."
+    },
+    {
+      "id": "mrrescue-lan",
+      "title": "Mr Rescue",
+      "currentAdapter": "linux-package",
+      "recommendedAdapter": "browser-stream",
+      "fallbackAdapter": "linux-package",
+      "priority": "medium",
+      "effort": "medium",
+      "readyNow": false,
+      "primaryAction": "Setup notes",
+      "path": "../mrrescue-lan/",
+      "tags": [
+        "Arcade",
+        "Action",
+        "Family"
+      ],
+      "categories": [
+        "arcade",
+        "action",
+        "family",
+        "age-10-plus"
+      ],
+      "playerProblem": "Only Debian/Linux offline install files are available; this is not a normal guest launch flow.",
+      "nextAction": "Pilot browser-streamed VM session for this Linux game, or demote it to install notes until a simple launcher exists."
+    },
+    {
+      "id": "neverball-lan",
+      "title": "Neverball",
+      "currentAdapter": "linux-package",
+      "recommendedAdapter": "browser-stream",
+      "fallbackAdapter": "linux-package",
+      "priority": "medium",
+      "effort": "medium",
+      "readyNow": false,
+      "primaryAction": "Setup notes",
+      "path": "../neverball-lan/",
+      "tags": [
+        "Puzzle",
+        "Arcade",
+        "Native"
+      ],
+      "categories": [
+        "puzzle",
+        "arcade",
+        "family",
+        "casual",
+        "age-10-plus"
+      ],
+      "playerProblem": "Only Debian/Linux offline install files are available; this is not a normal guest launch flow.",
+      "nextAction": "Pilot browser-streamed VM session for this Linux game, or demote it to install notes until a simple launcher exists."
+    },
+    {
+      "id": "nikwi-lan",
+      "title": "Nikwi Deluxe",
+      "currentAdapter": "linux-package",
+      "recommendedAdapter": "browser-stream",
+      "fallbackAdapter": "linux-package",
+      "priority": "medium",
+      "effort": "medium",
+      "readyNow": false,
+      "primaryAction": "Setup notes",
+      "path": "../nikwi-lan/",
+      "tags": [
+        "Platformer",
+        "Family",
+        "Retro"
+      ],
+      "categories": [
+        "arcade",
+        "platformer",
+        "family",
+        "casual",
+        "age-5-plus"
+      ],
+      "playerProblem": "Only Debian/Linux offline install files are available; this is not a normal guest launch flow.",
+      "nextAction": "Pilot browser-streamed VM session for this Linux game, or demote it to install notes until a simple launcher exists."
+    },
+    {
+      "id": "morris-lan",
+      "title": "Nine Men's Morris",
+      "currentAdapter": "linux-package",
+      "recommendedAdapter": "browser-stream",
+      "fallbackAdapter": "linux-package",
+      "priority": "medium",
+      "effort": "medium",
+      "readyNow": false,
+      "primaryAction": "Setup notes",
+      "path": "../morris-lan/",
+      "tags": [
+        "Board Game",
+        "Strategy",
+        "Family"
+      ],
+      "categories": [
+        "board-game",
+        "strategy",
+        "family",
+        "casual",
+        "age-10-plus"
+      ],
+      "playerProblem": "Only Debian/Linux offline install files are available; this is not a normal guest launch flow.",
+      "nextAction": "Pilot browser-streamed VM session for this Linux game, or demote it to install notes until a simple launcher exists."
+    },
+    {
+      "id": "numptyphysics-lan",
+      "title": "Numpty Physics",
+      "currentAdapter": "linux-package",
+      "recommendedAdapter": "browser-stream",
+      "fallbackAdapter": "linux-package",
+      "priority": "medium",
+      "effort": "medium",
+      "readyNow": false,
+      "primaryAction": "Setup notes",
+      "path": "../numptyphysics-lan/",
+      "tags": [
+        "Puzzle",
+        "Physics",
+        "Family"
+      ],
+      "categories": [
+        "puzzle",
+        "science",
+        "family",
+        "casual",
+        "age-5-plus"
+      ],
+      "playerProblem": "Only Debian/Linux offline install files are available; this is not a normal guest launch flow.",
+      "nextAction": "Pilot browser-streamed VM session for this Linux game, or demote it to install notes until a simple launcher exists."
+    },
+    {
+      "id": "open-invaders-lan",
+      "title": "Open Invaders",
+      "currentAdapter": "linux-package",
+      "recommendedAdapter": "browser-stream",
+      "fallbackAdapter": "linux-package",
+      "priority": "medium",
+      "effort": "medium",
+      "readyNow": false,
+      "primaryAction": "Setup notes",
+      "path": "../open-invaders-lan/",
+      "tags": [
+        "Arcade",
+        "Shooter",
+        "Retro"
+      ],
+      "categories": [
+        "arcade",
+        "action",
+        "retro",
+        "family",
+        "age-10-plus"
+      ],
+      "playerProblem": "Only Debian/Linux offline install files are available; this is not a normal guest launch flow.",
+      "nextAction": "Pilot browser-streamed VM session for this Linux game, or demote it to install notes until a simple launcher exists."
+    },
+    {
+      "id": "openclonk-lan",
+      "title": "OpenClonk",
+      "currentAdapter": "desktop-client",
+      "recommendedAdapter": "desktop-client",
+      "fallbackAdapter": "browser-stream",
+      "priority": "medium",
+      "effort": "medium",
+      "readyNow": false,
+      "primaryAction": "Install / play",
+      "path": "../openclonk-lan/",
+      "tags": [
+        "Action",
+        "Strategy",
+        "Native"
+      ],
+      "categories": [
+        "action",
+        "strategy",
+        "multiplayer",
+        "simulation",
+        "age-10-plus"
+      ],
+      "playerProblem": "Client downloads exist, but the page does not yet behave like a simple launcher.",
+      "nextAction": "Replace raw download choices with one clear Windows/Linux install path, then smoke test first playable action."
+    },
+    {
+      "id": "pathological-lan",
+      "title": "Pathological",
+      "currentAdapter": "linux-package",
+      "recommendedAdapter": "browser-stream",
+      "fallbackAdapter": "linux-package",
+      "priority": "medium",
+      "effort": "medium",
+      "readyNow": false,
+      "primaryAction": "Setup notes",
+      "path": "../pathological-lan/",
+      "tags": [
+        "Puzzle",
+        "Logic",
+        "Family"
+      ],
+      "categories": [
+        "puzzle",
+        "strategy",
+        "family",
+        "age-10-plus"
+      ],
+      "playerProblem": "Only Debian/Linux offline install files are available; this is not a normal guest launch flow.",
+      "nextAction": "Pilot browser-streamed VM session for this Linux game, or demote it to install notes until a simple launcher exists."
+    },
+    {
+      "id": "pentobi-lan",
+      "title": "Pentobi",
+      "currentAdapter": "desktop-client",
+      "recommendedAdapter": "desktop-client",
+      "fallbackAdapter": "browser-stream",
+      "priority": "medium",
+      "effort": "medium",
+      "readyNow": false,
+      "primaryAction": "Install / play",
+      "path": "../pentobi-lan/",
+      "tags": [
+        "Board Game",
+        "Strategy",
+        "Native"
+      ],
+      "categories": [
+        "board-game",
+        "strategy",
+        "tactical",
+        "family",
+        "casual",
+        "age-10-plus"
+      ],
+      "playerProblem": "Client downloads exist, but the page does not yet behave like a simple launcher.",
+      "nextAction": "Replace raw download choices with one clear Windows/Linux install path, then smoke test first playable action."
+    },
+    {
+      "id": "pingus-lan",
+      "title": "Pingus",
+      "currentAdapter": "desktop-client",
+      "recommendedAdapter": "desktop-client",
+      "fallbackAdapter": "browser-stream",
+      "priority": "medium",
+      "effort": "medium",
+      "readyNow": false,
+      "primaryAction": "Install / play",
+      "path": "../pingus-lan/",
+      "tags": [
+        "Puzzle",
+        "Strategy",
+        "Native"
+      ],
+      "categories": [
+        "puzzle",
+        "strategy",
+        "family",
+        "casual",
+        "age-10-plus"
+      ],
+      "playerProblem": "Client downloads exist, but the page does not yet behave like a simple launcher.",
+      "nextAction": "Replace raw download choices with one clear Windows/Linux install path, then smoke test first playable action."
+    },
+    {
+      "id": "pink-pony-lan",
+      "title": "Pink Pony",
+      "currentAdapter": "linux-package",
+      "recommendedAdapter": "browser-stream",
+      "fallbackAdapter": "linux-package",
+      "priority": "medium",
+      "effort": "medium",
+      "readyNow": false,
+      "primaryAction": "Setup notes",
+      "path": "../pink-pony-lan/",
+      "tags": [
+        "Racing",
+        "Family",
+        "3D"
+      ],
+      "categories": [
+        "racing",
+        "arcade",
+        "family",
+        "casual",
+        "age-5-plus"
+      ],
+      "playerProblem": "Only Debian/Linux offline install files are available; this is not a normal guest launch flow.",
+      "nextAction": "Pilot browser-streamed VM session for this Linux game, or demote it to install notes until a simple launcher exists."
+    },
+    {
+      "id": "pioneers-lan",
+      "title": "Pioneers",
+      "currentAdapter": "desktop-client",
+      "recommendedAdapter": "desktop-client",
+      "fallbackAdapter": "browser-stream",
+      "priority": "medium",
+      "effort": "medium",
+      "readyNow": false,
+      "primaryAction": "Install / play",
+      "path": "../pioneers-lan/",
+      "tags": [
+        "Board Game",
+        "Strategy",
+        "Native"
+      ],
+      "categories": [
+        "board-game",
+        "strategy",
+        "multiplayer",
+        "family",
+        "casual",
+        "age-10-plus"
+      ],
+      "playerProblem": "Client downloads exist, but the page does not yet behave like a simple launcher.",
+      "nextAction": "Replace raw download choices with one clear Windows/Linux install path, then smoke test first playable action."
+    },
+    {
+      "id": "powermanga-lan",
+      "title": "Powermanga",
+      "currentAdapter": "linux-package",
+      "recommendedAdapter": "browser-stream",
+      "fallbackAdapter": "linux-package",
+      "priority": "medium",
+      "effort": "medium",
+      "readyNow": false,
+      "primaryAction": "Setup notes",
+      "path": "../powermanga-lan/",
+      "tags": [
+        "Arcade",
+        "Shooter",
+        "Retro"
+      ],
+      "categories": [
+        "arcade",
+        "action",
+        "retro",
+        "age-10-plus"
+      ],
+      "playerProblem": "Only Debian/Linux offline install files are available; this is not a normal guest launch flow.",
+      "nextAction": "Pilot browser-streamed VM session for this Linux game, or demote it to install notes until a simple launcher exists."
+    },
+    {
+      "id": "pushover-lan",
+      "title": "Pushover",
+      "currentAdapter": "linux-package",
+      "recommendedAdapter": "browser-stream",
+      "fallbackAdapter": "linux-package",
+      "priority": "medium",
+      "effort": "medium",
+      "readyNow": false,
+      "primaryAction": "Setup notes",
+      "path": "../pushover-lan/",
+      "tags": [
+        "Puzzle",
+        "Native"
+      ],
+      "categories": [
+        "puzzle",
+        "strategy",
+        "family",
+        "age-10-plus"
+      ],
+      "playerProblem": "Only Debian/Linux offline install files are available; this is not a normal guest launch flow.",
+      "nextAction": "Pilot browser-streamed VM session for this Linux game, or demote it to install notes until a simple launcher exists."
+    },
+    {
+      "id": "ri-li-lan",
+      "title": "Ri-li",
+      "currentAdapter": "linux-package",
+      "recommendedAdapter": "browser-stream",
+      "fallbackAdapter": "linux-package",
+      "priority": "medium",
+      "effort": "medium",
+      "readyNow": false,
+      "primaryAction": "Setup notes",
+      "path": "../ri-li-lan/",
+      "tags": [
+        "Arcade",
+        "Family",
+        "Native"
+      ],
+      "categories": [
+        "arcade",
+        "puzzle",
+        "family",
+        "casual",
+        "age-5-plus"
+      ],
+      "playerProblem": "Only Debian/Linux offline install files are available; this is not a normal guest launch flow.",
+      "nextAction": "Pilot browser-streamed VM session for this Linux game, or demote it to install notes until a simple launcher exists."
+    },
+    {
+      "id": "ricochet-lan",
+      "title": "Ricochet Robots",
+      "currentAdapter": "desktop-client",
+      "recommendedAdapter": "desktop-client",
+      "fallbackAdapter": "browser-stream",
+      "priority": "medium",
+      "effort": "medium",
+      "readyNow": false,
+      "primaryAction": "Install / play",
+      "path": "../ricochet-lan/",
+      "tags": [
+        "Board Game",
+        "Puzzle",
+        "Native"
+      ],
+      "categories": [
+        "board-game",
+        "puzzle",
+        "multiplayer",
+        "tactical",
+        "family",
+        "age-10-plus"
+      ],
+      "playerProblem": "Client downloads exist, but the page does not yet behave like a simple launcher.",
+      "nextAction": "Replace raw download choices with one clear Windows/Linux install path, then smoke test first playable action."
+    },
+    {
+      "id": "solarwolf-lan",
+      "title": "SolarWolf",
+      "currentAdapter": "linux-package",
+      "recommendedAdapter": "browser-stream",
+      "fallbackAdapter": "linux-package",
+      "priority": "medium",
+      "effort": "medium",
+      "readyNow": false,
+      "primaryAction": "Setup notes",
+      "path": "../solarwolf-lan/",
+      "tags": [
+        "Arcade",
+        "Puzzle",
+        "Family"
+      ],
+      "categories": [
+        "arcade",
+        "puzzle",
+        "family",
+        "age-10-plus"
+      ],
+      "playerProblem": "Only Debian/Linux offline install files are available; this is not a normal guest launch flow.",
+      "nextAction": "Pilot browser-streamed VM session for this Linux game, or demote it to install notes until a simple launcher exists."
+    },
+    {
+      "id": "supertransball2-lan",
+      "title": "Super Transball 2",
+      "currentAdapter": "linux-package",
+      "recommendedAdapter": "browser-stream",
+      "fallbackAdapter": "linux-package",
+      "priority": "medium",
+      "effort": "medium",
+      "readyNow": false,
+      "primaryAction": "Setup notes",
+      "path": "../supertransball2-lan/",
+      "tags": [
+        "Arcade",
+        "Physics",
+        "Action"
+      ],
+      "categories": [
+        "arcade",
+        "action",
+        "simulation",
+        "age-10-plus"
+      ],
+      "playerProblem": "Only Debian/Linux offline install files are available; this is not a normal guest launch flow.",
+      "nextAction": "Pilot browser-streamed VM session for this Linux game, or demote it to install notes until a simple launcher exists."
+    },
+    {
+      "id": "supertux-lan",
+      "title": "SuperTux",
+      "currentAdapter": "desktop-client",
+      "recommendedAdapter": "desktop-client",
+      "fallbackAdapter": "browser-stream",
+      "priority": "medium",
+      "effort": "medium",
+      "readyNow": false,
+      "primaryAction": "Install / play",
+      "path": "../supertux-lan/",
+      "tags": [
+        "Platformer",
+        "Family",
+        "Native"
+      ],
+      "categories": [
+        "arcade",
+        "platformer",
+        "family",
+        "casual",
+        "age-5-plus"
+      ],
+      "playerProblem": "Client downloads exist, but the page does not yet behave like a simple launcher.",
+      "nextAction": "Replace raw download choices with one clear Windows/Linux install path, then smoke test first playable action."
+    },
+    {
+      "id": "supertuxkart-lan",
+      "title": "SuperTuxKart LAN Hub",
+      "currentAdapter": "desktop-client",
+      "recommendedAdapter": "desktop-client",
+      "fallbackAdapter": "browser-stream",
+      "priority": "medium",
+      "effort": "medium",
+      "readyNow": false,
+      "primaryAction": "Install / play",
+      "path": "../supertuxkart-lan/",
+      "tags": [
+        "Racing",
+        "Family",
+        "Native"
+      ],
+      "categories": [
+        "multiplayer",
+        "arcade",
+        "racing",
+        "family",
+        "age-5-plus"
+      ],
+      "playerProblem": "Client downloads exist, but the page does not yet behave like a simple launcher.",
+      "nextAction": "Replace raw download choices with one clear Windows/Linux install path, then smoke test first playable action."
+    },
+    {
+      "id": "tecnoballz-lan",
+      "title": "TecnoballZ",
+      "currentAdapter": "linux-package",
+      "recommendedAdapter": "browser-stream",
+      "fallbackAdapter": "linux-package",
+      "priority": "medium",
+      "effort": "medium",
+      "readyNow": false,
+      "primaryAction": "Setup notes",
+      "path": "../tecnoballz-lan/",
+      "tags": [
+        "Arcade",
+        "Puzzle",
+        "Retro"
+      ],
+      "categories": [
+        "arcade",
+        "puzzle",
+        "retro",
+        "family",
+        "age-10-plus"
+      ],
+      "playerProblem": "Only Debian/Linux offline install files are available; this is not a normal guest launch flow.",
+      "nextAction": "Pilot browser-streamed VM session for this Linux game, or demote it to install notes until a simple launcher exists."
+    },
+    {
+      "id": "triplea-lan",
+      "title": "TripleA Candidate",
+      "currentAdapter": "desktop-client",
+      "recommendedAdapter": "desktop-client",
+      "fallbackAdapter": "browser-stream",
+      "priority": "medium",
+      "effort": "medium",
+      "readyNow": false,
+      "primaryAction": "Install / play",
+      "path": "../triplea-lan/",
+      "tags": [
+        "Board Game",
+        "Strategy",
+        "Native"
+      ],
+      "categories": [
+        "board-game",
+        "strategy",
+        "multiplayer",
+        "tactical",
+        "age-10-plus"
+      ],
+      "playerProblem": "Client downloads exist, but the page does not yet behave like a simple launcher.",
+      "nextAction": "Replace raw download choices with one clear Windows/Linux install path, then smoke test first playable action."
+    },
+    {
+      "id": "tuxfootball-lan",
+      "title": "Tux Football",
+      "currentAdapter": "linux-package",
+      "recommendedAdapter": "browser-stream",
+      "fallbackAdapter": "linux-package",
+      "priority": "medium",
+      "effort": "medium",
+      "readyNow": false,
+      "primaryAction": "Setup notes",
+      "path": "../tuxfootball-lan/",
+      "tags": [
+        "Sports",
+        "Arcade",
+        "Family"
+      ],
+      "categories": [
+        "arcade",
+        "multiplayer",
+        "family",
+        "casual",
+        "age-5-plus"
+      ],
+      "playerProblem": "Only Debian/Linux offline install files are available; this is not a normal guest launch flow.",
+      "nextAction": "Pilot browser-streamed VM session for this Linux game, or demote it to install notes until a simple launcher exists."
+    },
+    {
+      "id": "tuxpuck-lan",
+      "title": "TuxPuck",
+      "currentAdapter": "linux-package",
+      "recommendedAdapter": "browser-stream",
+      "fallbackAdapter": "linux-package",
+      "priority": "medium",
+      "effort": "medium",
+      "readyNow": false,
+      "primaryAction": "Setup notes",
+      "path": "../tuxpuck-lan/",
+      "tags": [
+        "Sports",
+        "Arcade",
+        "Family"
+      ],
+      "categories": [
+        "arcade",
+        "family",
+        "casual",
+        "age-5-plus"
+      ],
+      "playerProblem": "Only Debian/Linux offline install files are available; this is not a normal guest launch flow.",
+      "nextAction": "Pilot browser-streamed VM session for this Linux game, or demote it to install notes until a simple launcher exists."
+    },
+    {
+      "id": "unknown-horizons-lan",
+      "title": "Unknown Horizons",
+      "currentAdapter": "desktop-client",
+      "recommendedAdapter": "desktop-client",
+      "fallbackAdapter": "browser-stream",
+      "priority": "medium",
+      "effort": "medium",
+      "readyNow": false,
+      "primaryAction": "Install / play",
+      "path": "../unknown-horizons-lan/",
+      "tags": [
+        "Strategy",
+        "Simulation",
+        "Native"
+      ],
+      "categories": [
+        "strategy",
+        "simulation",
+        "management",
+        "city-builder",
+        "multiplayer",
+        "age-10-plus"
+      ],
+      "playerProblem": "Client downloads exist, but the page does not yet behave like a simple launcher.",
+      "nextAction": "Replace raw download choices with one clear Windows/Linux install path, then smoke test first playable action."
+    },
+    {
+      "id": "warzone2100-lan",
+      "title": "Warzone 2100 LAN Hub",
+      "currentAdapter": "desktop-client",
+      "recommendedAdapter": "desktop-client",
+      "fallbackAdapter": "browser-stream",
+      "priority": "medium",
+      "effort": "medium",
+      "readyNow": false,
+      "primaryAction": "Install / play",
+      "path": "../warzone2100-lan/",
+      "tags": [
+        "Strategy",
+        "RTS",
+        "Native"
+      ],
+      "categories": [
+        "multiplayer",
+        "strategy",
+        "simulation",
+        "action",
+        "age-13-plus"
+      ],
+      "playerProblem": "Client downloads exist, but the page does not yet behave like a simple launcher.",
+      "nextAction": "Replace raw download choices with one clear Windows/Linux install path, then smoke test first playable action."
+    },
+    {
+      "id": "widelands-lan",
+      "title": "Widelands LAN Hub",
+      "currentAdapter": "desktop-client",
+      "recommendedAdapter": "desktop-client",
+      "fallbackAdapter": "browser-stream",
+      "priority": "medium",
+      "effort": "medium",
+      "readyNow": false,
+      "primaryAction": "Install / play",
+      "path": "../widelands-lan/",
+      "tags": [
+        "Strategy",
+        "RTS",
+        "Native"
+      ],
+      "categories": [
+        "multiplayer",
+        "strategy",
+        "simulation",
+        "management",
+        "age-10-plus"
+      ],
+      "playerProblem": "Client downloads exist, but the page does not yet behave like a simple launcher.",
+      "nextAction": "Replace raw download choices with one clear Windows/Linux install path, then smoke test first playable action."
+    },
+    {
+      "id": "xmoto-lan",
+      "title": "X-Moto",
+      "currentAdapter": "linux-package",
+      "recommendedAdapter": "browser-stream",
+      "fallbackAdapter": "linux-package",
+      "priority": "medium",
+      "effort": "medium",
+      "readyNow": false,
+      "primaryAction": "Setup notes",
+      "path": "../xmoto-lan/",
+      "tags": [
+        "Arcade",
+        "Racing",
+        "Native"
+      ],
+      "categories": [
+        "arcade",
+        "racing",
+        "platformer",
+        "action",
+        "age-10-plus"
+      ],
+      "playerProblem": "Only Debian/Linux offline install files are available; this is not a normal guest launch flow.",
+      "nextAction": "Pilot browser-streamed VM session for this Linux game, or demote it to install notes until a simple launcher exists."
+    },
+    {
+      "id": "xfrisk-lan",
+      "title": "XFrisk Risk Table",
+      "currentAdapter": "desktop-client",
+      "recommendedAdapter": "desktop-client",
+      "fallbackAdapter": "browser-stream",
+      "priority": "medium",
+      "effort": "medium",
+      "readyNow": false,
+      "primaryAction": "Install / play",
+      "path": "../xfrisk-lan/",
+      "tags": [
+        "Board Game",
+        "Strategy",
+        "Native"
+      ],
+      "categories": [
+        "board-game",
+        "strategy",
+        "multiplayer",
+        "tactical",
+        "age-10-plus"
+      ],
+      "playerProblem": "Client downloads exist, but the page does not yet behave like a simple launcher.",
+      "nextAction": "Replace raw download choices with one clear Windows/Linux install path, then smoke test first playable action."
+    },
+    {
+      "id": "boswars-lan",
+      "title": "Bos Wars",
+      "currentAdapter": "linux-package",
+      "recommendedAdapter": "browser-stream",
+      "fallbackAdapter": "linux-package",
+      "priority": "medium",
+      "effort": "high",
+      "readyNow": false,
+      "primaryAction": "Setup notes",
+      "path": "../boswars-lan/",
+      "tags": [
+        "Strategy",
+        "RTS",
+        "Native"
+      ],
+      "categories": [
+        "strategy",
+        "simulation",
+        "action",
+        "age-10-plus"
+      ],
+      "playerProblem": "Only Debian/Linux offline install files are available; this is not a normal guest launch flow.",
+      "nextAction": "Pilot browser-streamed VM session for this Linux game, or demote it to install notes until a simple launcher exists."
+    },
+    {
+      "id": "colobot-gold-lan",
+      "title": "Colobot: Gold Edition",
+      "currentAdapter": "linux-package",
+      "recommendedAdapter": "browser-stream",
+      "fallbackAdapter": "linux-package",
+      "priority": "medium",
+      "effort": "high",
+      "readyNow": false,
+      "primaryAction": "Setup notes",
+      "path": "../colobot-gold-lan/",
+      "tags": [
+        "Education",
+        "Programming",
+        "Strategy"
+      ],
+      "categories": [
+        "strategy",
+        "educational",
+        "simulation",
+        "science",
+        "age-10-plus"
+      ],
+      "playerProblem": "Only Debian/Linux offline install files are available; this is not a normal guest launch flow.",
+      "nextAction": "Pilot browser-streamed VM session for this Linux game, or demote it to install notes until a simple launcher exists."
+    },
+    {
+      "id": "freerct-lan",
+      "title": "FreeRCT",
+      "currentAdapter": "linux-package",
+      "recommendedAdapter": "browser-stream",
+      "fallbackAdapter": "linux-package",
+      "priority": "medium",
+      "effort": "high",
+      "readyNow": false,
+      "primaryAction": "Setup notes",
+      "path": "../freerct-lan/",
+      "tags": [
+        "Tycoon",
+        "Simulation",
+        "Native"
+      ],
+      "categories": [
+        "simulation",
+        "management",
+        "city-builder",
+        "strategy",
+        "age-10-plus"
+      ],
+      "playerProblem": "Only Debian/Linux offline install files are available; this is not a normal guest launch flow.",
+      "nextAction": "Pilot browser-streamed VM session for this Linux game, or demote it to install notes until a simple launcher exists."
+    },
+    {
+      "id": "meritous-lan",
+      "title": "Meritous",
+      "currentAdapter": "linux-package",
+      "recommendedAdapter": "browser-stream",
+      "fallbackAdapter": "linux-package",
+      "priority": "medium",
+      "effort": "high",
+      "readyNow": false,
+      "primaryAction": "Setup notes",
+      "path": "../meritous-lan/",
+      "tags": [
+        "RPG",
+        "Action",
+        "Dungeon"
+      ],
+      "categories": [
+        "rpg",
+        "adventure",
+        "action",
+        "roguelite",
+        "age-10-plus"
+      ],
+      "playerProblem": "Only Debian/Linux offline install files are available; this is not a normal guest launch flow.",
+      "nextAction": "Pilot browser-streamed VM session for this Linux game, or demote it to install notes until a simple launcher exists."
+    },
+    {
+      "id": "simutrans-lan",
+      "title": "Simutrans",
+      "currentAdapter": "linux-package",
+      "recommendedAdapter": "browser-stream",
+      "fallbackAdapter": "linux-package",
+      "priority": "medium",
+      "effort": "high",
+      "readyNow": false,
+      "primaryAction": "Setup notes",
+      "path": "../simutrans-lan/",
+      "tags": [
+        "Tycoon",
+        "Transport",
+        "Native"
+      ],
+      "categories": [
+        "simulation",
+        "management",
+        "city-builder",
+        "strategy",
+        "age-10-plus"
+      ],
+      "playerProblem": "Only Debian/Linux offline install files are available; this is not a normal guest launch flow.",
+      "nextAction": "Pilot browser-streamed VM session for this Linux game, or demote it to install notes until a simple launcher exists."
+    },
+    {
+      "id": "spacezero-lan",
+      "title": "SpaceZero",
+      "currentAdapter": "linux-package",
+      "recommendedAdapter": "browser-stream",
+      "fallbackAdapter": "linux-package",
+      "priority": "medium",
+      "effort": "high",
+      "readyNow": false,
+      "primaryAction": "Setup notes",
+      "path": "../spacezero-lan/",
+      "tags": [
+        "Space",
+        "Strategy",
+        "Native"
+      ],
+      "categories": [
+        "strategy",
+        "space",
+        "action",
+        "age-10-plus"
+      ],
+      "playerProblem": "Only Debian/Linux offline install files are available; this is not a normal guest launch flow.",
+      "nextAction": "Pilot browser-streamed VM session for this Linux game, or demote it to install notes until a simple launcher exists."
+    },
+    {
+      "id": "board-games-wave-1",
+      "title": "Board Games Wave 1",
+      "currentAdapter": "research-shelf",
+      "recommendedAdapter": "collection",
+      "fallbackAdapter": "research-shelf",
+      "priority": "low",
+      "effort": "high",
+      "readyNow": false,
+      "primaryAction": "Browse board games",
+      "path": "../board-games-wave-1/",
+      "tags": [
+        "Board Game",
+        "Family",
+        "Strategy",
+        "Party",
+        "Metadata",
+        "Searchable"
+      ],
+      "categories": [
+        "board-game",
+        "strategy",
+        "multiplayer",
+        "family",
+        "casual",
+        "age-10-plus"
+      ],
+      "playerProblem": "This is useful reference material, not a playable launcher yet.",
+      "nextAction": "Keep as a research shelf until individual games have rules, player counts, and table/start guidance."
+    },
+    {
+      "id": "freedink-lan",
+      "title": "GNU FreeDink / Dink Smallwood",
+      "currentAdapter": "needs-setup",
+      "recommendedAdapter": "setup-needed",
+      "fallbackAdapter": "needs-setup",
+      "priority": "low",
+      "effort": "unknown",
+      "readyNow": false,
+      "primaryAction": "View details",
+      "path": "../freedink-lan/",
+      "tags": [
+        "RPG",
+        "Adventure",
+        "Native"
+      ],
+      "categories": [
+        "rpg",
+        "adventure",
+        "action",
+        "fantasy",
+        "age-10-plus"
+      ],
+      "playerProblem": "The current launch state is ambiguous.",
+      "nextAction": "Inspect manually and assign a real adapter."
+    }
+  ]
+}

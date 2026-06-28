@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Any
 
 REAL_PLAY_ADAPTERS = {'browser', 'browser-emulator', 'collection', 'hosted-lan', 'browser-stream'}
-SETUP_ADAPTERS = {'linux-package', 'desktop-client', 'setup-needed', 'research-shelf'}
+SETUP_ADAPTERS = {'linux-package', 'desktop-client', 'setup-needed', 'needs-setup', 'research-shelf'}
 KNOWN_ADAPTERS = REAL_PLAY_ADAPTERS | SETUP_ADAPTERS
 
 DEFAULT_CATALOG = Path('/var/www/html/mirrors/games/catalog.json')
@@ -279,7 +279,7 @@ def report_markdown(result: dict[str, Any]) -> str:
     else:
         for error in errors:
             lines.append(f'- {error}')
-    lines += ['', '## Rule', '', 'Games with `linux-package`, `desktop-client`, or `setup-needed` adapters are not shown as Ready now until they get a browser launcher, a simple desktop launcher bundle, a hosted-session path, or a browser-streamed play path.']
+    lines += ['', '## Rule', '', 'Games with `linux-package`, `desktop-client`, `setup-needed`, or `needs-setup` adapters are not shown as Ready now until they get a browser launcher, a simple desktop launcher bundle, a hosted-session path, or a browser-streamed play path.']
     return '\n'.join(lines).rstrip() + '\n'
 
 

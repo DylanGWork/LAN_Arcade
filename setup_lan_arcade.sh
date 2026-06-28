@@ -1280,7 +1280,7 @@ write_public_index() {
         <div class="shelf-head"><h3>Favourites</h3><span id="favoriteShelfNote" class="shelf-note">Saved on this device</span></div>
         <div id="favoriteGrid" class="featured-grid"></div>
       </section>
-      <p class="catalog-note">Search includes games inside the Game Boy and Classic PC shelves when you type a title. Large collections open as shelves so the home screen stays readable.</p>
+      <p class="catalog-note">Search includes individual games inside the Game Boy and Classic PC shelves, including SimAnt and SimCity. Large collections stay nested so the home screen stays readable.</p>
       <section class="shelf" id="featuredShelf">
         <div class="shelf-head"><h3>Featured</h3><span class="shelf-note">Ready picks, collections, and high-interest LAN services</span></div>
         <div id="featuredGrid" class="featured-grid"></div>
@@ -1310,7 +1310,7 @@ write_public_index() {
         { id: "game-boy-wave-1", label: "Curated Game Boy Picks", note: "201 playable games", href: "../private-rom-wave-1/" },
         { id: "emulator-library", label: "Emulator Library", note: "All retro collections", href: "../emulator-library/" },
         { id: "game-boy-vault", label: "743 Game Boy Games", note: "Ready in browser", href: "../private-rom-vault/" },
-        { id: "classic-pc-games", label: "Classic PC Games", note: "15 playable / 28 total", href: "../private-dos-vault/?v=dos28-20260622b" },
+        { id: "classic-pc-games", label: "Classic PC Games", note: "15 playable / 28 total", href: "../private-dos-vault/" },
         { id: "board-games-wave-1", label: "Board Game Shelf", note: "200 board games", href: "../board-games-wave-1/" },
         { id: "ready-shelf", label: "Ready now", note: "Quick filter", action: "profile", value: "ready" },
         { id: "guest-shelf", label: "Guest friendly", note: "Quick filter", action: "profile", value: "guest" },

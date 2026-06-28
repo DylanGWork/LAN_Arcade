@@ -191,29 +191,29 @@ def page_for(root: Path, manifest: dict, game_id: str | None) -> str:
         package_text += f', plus {len(package_set) - 10} more'
     player_note = 'Choose the installer or package for your computer. Start from the game page if you are not sure which one to use.'
     if mostly_debs:
-        player_note = 'Most players should start from the game page. This shelf is mainly for Linux/Debian offline installation and repair.'
+        player_note = 'Most players should start from the game page. These files are for Linux installation on matching computers.'
     linux_note = ''
     if mostly_debs:
-        linux_note = "<section class='panel'><h2>Linux offline install</h2><p>Copy this shelf or its latest/version folder to a matching Debian 12 computer, open a terminal in that folder, then run:</p><p><code>sudo apt install ./*.deb</code></p><p>This is a complete local package set so the client does not need internet during install.</p></section>"
+        linux_note = "<section class='panel'><h2>Linux install files</h2><p>For a matching Debian 12 computer, copy this folder, open a terminal in it, then run:</p><p><code>sudo apt install ./*.deb</code></p><p>These local files let that computer install the game without internet.</p></section>"
     elif any('linux' in f"{asset_name(a)} {asset_platform(a)}".lower() for a in assets):
         linux_note = "<section class='panel'><h2>Linux note</h2><p>Linux downloads are included where upstream provides them. For AppImages, mark the file executable before launching it.</p><p><code>chmod +x ./downloaded-file.AppImage</code></p></section>"
     if mostly_debs and assets:
         folder_href = 'latest/' if (root / 'latest').exists() else './'
         download_cards = (
             "<article class='download-card'><span class='badge'>Linux</span>"
-            "<h3>Complete Debian package folder</h3>"
-            "<p>This is the local offline install set for matching Debian 12 computers. Most players should use the game page first; this folder is for Linux install/repair.</p>"
-            f"<a class='button secondary small' href='{html.escape(folder_href)}'>Open package folder</a>"
-            "<a class='button secondary small' href='manifest.json'>File details</a>"
+            "<h3>Complete Linux install folder</h3>"
+            "<p>This folder has the local Linux install files for a matching Debian 12 computer. Most players should use the game page first.</p>"
+            f"<a class='button secondary small' href='{html.escape(folder_href)}'>Open install folder</a>"
+            "<a class='button secondary small' href='manifest.json'>Technical file list</a>"
             "</article>"
         )
     else:
-        download_cards = primary_cards(root, manifest, assets) if assets else "<article><h3>No files listed</h3><p>This shelf has a manifest problem and needs operator repair.</p></article>"
+        download_cards = primary_cards(root, manifest, assets) if assets else "<article><h3>No files listed</h3><p>This file list needs repair before it is useful.</p></article>"
     advanced = advanced_cards(root, manifest, assets)
-    source_html = f"<p>Original source: <a href='{html.escape(source)}'>{html.escape(source)}</a></p>" if source else ''
+    source_html = f"<p>Game/project page: <a href='{html.escape(source)}'>{html.escape(source)}</a></p>" if source else ''
     notes_html = f"<p>{html.escape(notes)}</p>" if notes else ''
     package_html = f"<p class='small'>Package set: {html.escape(package_text)}</p>" if package_text else ''
-    return f"""<!doctype html><html lang='en'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>{html.escape(title)} Offline Downloads</title><style>{CSS}</style></head><body><main><p>{nav}</p><h1>{html.escape(title)} Offline Downloads</h1><div class='summary-row'><span>{len(assets)} local file{'s' if len(assets) != 1 else ''}</span><span>{html.escape(hsize(total))}</span><span>{html.escape(version)}</span></div><section class='panel'><h2>For players</h2><p>{html.escape(player_note)}</p><p><a class='button' href='{html.escape(game_link)}'>Open game page</a><a class='button secondary' href='manifest.json'>File details</a>{checksum_button}</p>{notes_html}{source_html}</section>{linux_note}<section class='panel'><h2>Recommended downloads</h2><div class='grid'>{download_cards}</div></section><details class='panel'><summary>Advanced file list</summary><p>These are the individual files stored for offline use. You usually do not need to pick through this list manually.</p>{package_html}<div class='advanced-list'>{advanced}</div></details></main></body></html>"""
+    return f"""<!doctype html><html lang='en'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>{html.escape(title)} Install Files</title><style>{CSS}</style></head><body><main><p>{nav}</p><h1>{html.escape(title)} Install Files</h1><div class='summary-row'><span>{len(assets)} local file{'s' if len(assets) != 1 else ''}</span><span>{html.escape(hsize(total))}</span><span>{html.escape(version)}</span></div><section class='panel'><h2>For players</h2><p>{html.escape(player_note)}</p><p><a class='button' href='{html.escape(game_link)}'>Open game page</a><a class='button secondary' href='manifest.json'>Technical file list</a>{checksum_button}</p>{notes_html}{source_html}</section>{linux_note}<section class='panel'><h2>Recommended action</h2><div class='grid'>{download_cards}</div></section><details class='panel'><summary>Advanced technical file list</summary><p>These are the individual files stored for offline use. Most players do not need this list.</p>{package_html}<div class='advanced-list'>{advanced}</div></details></main></body></html>"""
 
 
 def normalize(download_root: Path, local_games: Path, dry_run: bool) -> dict:

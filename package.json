@@ -42,7 +42,8 @@
     "native:services": "python3 scripts/native_service_admin.py",
     "qa:library-discovery": "node qa/library-discovery-smoke.mjs",
     "qa:git-identity": "bash scripts/check_git_identity.sh",
-    "backup:user-data": "bash scripts/backup_arcade_user_data.sh"
+    "backup:user-data": "bash scripts/backup_arcade_user_data.sh",
+    "qa:easy-launchers": "python3 scripts/plan_easy_launchers.py"
   },
   "devDependencies": {
     "@types/node": "20.19.1",

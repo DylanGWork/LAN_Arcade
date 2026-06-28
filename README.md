@@ -22,7 +22,7 @@ The goal is not to clone Steam. The goal is simpler: answer "what can I play now
 
 The main page intentionally shows launcher cards and nested shelves, not every game inside large collections. The latest deployed inventory is tracked in [docs/GAME_LIBRARY_INVENTORY_STATUS_2026-06-28.md](docs/GAME_LIBRARY_INVENTORY_STATUS_2026-06-28.md). In short: some shelves contain hundreds of nested items, but only entries with local files and gameplay smoke evidence should be described as ready to play.
 
-Launcher adapters are the current contract for how a player starts each item. See [docs/LAUNCHER_ADAPTERS.md](docs/LAUNCHER_ADAPTERS.md) before promoting package-only, desktop-client, or hosted-service entries.
+Launcher adapters are the current contract for how a player starts each item. See [docs/LAUNCHER_ADAPTERS.md](docs/LAUNCHER_ADAPTERS.md) before promoting package-only, desktop-client, or hosted-service entries. The easy-launcher queue identifies which non-ready entries should be converted next instead of pretending install files are playable games.
 
 ## Deployment Modes
 
@@ -119,6 +119,7 @@ Recommended checks while developing:
 ```sh
 npm run qa:git-identity
 npm run qa:launcher-adapters
+npm run qa:easy-launchers
 npm run qa:library-discovery
 npm run test -w @lan-arcade/arcade-api
 npm run backup:user-data

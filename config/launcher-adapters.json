@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-28T01:30:57.740534+00:00",
+  "generatedAt": "2026-06-28T03:29:01.050241+00:00",
   "catalog": "/var/www/html/mirrors/games/catalog.json",
   "overrides": "config/launcher-adapter-overrides.json",
   "contract": {
@@ -13,6 +13,7 @@
     "setupAdapters": [
       "desktop-client",
       "linux-package",
+      "needs-setup",
       "research-shelf",
       "setup-needed"
     ],
@@ -25,7 +26,8 @@
     "collection": 5,
     "desktop-client": 33,
     "hosted-lan": 18,
-    "linux-package": 77,
+    "linux-package": 74,
+    "needs-setup": 3,
     "research-shelf": 1
   },
   "games": {
@@ -711,15 +713,15 @@
       "target": "/var/www/html/mirrors/domination-gb/index.html"
     },
     "drascula-scummvm": {
-      "adapter": "linux-package",
-      "preferredAdapter": "linux-package",
+      "adapter": "needs-setup",
+      "preferredAdapter": "needs-setup",
       "fallbackAdapters": [],
-      "readiness": "Needs easy launcher",
-      "primaryAction": "Setup notes",
-      "playerAction": "Setup notes",
-      "statusLabel": "Needs launcher",
-      "deviceLabel": "Linux package only",
-      "launchHint": "advanced install only",
+      "readiness": "Needs setup",
+      "primaryAction": "View details",
+      "playerAction": "View details",
+      "statusLabel": "Needs setup",
+      "deviceLabel": "Setup needed",
+      "launchHint": "not ready",
       "readyNow": false,
       "guestReady": false,
       "promotionState": "needs-launcher",
@@ -727,7 +729,7 @@
       "requiresAccount": false,
       "saveScope": "account-or-guest",
       "resourceClass": "service",
-      "reason": "Only a Debian/Linux package shelf is present; no browser/Windows/simple launcher path yet.",
+      "reason": "Page text indicates files/testing/setup are incomplete.",
       "target": "/var/www/html/mirrors/drascula-scummvm/index.html"
     },
     "emulator-library": {
@@ -1031,15 +1033,15 @@
       "target": "/var/www/html/mirrors/freecol-lan/index.html"
     },
     "freedink-lan": {
-      "adapter": "linux-package",
-      "preferredAdapter": "linux-package",
+      "adapter": "needs-setup",
+      "preferredAdapter": "needs-setup",
       "fallbackAdapters": [],
-      "readiness": "Needs easy launcher",
-      "primaryAction": "Setup notes",
-      "playerAction": "Setup notes",
-      "statusLabel": "Needs launcher",
-      "deviceLabel": "Linux package only",
-      "launchHint": "advanced install only",
+      "readiness": "Needs setup",
+      "primaryAction": "View details",
+      "playerAction": "View details",
+      "statusLabel": "Needs setup",
+      "deviceLabel": "Setup needed",
+      "launchHint": "not ready",
       "readyNow": false,
       "guestReady": false,
       "promotionState": "needs-launcher",
@@ -1047,7 +1049,7 @@
       "requiresAccount": false,
       "saveScope": "account-or-guest",
       "resourceClass": "service",
-      "reason": "Only a Debian/Linux package shelf is present; no browser/Windows/simple launcher path yet.",
+      "reason": "Page text indicates files/testing/setup are incomplete.",
       "target": "/var/www/html/mirrors/freedink-lan/index.html"
     },
     "freedoom-lan": {
@@ -1713,15 +1715,15 @@
       "target": "/var/www/html/mirrors/luanti-lan/index.html"
     },
     "lure-temptress-scummvm": {
-      "adapter": "linux-package",
-      "preferredAdapter": "linux-package",
+      "adapter": "needs-setup",
+      "preferredAdapter": "needs-setup",
       "fallbackAdapters": [],
-      "readiness": "Needs easy launcher",
-      "primaryAction": "Setup notes",
-      "playerAction": "Setup notes",
-      "statusLabel": "Needs launcher",
-      "deviceLabel": "Linux package only",
-      "launchHint": "advanced install only",
+      "readiness": "Needs setup",
+      "primaryAction": "View details",
+      "playerAction": "View details",
+      "statusLabel": "Needs setup",
+      "deviceLabel": "Setup needed",
+      "launchHint": "not ready",
       "readyNow": false,
       "guestReady": false,
       "promotionState": "needs-launcher",
@@ -1729,7 +1731,7 @@
       "requiresAccount": false,
       "saveScope": "account-or-guest",
       "resourceClass": "service",
-      "reason": "Only a Debian/Linux package shelf is present; no browser/Windows/simple launcher path yet.",
+      "reason": "Page text indicates files/testing/setup are incomplete.",
       "target": "/var/www/html/mirrors/lure-temptress-scummvm/index.html"
     },
     "manaplus-lan": {
@@ -3232,12 +3234,6 @@
       "reason": "Only a Debian/Linux package shelf is present; no browser/Windows/simple launcher path yet."
     },
     {
-      "id": "drascula-scummvm",
-      "title": "Drascula: The Vampire Strikes Back",
-      "adapter": "linux-package",
-      "reason": "Only a Debian/Linux package shelf is present; no browser/Windows/simple launcher path yet."
-    },
-    {
       "id": "endless-sky-lan",
       "title": "Endless Sky LAN Hub",
       "adapter": "desktop-client",
@@ -3308,12 +3304,6 @@
       "title": "FreeCol LAN Hub",
       "adapter": "desktop-client",
       "reason": "Has client downloads but still needs a one-click launcher or clearer install flow."
-    },
-    {
-      "id": "freedink-lan",
-      "title": "GNU FreeDink / Dink Smallwood",
-      "adapter": "linux-package",
-      "reason": "Only a Debian/Linux package shelf is present; no browser/Windows/simple launcher path yet."
     },
     {
       "id": "freedoom-lan",
@@ -3468,12 +3458,6 @@
     {
       "id": "ltris-lan",
       "title": "LTris",
-      "adapter": "linux-package",
-      "reason": "Only a Debian/Linux package shelf is present; no browser/Windows/simple launcher path yet."
-    },
-    {
-      "id": "lure-temptress-scummvm",
-      "title": "Lure of the Temptress",
       "adapter": "linux-package",
       "reason": "Only a Debian/Linux package shelf is present; no browser/Windows/simple launcher path yet."
     },

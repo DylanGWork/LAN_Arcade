@@ -23,12 +23,26 @@ The generated adapter registry is `config/launcher-adapters.json` and the deploy
 4. Hosted service control must be allowlisted. Browser/API input must never become arbitrary shell.
 5. Every promoted adapter needs full-flow QA: open, start, interact, confirm offline behaviour, and record result.
 
+## Easy Launcher Queue
+
+Use `npm run qa:easy-launchers` after the adapter audit. It writes the next conversion queue to `config/easy-launcher-queue.json` and a human report under `qa/reports/easy-launcher-queue/latest/`.
+
+The queue is not a promotion list. It is a triage list for games that still need a normal player launch path. Typical outcomes are:
+
+- ScummVM/freeware adventures: build or configure a `browser-emulator` launcher where practical.
+- Desktop-client LAN games: keep one clear Windows/Linux install path and smoke test first playable action.
+- Linux-package-only games: pilot `browser-stream` or leave as setup notes until a non-technical launch path exists.
+- Research shelves: keep nested until individual playable entries exist.
+
+Do not mark a queued game ready just because files exist. Ready means a player can start, interact, and understand the next step without reading dependency lists.
+
 ## Safe Commands
 
-Regenerate the launcher audit:
+Regenerate the launcher audit and next easy-launcher queue:
 
 ```bash
 npm run qa:launcher-adapters
+npm run qa:easy-launchers
 ```
 
 Deploy the generated registry through the normal safe VM regeneration path:
