@@ -3903,6 +3903,11 @@ else
   done
 fi
 
+if [ -x "$SCRIPT_DIR/scripts/build_lemmings_ts.py" ] && command -v python3 >/dev/null 2>&1; then
+  echo "===== Building Lemmings browser adapter when private data is available ====="
+  python3 "$SCRIPT_DIR/scripts/build_lemmings_ts.py" || echo "WARN Lemmings browser adapter build failed; the placeholder page may be shown."
+fi
+
 echo "===== Building catalog and pages in $INDEX_DIR ====="
 build_catalog_json
 ensure_filters_file
