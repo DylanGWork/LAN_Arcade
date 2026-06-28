@@ -22,6 +22,8 @@ The goal is not to clone Steam. The goal is simpler: answer "what can I play now
 
 The main page intentionally shows launcher cards and nested shelves, not every game inside large collections. The latest deployed inventory is tracked in [docs/GAME_LIBRARY_INVENTORY_STATUS_2026-06-28.md](docs/GAME_LIBRARY_INVENTORY_STATUS_2026-06-28.md). In short: some shelves contain hundreds of nested items, but only entries with local files and gameplay smoke evidence should be described as ready to play.
 
+Launcher adapters are the current contract for how a player starts each item. See [docs/LAUNCHER_ADAPTERS.md](docs/LAUNCHER_ADAPTERS.md) before promoting package-only, desktop-client, or hosted-service entries.
+
 ## Deployment Modes
 
 ### Full Server / GannanNet Mode

@@ -12,6 +12,7 @@ services:
       LAN_ARCADE_DB_PATH: /var/lib/lan-arcade/lan-arcade.sqlite
       LAN_ARCADE_CATALOG_PATH: /var/www/html/mirrors/games/catalog.json
       LAN_ARCADE_FILTERS_PATH: /var/www/html/mirrors/games/admin.filters.json
+      LAN_ARCADE_LAUNCHER_ADAPTERS_PATH: /var/www/html/mirrors/games/launcher-adapters.json
     volumes:
       - /var/www/html/mirrors:/var/www/html/mirrors
       - /var/lib/lan-arcade:/var/lib/lan-arcade

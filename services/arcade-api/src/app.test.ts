@@ -9,6 +9,7 @@ function tempFixture() {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'lan-arcade-api-'));
   const catalogPath = path.join(dir, 'catalog.json');
   const filtersPath = path.join(dir, 'admin.filters.json');
+  const launcherAdaptersPath = path.join(dir, 'launcher-adapters.json');
   const databasePath = path.join(dir, 'arcade.sqlite');
   fs.writeFileSync(catalogPath, JSON.stringify({
     generated_at: '2026-04-25T00:00:00Z',
@@ -26,7 +27,38 @@ function tempFixture() {
     }]
   }, null, 2));
   fs.writeFileSync(filtersPath, JSON.stringify({ disabled_categories: [], disabled_games: [] }, null, 2));
-  return { dir, catalogPath, filtersPath, databasePath };
+  fs.writeFileSync(launcherAdaptersPath, JSON.stringify({
+    generatedAt: '2026-06-28T00:00:00Z',
+    total: 1,
+    counts: { browser: 1 },
+    contract: { rule: 'Ready now requires a real player launch adapter.' },
+    games: {
+      '2048': {
+        adapter: 'browser',
+        preferredAdapter: 'browser',
+        primaryAction: 'Play',
+        readiness: 'Ready offline',
+        readyNow: true,
+        guestReady: true,
+        launchHint: 'browser play',
+        qaStatus: 'inferred-ready',
+        promotionState: 'ready'
+      },
+      'mindustry-lan': {
+        adapter: 'hosted-lan',
+        preferredAdapter: 'hosted-lan',
+        serviceId: 'mindustry-lan',
+        primaryAction: 'Start / join',
+        readiness: 'Start on demand',
+        readyNow: true,
+        guestReady: true,
+        launchHint: 'local server',
+        qaStatus: 'service-smoke-passed',
+        promotionState: 'ready'
+      }
+    }
+  }, null, 2));
+  return { dir, catalogPath, filtersPath, launcherAdaptersPath, databasePath };
 }
 
 async function withServer<T>(fixture: ReturnType<typeof tempFixture>, run: (baseUrl: string) => Promise<T>): Promise<T> {
@@ -306,6 +338,28 @@ test('signed-in accounts can store and retrieve isolated save slots', async () =
     });
     assert.notEqual(updated.save.checksum, first.save.checksum);
     assert.deepEqual(JSON.parse(updated.save.payload), { board: [16], score: 16 });
+  });
+});
+
+test('launcher adapter status is exposed without enabling host control', async () => {
+  const fixture = tempFixture();
+  await withServer(fixture, async (baseUrl) => {
+    const all = await request<{ games: Record<string, { adapter: string; primaryAction: string }> }>(baseUrl, '/launchers');
+    assert.equal(all.games['2048'].adapter, 'browser');
+
+    const launcher = await request<{ gameId: string; adapter: string; serviceId: string; primaryAction: string; readyNow: boolean; control: { supported: boolean; mode: string } }>(baseUrl, '/launchers/mindustry-lan');
+    assert.equal(launcher.gameId, 'mindustry-lan');
+    assert.equal(launcher.adapter, 'hosted-lan');
+    assert.equal(launcher.serviceId, 'mindustry-lan');
+    assert.equal(launcher.primaryAction, 'Start / join');
+    assert.equal(launcher.readyNow, true);
+    assert.equal(launcher.control.supported, false);
+    assert.equal(launcher.control.mode, 'vm-helper-pending');
+
+    const response = await fetch(new URL('/launchers/mindustry-lan/start', baseUrl), { method: 'POST' });
+    assert.equal(response.status, 501);
+    const body = await response.json() as { safePath: string };
+    assert.match(body.safePath, /allowlisted VM helper/);
   });
 });
 

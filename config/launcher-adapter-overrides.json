@@ -1,0 +1,88 @@
+{
+  "version": 1,
+  "updatedAt": "2026-06-28",
+  "notes": "Human launcher decisions layered on top of the generated adapter audit. Keep this file small and intentional; the audit output remains generated.",
+  "games": {
+    "pillage-first-lan": {
+      "adapter": "hosted-lan",
+      "serviceId": "pillage-first-lan",
+      "primaryAction": "Play",
+      "readiness": "Ready offline",
+      "statusLabel": "Browser strategy",
+      "deviceLabel": "Browser",
+      "launchHint": "browser play",
+      "readyNow": true,
+      "guestReady": false,
+      "promotionState": "ready",
+      "qaStatus": "gameplay-smoked",
+      "requiresAccount": true,
+      "saveScope": "server-world"
+    },
+    "unciv-lan": {
+      "adapter": "hosted-lan",
+      "serviceId": "unciv-lan",
+      "primaryAction": "Start / join",
+      "readiness": "Start on demand",
+      "statusLabel": "LAN service",
+      "deviceLabel": "Phone or desktop client",
+      "launchHint": "local server",
+      "readyNow": true,
+      "guestReady": true,
+      "promotionState": "ready",
+      "qaStatus": "service-smoke-passed",
+      "resourceClass": "medium"
+    },
+    "mindustry-lan": {
+      "adapter": "hosted-lan",
+      "serviceId": "mindustry-lan",
+      "primaryAction": "Start / join",
+      "readiness": "Start on demand",
+      "statusLabel": "LAN service",
+      "deviceLabel": "Phone or desktop client",
+      "launchHint": "local server",
+      "readyNow": true,
+      "guestReady": true,
+      "promotionState": "ready",
+      "qaStatus": "service-smoke-passed",
+      "resourceClass": "medium"
+    },
+    "luanti-lan": {
+      "adapter": "hosted-lan",
+      "serviceId": "luanti-lan",
+      "primaryAction": "Start / join",
+      "readiness": "Start on demand",
+      "statusLabel": "LAN service",
+      "deviceLabel": "Desktop or Android client",
+      "launchHint": "local server",
+      "readyNow": true,
+      "guestReady": true,
+      "promotionState": "ready",
+      "qaStatus": "service-smoke-passed",
+      "resourceClass": "medium"
+    },
+    "private-dos-classics": {
+      "adapter": "collection",
+      "primaryAction": "Open collection",
+      "readiness": "Collection ready",
+      "statusLabel": "Classic PC games",
+      "deviceLabel": "Browser emulator",
+      "launchHint": "15 playable games",
+      "readyNow": true,
+      "guestReady": true,
+      "promotionState": "ready",
+      "qaStatus": "partial-gameplay-smoke"
+    },
+    "board-games-wave-1": {
+      "adapter": "research-shelf",
+      "primaryAction": "Browse board games",
+      "readiness": "Reference shelf",
+      "statusLabel": "Board game shelf",
+      "deviceLabel": "Tabletop",
+      "launchHint": "rules and table setup",
+      "readyNow": false,
+      "guestReady": false,
+      "promotionState": "research",
+      "qaStatus": "metadata-only"
+    }
+  }
+}

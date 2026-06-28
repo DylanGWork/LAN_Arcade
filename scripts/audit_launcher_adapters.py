@@ -12,9 +12,14 @@ import json
 from pathlib import Path
 from typing import Any
 
+REAL_PLAY_ADAPTERS = {'browser', 'browser-emulator', 'collection', 'hosted-lan', 'browser-stream'}
+SETUP_ADAPTERS = {'linux-package', 'desktop-client', 'setup-needed', 'research-shelf'}
+KNOWN_ADAPTERS = REAL_PLAY_ADAPTERS | SETUP_ADAPTERS
+
 DEFAULT_CATALOG = Path('/var/www/html/mirrors/games/catalog.json')
 DEFAULT_MIRRORS = Path('/var/www/html/mirrors')
 DEFAULT_OUTPUT = Path('config/launcher-adapters.json')
+DEFAULT_OVERRIDES = Path('config/launcher-adapter-overrides.json')
 DEFAULT_REPORT = Path('qa/reports/launcher-adapter-audit/latest')
 
 COLLECTION_IDS = {
@@ -94,6 +99,37 @@ def read_page(catalog_path: Path, mirrors_root: Path, game: dict[str, Any]) -> t
         return '', str(target)
 
 
+def load_overrides(path: Path) -> dict[str, dict[str, Any]]:
+    if not path.exists():
+        return {}
+    raw = json.loads(path.read_text(encoding='utf-8'))
+    games = raw.get('games') if isinstance(raw, dict) else raw
+    if not isinstance(games, dict):
+        raise ValueError(f'launcher adapter overrides must contain an object at games: {path}')
+    return {str(game_id): value for game_id, value in games.items() if isinstance(value, dict)}
+
+
+def merge_override(info: dict[str, Any], override: dict[str, Any]) -> dict[str, Any]:
+    merged = dict(info)
+    adapter = override.get('adapter') or override.get('preferredAdapter')
+    if adapter:
+        merged['adapter'] = str(adapter)
+        merged['preferredAdapter'] = str(adapter)
+    for key in [
+        'fallbackAdapters', 'readiness', 'primaryAction', 'playerAction', 'statusLabel', 'deviceLabel',
+        'launchHint', 'readyNow', 'guestReady', 'promotionState', 'qaStatus', 'requiresAccount',
+        'saveScope', 'resourceClass', 'serviceId', 'launcherUrl', 'advancedUrl', 'operatorNotes', 'reason'
+    ]:
+        if key in override:
+            merged[key] = override[key]
+    if 'playerAction' in override and 'primaryAction' not in override:
+        merged['primaryAction'] = override['playerAction']
+    if 'primaryAction' in override and 'playerAction' not in override:
+        merged['playerAction'] = override['primaryAction']
+    merged['overrideApplied'] = True
+    return merged
+
+
 def adapter_for(game: dict[str, Any], page_text: str) -> dict[str, Any]:
     game_id = str(game.get('id') or '')
     text = blob(game, page_text)
@@ -103,13 +139,21 @@ def adapter_for(game: dict[str, Any], page_text: str) -> dict[str, Any]:
                ready: bool, reason: str, guest: bool = False) -> dict[str, Any]:
         return {
             'adapter': adapter,
+            'preferredAdapter': adapter,
+            'fallbackAdapters': [],
             'readiness': readiness,
             'primaryAction': action,
+            'playerAction': action,
             'statusLabel': status,
             'deviceLabel': device,
             'launchHint': hint,
             'readyNow': ready,
             'guestReady': guest,
+            'promotionState': 'ready' if ready else 'needs-launcher',
+            'qaStatus': 'inferred-ready' if ready else 'needs-full-flow-qa',
+            'requiresAccount': False,
+            'saveScope': 'account-or-guest',
+            'resourceClass': 'light' if adapter in {'browser', 'browser-emulator', 'collection'} else 'service',
             'reason': reason,
         }
 
@@ -146,8 +190,9 @@ def adapter_for(game: dict[str, Any], page_text: str) -> dict[str, Any]:
     return result('browser', 'Ready offline', 'Play', 'Browser ready', 'Browser', 'browser play', True, 'Default local browser game or wrapper.', guest)
 
 
-def audit(catalog_path: Path, mirrors_root: Path) -> dict[str, Any]:
+def audit(catalog_path: Path, mirrors_root: Path, overrides_path: Path = DEFAULT_OVERRIDES) -> dict[str, Any]:
     catalog = json.loads(catalog_path.read_text(encoding='utf-8'))
+    overrides = load_overrides(overrides_path)
     games = catalog.get('games') if isinstance(catalog.get('games'), list) else []
     adapters: dict[str, dict[str, Any]] = {}
     counts: dict[str, int] = {}
@@ -156,22 +201,49 @@ def audit(catalog_path: Path, mirrors_root: Path) -> dict[str, Any]:
     for game in games:
         page_text, target = read_page(catalog_path, mirrors_root, game)
         info = adapter_for(game, page_text)
+        game_id = str(game.get('id') or '')
+        if game_id in overrides:
+            info = merge_override(info, overrides[game_id])
         info['target'] = target
-        adapters[str(game.get('id') or '')] = info
+        adapters[game_id] = info
         counts[info['adapter']] = counts.get(info['adapter'], 0) + 1
         if info['adapter'] in {'linux-package', 'desktop-client'}:
             needs_easy_launcher.append({'id': str(game.get('id') or ''), 'title': str(game.get('title') or ''), 'adapter': info['adapter'], 'reason': info['reason']})
         if target and not Path(target).exists():
             missing_targets.append({'id': str(game.get('id') or ''), 'title': str(game.get('title') or ''), 'target': target})
-    return {
+    result = {
         'generatedAt': dt.datetime.now(dt.timezone.utc).isoformat(),
         'catalog': str(catalog_path),
+        'overrides': str(overrides_path),
+        'contract': {
+            'readyAdapters': sorted(REAL_PLAY_ADAPTERS),
+            'setupAdapters': sorted(SETUP_ADAPTERS),
+            'rule': 'Ready now requires a real player launch adapter, not just local package files.'
+        },
         'total': len(games),
         'counts': dict(sorted(counts.items())),
         'games': adapters,
         'needsEasyLauncher': needs_easy_launcher,
         'missingTargets': missing_targets,
     }
+    result['contractErrors'] = validate_contract(result)
+    return result
+
+
+def validate_contract(result: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    games = result.get('games') if isinstance(result.get('games'), dict) else {}
+    for game_id, info in games.items():
+        if not isinstance(info, dict):
+            continue
+        adapter = str(info.get('adapter') or '')
+        if adapter not in KNOWN_ADAPTERS:
+            errors.append(f'{game_id}: unknown adapter {adapter!r}')
+        if info.get('readyNow') is True and adapter in SETUP_ADAPTERS:
+            errors.append(f'{game_id}: setup-only adapter {adapter!r} cannot be readyNow=true')
+        if info.get('guestReady') is True and info.get('readyNow') is not True:
+            errors.append(f'{game_id}: guestReady=true requires readyNow=true')
+    return errors
 
 
 def report_markdown(result: dict[str, Any]) -> str:
@@ -200,7 +272,14 @@ def report_markdown(result: dict[str, Any]) -> str:
     else:
         for item in result['missingTargets']:
             lines.append(f"- `{item['id']}` - {item['title']}: `{item['target']}`")
-    lines += ['', '## Rule', '', 'Games with `linux-package` or `desktop-client` adapters are not shown as Ready now until they get a browser launcher, a simple desktop launcher bundle, or a server-streamed play path.']
+    lines += ['', '## Contract Errors', '']
+    errors = result.get('contractErrors') or []
+    if not errors:
+        lines.append('None.')
+    else:
+        for error in errors:
+            lines.append(f'- {error}')
+    lines += ['', '## Rule', '', 'Games with `linux-package`, `desktop-client`, or `setup-needed` adapters are not shown as Ready now until they get a browser launcher, a simple desktop launcher bundle, a hosted-session path, or a browser-streamed play path.']
     return '\n'.join(lines).rstrip() + '\n'
 
 
@@ -209,10 +288,11 @@ def main() -> int:
     parser.add_argument('--catalog', default=str(DEFAULT_CATALOG))
     parser.add_argument('--mirrors-root', default=str(DEFAULT_MIRRORS))
     parser.add_argument('--output', default=str(DEFAULT_OUTPUT))
+    parser.add_argument('--overrides', default=str(DEFAULT_OVERRIDES))
     parser.add_argument('--report-dir', default=str(DEFAULT_REPORT))
     args = parser.parse_args()
 
-    result = audit(Path(args.catalog), Path(args.mirrors_root))
+    result = audit(Path(args.catalog), Path(args.mirrors_root), Path(args.overrides))
     output = Path(args.output)
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(result, indent=2) + '\n', encoding='utf-8')
@@ -221,6 +301,8 @@ def main() -> int:
     (report_dir / 'report.json').write_text(json.dumps(result, indent=2) + '\n', encoding='utf-8')
     (report_dir / 'REPORT.md').write_text(report_markdown(result), encoding='utf-8')
     print(report_markdown(result))
+    if result.get('contractErrors'):
+        return 1
     return 0
 
 

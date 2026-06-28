@@ -1688,7 +1688,7 @@ write_public_index() {
       }
       function isNativeOrServerGame(game) {
         var info = launcherInfo(game);
-        if (info) return hasLauncherAdapter(game, ["hosted-lan", "desktop-client", "linux-package", "server-stream"]);
+        if (info) return hasLauncherAdapter(game, ["hosted-lan", "desktop-client", "linux-package", "browser-stream"]);
         var id = String(game.id || "").toLowerCase();
         return id.slice(-4) === "-lan" || isServerService(game) || hasText(game, ["native", "client required", "installer"]);
       }
@@ -1788,7 +1788,7 @@ write_public_index() {
         if (game.deepType === "rom") return "Play";
         var info = launcherInfo(game);
         if (info && info.primaryAction) return String(info.primaryAction);
-        if (isResearchEntry(game)) return "View details";
+        if (isResearchEntry(game)) return "Setup notes";
         if (isCollection(game)) return "Open collection";
         if (isServerService(game)) return "Start / join";
         if (isNativeOrServerGame(game)) return "Install / play";
@@ -1902,13 +1902,14 @@ write_public_index() {
         });
         return sorted;
       }
-      function gameUrl(game) { return game.path ? String(game.path) : "../" + encodeURIComponent(String(game.id || "")) + "/"; }
+      function gameUrl(game) { var info = launcherInfo(game); if (info && info.launcherUrl) return String(info.launcherUrl); return game.path ? String(game.path) : "../" + encodeURIComponent(String(game.id || "")) + "/"; }
       function launchHint(game) {
         if (game.deepType === "dos") return game.path && game.path.indexOf("play.html") >= 0 ? "browser play" : "classic PC collection";
         if (game.deepType === "rom") return "browser emulator";
         if (game.deepType === "board") return "rules and table notes";
         var info = launcherInfo(game);
         if (info && info.launchHint) return String(info.launchHint);
+        if (hasLauncherAdapter(game, ["browser-stream"])) return "streamed from arcade";
         if (isCollection(game)) return "collection";
         if (isServerService(game)) return "local server";
         if (isNativeOrServerGame(game)) return "desktop install";
@@ -1990,7 +1991,7 @@ write_public_index() {
         var grid = document.getElementById("recentGrid");
         if (!shelf || !grid) return;
         var recentSource = state.account && state.account.account && state.serverRecentGames.length ? state.serverRecentGames : loadRecentGames();
-        var recent = recentSource.slice(0, 6);
+        var recent = recentSource.slice(0, 4);
         var note = document.getElementById("recentShelfNote");
         if (note) note.textContent = state.account && state.account.account ? "Synced for " + (state.account.account.displayName || state.account.account.username) + " on this arcade" : "Saved on this device";
         clear(grid);
@@ -2001,7 +2002,7 @@ write_public_index() {
         var shelf = document.getElementById("favoriteShelf");
         var grid = document.getElementById("favoriteGrid");
         if (!shelf || !grid) return;
-        var favorites = currentFavoriteGames().slice(0, 6);
+        var favorites = currentFavoriteGames().slice(0, 4);
         var note = document.getElementById("favoriteShelfNote");
         if (note) note.textContent = state.account && state.account.account ? "Synced for " + (state.account.account.displayName || state.account.account.username) + " on this arcade" : "Saved on this device";
         clear(grid);

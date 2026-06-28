@@ -340,6 +340,7 @@ async function testGame(browser, game, options) {
     playabilityStatus: 'unknown',
     playabilityNotes: [],
     profile: options.mobile ? 'mobile' : 'desktop',
+    launcher: game.launcher || null,
   };
 
   if (options.blockExternal) {
@@ -679,6 +680,9 @@ function applyResultStatus(result, options) {
 
 function classifyPlayability(result, hasRenderEvidence) {
   const notes = result.playabilityNotes;
+  const launcher = result.launcher || {};
+  const adapter = String(launcher.adapter || '');
+  const setupOnlyAdapters = new Set(['linux-package', 'desktop-client', 'setup-needed', 'research-shelf']);
   const mainDocumentFailed = result.reasons.some((reason) => reason.startsWith('Main document returned HTTP'));
   const nonResponsive = result.reasons.some((reason) => reason.startsWith('Page became non-responsive'));
   const directoryIndex = result.reasons.some((reason) => reason.includes('directory listing'));
@@ -689,6 +693,11 @@ function classifyPlayability(result, hasRenderEvidence) {
     if (directoryIndex) notes.push('opened directory listing instead of game');
     if (!hasRenderEvidence) notes.push('no strong render evidence');
     return 'blocker';
+  }
+
+  if (setupOnlyAdapters.has(adapter) || launcher.readyNow === false) {
+    notes.push(`launcher adapter ${adapter || 'unknown'} is not promoted as ready-to-play`);
+    return 'warning';
   }
 
   if (result.strictStatus === 'pass') {
@@ -758,7 +767,7 @@ async function writeReports(results, options) {
 }
 
 function markdownNotesFor(result) {
-  if (result.reasons.length === 0) return 'OK';
+  if (result.reasons.length === 0 && result.playabilityNotes.length === 0) return 'OK';
 
   const notes = result.reasons.map((reason) => reason.replace(/\|/g, '\\|'));
   const examples = [];
@@ -793,6 +802,17 @@ function shortUrl(value) {
   }
 }
 
+async function loadLauncherAudit(options) {
+  try {
+    const response = await fetch(new URL('launcher-adapters.json', options.baseUrl).href);
+    if (!response.ok) return { games: {} };
+    const body = await response.json();
+    return body && typeof body === 'object' && body.games ? body : { games: {} };
+  } catch {
+    return { games: {} };
+  }
+}
+
 async function main() {
   const options = parseArgs(process.argv.slice(2));
   const browserType = browserTypeFor(options.browserName);
@@ -802,6 +822,10 @@ async function main() {
 
   try {
     const games = await discoverGames(browser, options);
+    const launcherAudit = await loadLauncherAudit(options);
+    for (const game of games) {
+      game.launcher = launcherAudit.games ? launcherAudit.games[game.id] || null : null;
+    }
     if (games.length === 0) {
       throw new Error(`No games discovered from ${options.baseUrl}`);
     }

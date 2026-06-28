@@ -1,3 +1,4 @@
+import fs from 'node:fs';
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
 import { z } from 'zod';
 import type { AdminFilters, ScoreSubmission } from '@lan-arcade/shared';
@@ -138,7 +139,7 @@ async function handleRequest(
       name: config.arcadeName,
       apiVersion: '0.2.0',
       generatedAt: new Date().toISOString(),
-      capabilities: ['catalog', 'profiles', 'accounts', 'account-sessions', 'account-activity', 'account-favorites', 'account-friends', 'account-messages', 'account-save-vault', 'local-email-addresses', 'account-email-state', 'scores', 'leaderboards', 'daily-challenges']
+      capabilities: ['catalog', 'profiles', 'accounts', 'account-sessions', 'account-activity', 'account-favorites', 'account-friends', 'account-messages', 'account-save-vault', 'local-email-addresses', 'account-email-state', 'launcher-adapters', 'launcher-status', 'scores', 'leaderboards', 'daily-challenges']
     });
     return;
   }
@@ -350,6 +351,39 @@ async function handleRequest(
     return;
   }
 
+  if (method === 'GET' && pathname === '/launchers') {
+    sendJson(response, 200, readLauncherAdapters(config));
+    return;
+  }
+
+  const launcherMatch = pathname.match(/^\/launchers\/([^/]+)$/);
+  if (method === 'GET' && launcherMatch) {
+    const gameId = decodeURIComponent(launcherMatch[1]);
+    const launcher = launcherStatus(config, gameId);
+    if (!launcher) return sendJson(response, 404, { error: 'Launcher not found' });
+    sendJson(response, 200, launcher);
+    return;
+  }
+
+  const launcherControlMatch = pathname.match(/^\/launchers\/([^/]+)\/(start|stop)$/);
+  if (method === 'POST' && launcherControlMatch) {
+    const gameId = decodeURIComponent(launcherControlMatch[1]);
+    const action = launcherControlMatch[2];
+    const launcher = launcherStatus(config, gameId);
+    if (!launcher) return sendJson(response, 404, { error: 'Launcher not found' });
+    if (!['hosted-lan', 'browser-stream'].includes(String(launcher.adapter || ''))) {
+      return sendJson(response, 400, { error: 'This launcher does not use start/stop control', launcher });
+    }
+    sendJson(response, 501, {
+      error: 'Launcher service control is not enabled in the API container yet',
+      action,
+      launcher,
+      safePath: 'Use the allowlisted VM helper until a host-control service is installed.',
+      helper: 'python3 scripts/native_service_admin.py start|stop <serviceId>'
+    });
+    return;
+  }
+
   if (method === 'GET' && pathname === '/players') {
     sendJson(response, 200, { players: db.listPlayers() });
     return;
@@ -429,6 +463,53 @@ async function handleRequest(
   }
 
   sendJson(response, 404, { error: 'Not found' });
+}
+
+interface LauncherAuditFile {
+  generatedAt?: string;
+  total?: number;
+  counts?: Record<string, number>;
+  contract?: unknown;
+  games?: Record<string, Record<string, unknown>>;
+}
+
+function readLauncherAdapters(config: ApiConfig): LauncherAuditFile {
+  try {
+    const raw = fs.readFileSync(config.launcherAdaptersPath, 'utf8');
+    const parsed = JSON.parse(raw) as LauncherAuditFile;
+    return {
+      generatedAt: parsed.generatedAt,
+      total: parsed.total,
+      counts: parsed.counts || {},
+      contract: parsed.contract || {},
+      games: parsed.games || {}
+    };
+  } catch {
+    return { counts: {}, games: {} };
+  }
+}
+
+function launcherStatus(config: ApiConfig, gameId: string): Record<string, unknown> | undefined {
+  const audit = readLauncherAdapters(config);
+  const info = audit.games?.[gameId];
+  if (!info) return undefined;
+  const adapter = String(info.adapter || info.preferredAdapter || 'setup-needed');
+  const serviceId = String(info.serviceId || gameId);
+  return {
+    gameId,
+    adapter,
+    serviceId,
+    primaryAction: info.primaryAction || info.playerAction || 'Open',
+    readiness: info.readiness || 'Unknown',
+    readyNow: info.readyNow === true,
+    guestReady: info.guestReady === true,
+    launchHint: info.launchHint || '',
+    qaStatus: info.qaStatus || 'unknown',
+    promotionState: info.promotionState || 'unknown',
+    control: adapter === 'hosted-lan' || adapter === 'browser-stream'
+      ? { supported: false, mode: 'vm-helper-pending' }
+      : { supported: false, mode: 'not-required' }
+  };
 }
 
 function readAccountSession(request: IncomingMessage, db: ArcadeDb) {

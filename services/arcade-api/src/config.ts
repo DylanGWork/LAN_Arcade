@@ -6,6 +6,7 @@ export interface ApiConfig {
   databasePath: string;
   catalogPath: string;
   filtersPath: string;
+  launcherAdaptersPath: string;
   arcadeName: string;
 }
 
@@ -17,6 +18,7 @@ export function loadConfig(overrides: Partial<ApiConfig> = {}): ApiConfig {
     databasePath: process.env.LAN_ARCADE_DB_PATH || '/var/lib/lan-arcade/lan-arcade.sqlite',
     catalogPath,
     filtersPath: process.env.LAN_ARCADE_FILTERS_PATH || path.join(path.dirname(catalogPath), 'admin.filters.json'),
+    launcherAdaptersPath: process.env.LAN_ARCADE_LAUNCHER_ADAPTERS_PATH || path.join(path.dirname(catalogPath), 'launcher-adapters.json'),
     arcadeName: process.env.ARCADE_NAME || 'LAN Arcade',
     ...overrides
   };
