@@ -80,7 +80,26 @@ async function domState(page) {
   });
 }
 
+const gameplayRequired = new Set(['lemmings-ma']);
+
 async function testGame(browser, game, index) {
+  if (['blocked', 'candidate'].includes(game.status) && !hasArg('--include-not-ready')) {
+    return {
+      index,
+      id: game.id,
+      title: game.title,
+      status: game.status,
+      startedAt: new Date().toISOString(),
+      verdict: 'skipped-not-ready',
+      reason: 'This entry is not marked playable in the browser, so the smoke audit does not launch it by default.',
+      consoleMessages: [],
+      pageErrors: [],
+      requestFailures: [],
+      externalRequests: [],
+      screenshots: [],
+      durationMs: 0,
+    };
+  }
   const dir = path.join(screenshotDir, game.id);
   await fs.mkdir(dir, { recursive: true });
   const page = await browser.newPage({ viewport: { width: 1366, height: 900 }, deviceScaleFactor: 1 });
@@ -166,6 +185,9 @@ async function testGame(browser, game, index) {
     } else if (hashes.size <= 1) {
       result.verdict = 'started-needs-playtest';
       result.reason = 'The emulator stayed alive, but generic input did not visibly change the screen.';
+    } else if (gameplayRequired.has(game.id)) {
+      result.verdict = 'started-needs-playtest';
+      result.reason = 'This game needs a game-specific gameplay audit; reaching the title or briefing screen is not enough to mark it browser-ready.';
     } else {
       result.verdict = 'browser-smoke-pass';
       result.reason = 'The game booted, accepted first input, stayed offline, and did not report a runtime crash.';

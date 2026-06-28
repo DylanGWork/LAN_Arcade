@@ -43,7 +43,7 @@ PACKAGE_CONFIGS = {
     'incredible-machine-1-ma': dict(cmd='TIM.EXE', root='work/start-dosroot-*', status='source-ready'),
     'oregon-trail-deluxe-ma': dict(cmd='OREGON.EXE', root='work/start-dosroot-*', status='source-ready'),
     'prince-of-persia-ma': dict(cmd='PRINCE.EXE', root='work/start-dosroot-*', status='source-ready'),
-    'lemmings-ma': dict(cmd='lemvga.com /e', root='work/start-dosroot-*', status='source-ready', dosbox=dict(machine='ega', memsize=4, core='normal', cycles='3000', nosound=True), summary='Ready in browser using the stable EGA launch path. The VGA launch path crashes this browser emulator, so this page intentionally starts the EGA version.'),
+    'lemmings-ma': dict(cmd='lemvga.com /e', root='work/start-dosroot-*', status='blocked', dosbox=dict(machine='ega', memsize=4, core='normal', cycles='3000', nosound=True), summary='Browser play is not ready: this package reaches the Lemmings menus and Level 1 briefing, but the current browser emulator crashes with a memory-bounds backend panic when real gameplay starts. Download the game ZIP and use local DOSBox for now.', controls=['Browser play is disabled until a gameplay-level audit passes', 'Use Download game ZIP with local DOSBox if you want to try it now', 'Do not mark this ready from a title-screen-only smoke test']),
     'dune-ii-ma': dict(cmd='DUNE2.EXE', root='work/start-dosroot-*', status='source-ready'),
     'simant-ma': dict(cmd='SIMANT.EXE', root='work/start-dosroot-*', status='source-ready'),
     'rogue-ma': dict(cmd='ROGUE.EXE', root='work/start-dosroot-*', status='source-ready'),
@@ -260,11 +260,12 @@ def build(dest):
                     summary = 'Ready to play from locally stored game files.'
                     if details:
                         summary += ' ' + details
-                controls = [
-                    'Click inside the game before using keyboard or mouse',
-                    'Use the game menus/keyboard controls shown in-game',
-                    'If a DOS menu appears, choose PLAY.BAT',
-                ]
+                if not g.get('controls'):
+                    controls = [
+                        'Click inside the game before using keyboard or mouse',
+                        'Use the game menus/keyboard controls shown in-game',
+                        'If a DOS menu appears, choose PLAY.BAT',
+                    ]
             runtime = 'Browser classic PC emulator' if root else g.get('runtime', 'Browser classic PC emulator')
             entry=dict(id=g['id'], title=g['title'], platform='Classic PC', genre=row.get('genre') or g.get('genre', 'PC classic'), status=status, sourceUrl=row.get('source_url') or g.get('source',''), summary=summary, qaReport=report, controls=controls, manuals=[], screenshots=[], packageUrl='', packageSha256='', packageBytes=0, bundleUrl='', bundleSha256='', bundleBytes=0, browserCore='js-dos' if 'cmd' in g else '', runtime=runtime, availability=g.get('availability',''), downloadEvidence=g.get('evidence',''), sourceState='source-missing')
             if root:
@@ -358,6 +359,7 @@ async function boot(){
   const fullscreenButton=document.getElementById('fullscreenButton');
   if(fullscreenButton)fullscreenButton.onclick=async()=>{const target=document.querySelector('.player')||gameEl;if(target.requestFullscreen){await target.requestFullscreen().catch(()=>{});setTimeout(()=>window.dispatchEvent(new Event('resize')),120);}};
   if(!playUrl){gameEl.innerHTML='<p style="padding:20px">This game needs local files before it can be played here.</p>';return}
+  if(g.status==='blocked'){gameEl.innerHTML='<div style="padding:20px"><h2>Browser play is not ready for this game</h2><p>'+esc(g.summary)+'</p><p>Use Download game ZIP from the side panel if you want to try it in local DOSBox.</p></div>';return}
   if(typeof Dos!=='function'){gameEl.innerHTML='<p style="padding:20px;color:#ffb4ae">The local js-dos runtime did not load.</p>';return}
   ensureStorageShim();
   const player=Dos(gameEl,{url:playUrl,pathPrefix:'../js-dos-runtime/__JSDOS_VERSION__/emulators/',autoStart:true,workerThread:true,renderBackend:'canvas',backend:'dosbox',mouseCapture:false,noCloud:true,kiosk:true,fsChanges:{local:false}});
