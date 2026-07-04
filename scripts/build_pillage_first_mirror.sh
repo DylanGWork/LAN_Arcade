@@ -54,6 +54,41 @@ hook.write_text("""import { useQuery } from '@tanstack/react-query';\n\nexport c
 discord_hook = root / 'apps/web/app/(public)/hooks/use-discord-members.ts'
 discord_hook.write_text("""import { useQuery } from '@tanstack/react-query';\n\nexport const useDiscordMembers = () => {\n  return useQuery({\n    queryKey: ['discord-members', 'lan-arcade-offline'],\n    queryFn: async () => ({\n      memberCount: 217,\n    }),\n    placeholderData: {\n      memberCount: 217,\n    },\n    staleTime: Infinity,\n  });\n};\n""")
 
+# LAN Arcade stability patch: React Router can occasionally hand nested
+# client loaders a null session context during direct navigation or error
+# recovery. Upstream assumes the context is always populated by root
+# middleware, which can crash the game layout before the requested page renders.
+session_middleware = root / 'apps/web/app/middleware/client-session-middleware.ts'
+s = session_middleware.read_text()
+s = s.replace(
+    "  const sessionCtx = context.get(sessionContext);\n  if (!sessionCtx.sessionId) {\n    sessionCtx.sessionId = window.crypto.randomUUID();\n  }",
+    "  const sessionCtx = context.get(sessionContext) ?? { sessionId: null };\n  if (!sessionCtx.sessionId) {\n    sessionCtx.sessionId = window.crypto.randomUUID();\n  }",
+    1,
+)
+session_middleware.write_text(s)
+
+game_layout = root / 'apps/web/app/(game)/layout.tsx'
+s = game_layout.read_text()
+s = s.replace(
+    "  const { sessionContext } = sessionModule;\n  const { sessionId } = context.get(sessionContext);\n\n  addGameWorldAttributesToFaro(serverSlug);",
+    "  const { sessionContext } = sessionModule;\n  const sessionCtx = context.get(sessionContext) ?? { sessionId: null };\n  const sessionId = sessionCtx.sessionId ?? window.crypto.randomUUID();\n  sessionCtx.sessionId = sessionId;\n\n  addGameWorldAttributesToFaro(serverSlug);",
+    1,
+)
+if 'const sessionCtx = context.get(sessionContext) ?? { sessionId: null };' not in s:
+    raise SystemExit('Failed to patch game layout session guard')
+game_layout.write_text(s)
+
+game_middleware = root / 'apps/web/app/utils/middleware.ts'
+s = game_middleware.read_text()
+s = s.replace(
+    "  const { sessionId } = context.get(sessionContext);",
+    "  const sessionCtx = context.get(sessionContext) ?? { sessionId: null };\n  const sessionId = sessionCtx.sessionId ?? window.crypto.randomUUID();\n  sessionCtx.sessionId = sessionId;",
+    1,
+)
+if 'const sessionId = sessionCtx.sessionId ?? window.crypto.randomUUID();' not in s:
+    raise SystemExit('Failed to patch game middleware session guard')
+game_middleware.write_text(s)
+
 rally_point = root / 'apps/web/app/(game)/(village-slug)/(village)/(...building-field-id)/components/components/rally-point/rally-point-send-troops.tsx'
 s = rally_point.read_text()
 if "import { AttackRaidForm } from 'app/(game)/(village-slug)/components/send-troops/attack-raid-form';" not in s:
