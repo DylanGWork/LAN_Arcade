@@ -1,3 +1,21 @@
+# Preservation And Secret Baseline - 2026-07-11
+
+Before repository extraction, catalogue refactors, or service migrations, use
+`docs/PHASE0_PRESERVATION_SECURITY_REVIEW_2026-07-11.md` as the current
+baseline. The valid preflight snapshot is under
+`/home/dylan/backups/lan-arcade/preflight/20260710T145813Z`.
+
+Do not copy the live LAN Arcade SQLite main file directly: it uses WAL mode.
+Run `npm run backup:user-data`, which now performs an online backup and checks
+the standalone result. Run `npm run qa:secrets` before commits. TravianZ
+credentials are generated into the ignored runtime environment and must never
+be added to tracked scripts or Compose defaults.
+
+Pillage First worlds are browser OPFS data tied to scheme, host, port, and
+browser profile. VM backups do not contain Dylan's `s-dd7a` world. Preserve
+the existing `https://192.168.1.106/mirrors/pillage-first/` origin and require
+an explicit browser export plus disposable-profile import test before cutover.
+
 # Library Search, Classic PC, And Wording Lessons - 2026-06-27
 
 # Git Identity And Contributor Attribution - 2026-06-28

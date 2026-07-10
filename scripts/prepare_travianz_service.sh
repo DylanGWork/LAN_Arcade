@@ -63,19 +63,40 @@ write_env() {
   if [ -f "$ENV_FILE" ]; then
     return 0
   fi
+  command -v openssl >/dev/null 2>&1 || {
+    echo "openssl is required to generate TravianZ database credentials." >&2
+    exit 1
+  }
+  local root_password app_password
+  root_password="$(openssl rand -hex 32)"
+  app_password="$(openssl rand -hex 32)"
   umask 077
   cat > "$ENV_FILE" <<EOF
 TRAVIANZ_APP_DIR=$APP_DIR
 TRAVIANZ_DB_DIR=$DB_DIR
 TRAVIANZ_HTTP_PORT=$HTTP_PORT
 TRAVIANZ_PHPMYADMIN_PORT=$PHPMYADMIN_PORT
-MARIADB_ROOT_PASSWORD=lanarcade-travianz-root
+MARIADB_ROOT_PASSWORD=$root_password
 MARIADB_DATABASE=travian
 MARIADB_USER=travianz
-MARIADB_PASSWORD=travianzpass
+MARIADB_PASSWORD=$app_password
 DB_HOST=db
 DB_PORT=3306
 EOF
+  unset root_password app_password
+  chmod 600 "$ENV_FILE"
+}
+
+
+protect_runtime_credentials() {
+  local config="$APP_DIR/GameEngine/config.php"
+  [ -f "$config" ] || return 0
+  chmod 600 "$config"
+  if command -v setfacl >/dev/null 2>&1; then
+    setfacl -m u:33:r "$config"
+  else
+    chmod 604 "$config"
+  fi
 }
 
 prepare_source() {
@@ -97,6 +118,7 @@ prepare_source() {
   chmod -R a+rwX "$APP_DIR/var" "$APP_DIR/GameEngine" "$APP_DIR/install" 2>/dev/null || true
   mkdir -p "$APP_DIR/var/log"
   chmod -R a+rwX "$APP_DIR/var/log" 2>/dev/null || true
+  protect_runtime_credentials
   echo "Prepared TravianZ source at $APP_DIR"
   echo "Compose env: $ENV_FILE"
 }
