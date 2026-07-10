@@ -4,19 +4,20 @@
   "notes": "Human launcher decisions layered on top of the generated adapter audit. Keep this file small and intentional; the audit output remains generated.",
   "games": {
     "pillage-first-lan": {
-      "adapter": "hosted-lan",
-      "serviceId": "pillage-first-lan",
+      "adapter": "browser",
       "primaryAction": "Play",
       "readiness": "Ready offline",
       "statusLabel": "Browser strategy",
-      "deviceLabel": "Browser",
+      "deviceLabel": "Modern browser over LAN HTTPS",
       "launchHint": "browser play",
       "readyNow": true,
-      "guestReady": false,
+      "guestReady": true,
       "promotionState": "ready",
-      "qaStatus": "gameplay-smoked",
-      "requiresAccount": true,
-      "saveScope": "server-world"
+      "qaStatus": "blocked-network-gameplay-smoked",
+      "requiresAccount": false,
+      "saveScope": "browser-origin-profile",
+      "resourceClass": "light",
+      "reason": "Static offline browser game. Worlds are stored in OPFS for the exact browser origin and profile."
     },
     "unciv-lan": {
       "adapter": "hosted-lan",
