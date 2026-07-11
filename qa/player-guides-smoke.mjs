@@ -47,6 +47,49 @@ try {
   check('no browser page errors', result.pageErrors.length === 0, result.pageErrors);
   check('no external requests', result.externalRequests.length === 0, result.externalRequests);
   await page.screenshot({ path: path.join(reportDir, 'guides.png'), fullPage: true });
+
+  const mirrorChecks = [
+    {
+      name: 'Luanti',
+      root: new URL('/mirrors/luanti-player-docs/', baseUrl).href,
+      entrySelector: 'a[href="for-players/servers.html"]',
+      heading: 'Servers',
+      minCssRules: 50,
+    },
+    {
+      name: 'Mindustry',
+      root: new URL('/mirrors/mindustry-docs/', baseUrl).href,
+      heading: 'Welcome to the Mindustry Wiki',
+      minCssRules: 500,
+    },
+  ];
+  for (const guide of mirrorChecks) {
+    const guideResponse = await page.goto(guide.root, { waitUntil: 'networkidle', timeout: 45000 });
+    check(`${guide.name} guide returns HTTP 200`, guideResponse?.status() === 200, guideResponse?.status());
+    check(`${guide.name} guide has no dead-end offline links`, await page.locator('a[href="/mirrors/games/offline-link.html"]').count() === 0);
+    if (guide.entrySelector) {
+      const entry = page.locator(guide.entrySelector);
+      const entryCount = await entry.count();
+      check(`${guide.name} guide exposes a useful starting point`, entryCount === 1, entryCount);
+      if (entryCount === 1) {
+        await Promise.all([
+          page.waitForNavigation({ waitUntil: 'networkidle', timeout: 45000 }),
+          entry.click(),
+        ]);
+      }
+    }
+    const articleHeading = (await page.locator('h1').innerText()).replace(/#$/, '').trim();
+    check(guide.name + ' article heading is visible', articleHeading === guide.heading, articleHeading);
+    const cssRuleCount = await page.evaluate(() => [...document.styleSheets].reduce((total, sheet) => {
+      try { return total + sheet.cssRules.length; } catch { return total; }
+    }, 0));
+    check(`${guide.name} local theme CSS is active`, cssRuleCount >= guide.minCssRules, cssRuleCount);
+    const guideText = (await page.locator('body').innerText()).toLowerCase();
+    check(`${guide.name} omits operator placeholder wording`, !guideText.includes('external source saved for operators'));
+    await page.screenshot({ path: path.join(reportDir, `${guide.name.toLowerCase()}-guide.png`), fullPage: false });
+  }
+  check('guide mirrors have no browser page errors', result.pageErrors.length === 0, result.pageErrors);
+  check('guide mirrors make no external requests', result.externalRequests.length === 0, result.externalRequests);
   result.passed = result.checks.every((item) => item.passed);
 } catch (error) {
   result.error = error?.stack || error?.message || String(error);

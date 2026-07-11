@@ -61,6 +61,8 @@ Do not stop Docker globally.
 ## Recent Regression Lessons
 
 - Do not certify a game or launcher from HTTP 200, a visible card, or a loaded page alone. Test the first meaningful user action on the real LAN origin and mobile/narrow layout where practical.
+- Do not certify a mirrored manual from HTTP 200 or link scanning alone. Open its player-facing landing page, follow at least one useful guide link, confirm local CSS actually renders, and block external requests during the browser test.
+- Never replace arbitrary raw URLs inside CSS or JavaScript. Audit and rewrite only runtime-bearing references such as HTML href/src/action/srcset and CSS url(); license comments, SVG namespaces, and code examples must remain intact.
 - Keep user-facing library wording separate from intake/admin wording. Avoid labels such as `source-ready`, `package missing`, `candidate`, or `top-level cards` on pages intended for guests; use plain labels such as `Ready to play`, `Needs local files`, `Open shelf`, `Play`, or `Install / play`.
 - Large shelves such as Game Boy, Classic PC/DOS, and board-game research must remain nested to avoid flooding the home page, but search must reach into those shelves and offer direct playable results for known titles.
 - Browser DOS emulation is resource-heavy. Prefer js-dos worker/canvas mode, clean up emulator instances on page unload, and treat local DOSBox downloads as the low-power fallback.

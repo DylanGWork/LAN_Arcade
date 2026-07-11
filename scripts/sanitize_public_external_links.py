@@ -15,10 +15,9 @@ import time
 import urllib.parse
 from pathlib import Path
 
-ATTR_RE = re.compile(r"(<(?P<tag>[a-zA-Z0-9:-]+)\b[^>]*?\s)(?P<attr>href|src|action|poster)=(?P<quote>['\"])(?P<value>https?://[^'\"]+|//[^'\"]+)(?P=quote)", re.I)
-SRCSET_RE = re.compile(r"(<(?P<tag>[a-zA-Z0-9:-]+)\b[^>]*?\s)srcset=(?P<quote>['\"])(?P<value>[^'\"]*https?://[^'\"]+|[^'\"]*//[^'\"]+)(?P=quote)", re.I)
+ATTR_RE = re.compile(r"(<(?P<tag>[a-zA-Z0-9:-]+)\b[^>]*?\s)(?P<attr>href|src|action|poster|data-[a-zA-Z0-9:-]*(?:href|src))=(?P<quote>['\"])(?P<value>(?:https?:)?//(?:(?!(?P=quote)).)+)(?P=quote)", re.I)
+SRCSET_RE = re.compile(r"(<(?P<tag>[a-zA-Z0-9:-]+)\b[^>]*?\s)(?P<attr>srcset|data-[a-zA-Z0-9:-]*srcset)=(?P<quote>['\"])(?P<value>[^'\"]*https?://[^'\"]+|[^'\"]*//[^'\"]+)(?P=quote)", re.I)
 CSS_URL_RE = re.compile(r"url\((?P<quote>['\"]?)(https?://[^)'\"]+|//[^)'\"]+)(?P=quote)\)", re.I)
-RAW_URL_RE = re.compile(r"https?://[^\s<'\")]+", re.I)
 SCAN_SUFFIXES = {'.html', '.htm', '.css'}
 INTERNAL_HOSTS = {'127.0.0.1', 'localhost', '192.168.1.106', 'gannannet.local', 'gannan.home.arpa', 'lan-arcade.invalid'}
 
@@ -44,8 +43,12 @@ def is_internal(value: str) -> bool:
 def replacement_for(tag: str, attr: str, value: str) -> str:
     tag = tag.lower()
     attr = attr.lower()
+    if attr.endswith('href'):
+        attr = 'href'
+    elif attr.endswith('src'):
+        attr = 'src'
     if tag in {'a', 'area'} and attr == 'href':
-        return '/mirrors/games/offline-link.html'
+        return ''
     if attr == 'action':
         return '/mirrors/games/offline-link.html'
     if tag == 'link' and attr == 'href':
@@ -64,6 +67,11 @@ def sanitize_text(text: str, stats: dict[str, int]) -> str:
             return match.group(0)
         stats['attributeRefs'] += 1
         repl = replacement_for(match.group('tag'), match.group('attr'), value)
+        if match.group('tag').lower() in {'a', 'area'} and match.group('attr').lower() == 'href':
+            return (
+                f"{match.group(1)}aria-disabled=\"true\" "
+                'data-arcade-external-removed="true" title="Not available offline"'
+            )
         return f"{match.group(1)}{match.group('attr')}={match.group('quote')}{repl}{match.group('quote')} data-arcade-external-removed=\"true\""
 
     def srcset_repl(match: re.Match[str]) -> str:
@@ -75,7 +83,7 @@ def sanitize_text(text: str, stats: dict[str, int]) -> str:
         if not externals:
             return match.group(0)
         stats['srcsetRefs'] += 1
-        return f"{match.group(1)}srcset={match.group('quote')}/mirrors/_offline_assets/placeholder.svg{match.group('quote')} data-arcade-external-removed=\"true\""
+        return f"{match.group(1)}{match.group('attr')}={match.group('quote')}/mirrors/_offline_assets/placeholder.svg{match.group('quote')} data-arcade-external-removed=\"true\""
 
     def css_repl(match: re.Match[str]) -> str:
         value = match.group(2)
@@ -84,18 +92,26 @@ def sanitize_text(text: str, stats: dict[str, int]) -> str:
         stats['cssRefs'] += 1
         return 'url(/mirrors/_offline_assets/placeholder.svg)'
 
-    out = ATTR_RE.sub(attr_repl, text)
-    out = SRCSET_RE.sub(srcset_repl, out)
+    out = text
+    while True:
+        updated = ATTR_RE.sub(attr_repl, out)
+        if updated == out:
+            break
+        out = updated
+    while True:
+        updated = SRCSET_RE.sub(srcset_repl, out)
+        if updated == out:
+            break
+        out = updated
     out = CSS_URL_RE.sub(css_repl, out)
+    out = re.sub(
+        r'href=[\"\']/mirrors/games/offline-link\.html[\"\']\s+data-arcade-external-removed=[\"\']true[\"\']',
+        'aria-disabled="true" data-arcade-external-removed="true" title="Not available offline"',
+        out,
+        flags=re.I,
+    )
 
-    def raw_repl(match: re.Match[str]) -> str:
-        value = match.group(0)
-        if is_internal(value):
-            return value
-        stats['rawRefs'] += 1
-        return 'external source saved for operators'
-
-    return RAW_URL_RE.sub(raw_repl, out)
+    return out
 
 
 def main() -> int:

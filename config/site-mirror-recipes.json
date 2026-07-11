@@ -59,7 +59,19 @@
     "gameIds": [
       "supertuxkart-lan"
     ],
-    "recursive": false
+    "recursive": false,
+    "landing": [
+      {
+        "label": "Discover the game",
+        "path": "Discover.html",
+        "description": "Karts, tracks, modes, items, and multiplayer."
+      },
+      {
+        "label": "Frequently asked questions",
+        "path": "FAQ.html",
+        "description": "Common setup and gameplay help."
+      }
+    ]
   },
   "xonotic-site": {
     "title": "Xonotic Site",
@@ -75,7 +87,19 @@
     "gameIds": [
       "xonotic-lan"
     ],
-    "recursive": false
+    "recursive": false,
+    "landing": [
+      {
+        "label": "New player guide",
+        "path": "guide/index.html",
+        "description": "Movement, weapons, pickups, settings, and useful gameplay techniques."
+      },
+      {
+        "label": "Frequently asked questions",
+        "path": "faq/index.html",
+        "description": "Common setup and gameplay answers."
+      }
+    ]
   },
   "freedoom-site": {
     "title": "Freedoom Site",
@@ -102,7 +126,14 @@
       "https://github.com/SuperTux/supertux/wiki",
       "https://github.com/SuperTux/supertux/wiki/User-Manual"
     ],
-    "recursive": false
+    "recursive": false,
+    "landing": [
+      {
+        "label": "Player manual",
+        "path": "SuperTux/supertux/wiki/User-Manual.html",
+        "description": "Controls, world maps, power-ups, hazards, and how to begin."
+      }
+    ]
   },
   "ddnet-wiki": {
     "title": "DDNet Player Wiki",
@@ -120,6 +151,28 @@
       "https://wiki.ddnet.org/wiki/Tiles/en",
       "https://wiki.ddnet.org/wiki/Binds/en",
       "https://wiki.ddnet.org/wiki/Troubleshooting/en"
+    ],
+    "landing": [
+      {
+        "label": "Getting started",
+        "path": "wiki/Getting_started/en.html",
+        "description": "Learn movement, the hook, and how cooperative maps work."
+      },
+      {
+        "label": "Common terms",
+        "path": "wiki/Common_Terminology/en.html",
+        "description": "Understand the words and abbreviations players use."
+      },
+      {
+        "label": "Tiles explained",
+        "path": "wiki/Tiles/en.html",
+        "description": "Learn what the map tiles do."
+      },
+      {
+        "label": "Troubleshooting",
+        "path": "wiki/Troubleshooting/en.html",
+        "description": "Fix common client and connection problems."
+      }
     ]
   },
   "endless-sky-wiki": {
@@ -133,7 +186,14 @@
     "pages": [
       "https://github.com/endless-sky/endless-sky/wiki/PlayersManual"
     ],
-    "recursive": false
+    "recursive": false,
+    "landing": [
+      {
+        "label": "Player manual",
+        "path": "endless-sky/endless-sky/wiki/PlayersManual.html",
+        "description": "Starting a pilot, trading, flying, combat, ships, and keyboard controls."
+      }
+    ]
   },
   "luanti-player-docs": {
     "title": "Luanti Player Guide",
@@ -148,6 +208,28 @@
       "https://docs.luanti.org/for-players/getting-started/",
       "https://docs.luanti.org/for-players/controls/",
       "https://docs.luanti.org/for-players/servers/"
+    ],
+    "landing": [
+      {
+        "label": "Getting started",
+        "path": "for-players/getting-started.html",
+        "description": "Create a world, join a game, and learn the essential controls."
+      },
+      {
+        "label": "Controls",
+        "path": "for-players/controls.html",
+        "description": "Keyboard, mouse, touchscreen, and gamepad controls."
+      },
+      {
+        "label": "Join the LAN server",
+        "path": "for-players/servers.html",
+        "description": "Connect to a shared world and understand local player accounts."
+      },
+      {
+        "label": "Troubleshooting",
+        "path": "for-players/troubleshooting.html",
+        "description": "Solutions for common launch, display, and connection problems."
+      }
     ]
   },
   "triplea-guide": {
@@ -161,6 +243,23 @@
     "pages": [
       "https://triplea-game.org/user-guide/",
       "https://triplea-game.org/user-guide/rule-book"
+    ],
+    "landing": [
+      {
+        "label": "Start here",
+        "path": "user-guide/index.html",
+        "description": "Choose a map and start local, network, or AI play."
+      },
+      {
+        "label": "Game rules",
+        "path": "user-guide/rule-book.html",
+        "description": "Turn phases, combat, movement, production, and victory."
+      },
+      {
+        "label": "Tactical handbook",
+        "path": "user-guide/tactical-handbook.html",
+        "description": "Practical strategy for new and returning players."
+      }
     ]
   }
 }

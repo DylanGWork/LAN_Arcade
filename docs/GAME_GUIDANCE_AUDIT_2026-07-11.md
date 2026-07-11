@@ -56,6 +56,14 @@ The 924 records above are source records, not unique games. Collection cards ove
 - Repaired remote media where available. Two dead upstream image URLs were replaced with local transparent placeholders so they cannot leak network requests.
 - Added non-recursive mirroring for selected pages. This avoids recursively crawling large GitHub sites.
 
+## Mirror Usability Correction
+
+The first pass incorrectly accepted HTTP success, a local URL, and the absence of obvious external links as sufficient evidence. Player testing exposed two failures: generated landing pages exposed operator-oriented file lists, and raw URL replacement inside minified CSS broke the Luanti theme.
+
+The corrected acceptance gate now requires a player-facing landing page, one real guide article opened from that page, active local theme CSS, no clickable dead-end offline-link pages, and no browser errors or external requests while the guide is used.
+
+Luanti and Mindustry now have browser-level regression checks for these conditions. The sanitizer inspects runtime and navigation references without rewriting harmless URLs in CSS comments, SVG namespaces, documentation examples, or license text.
+
 ## Next Queue
 
 1. Cache the eight verified-but-not-local sources: Widelands, FreeOrion (after version review), Cataclysm DDA, Veloren, Stendhal, Dungeon Crawl Stone Soup, NetHack, and Simutrans.

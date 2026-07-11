@@ -11,6 +11,7 @@ from __future__ import annotations
 import argparse
 import html
 import json
+import re
 from pathlib import Path
 import shutil
 import subprocess
@@ -101,6 +102,8 @@ def patch_html_for_offline(root: Path) -> dict:
         patched = "\n".join(lines) + ("\n" if text.endswith("\n") else "")
         patched = patched.replace('data-md-component="search"', 'data-md-component="search-offline"')
         patched = patched.replace('data-md-component="source"', 'data-md-component="source-offline"')
+        patched = re.sub(r'\s+integrity=(["\']).*?\1', '', patched, flags=re.I)
+        patched = re.sub(r'\s+crossorigin=(["\']).*?\1', '', patched, flags=re.I)
         if patched != text:
             path.write_text(patched, encoding="utf-8")
             changed += 1
@@ -111,15 +114,28 @@ def patch_html_for_offline(root: Path) -> dict:
     return {"html_scanned": scanned, "html_changed": changed}
 
 
-def make_root_index(dest: Path, title: str, pages: list[str]) -> None:
-    if (dest / "index.html").exists():
+def make_root_index(dest: Path, title: str, pages: list[str], landing: list[dict] | None = None) -> None:
+    landing = landing or []
+    if (dest / "index.html").exists() and not landing:
         return
-    html_pages = sorted(p.relative_to(dest).as_posix() for p in dest.rglob("*.html"))
-    links = "".join(f"<li><a href='{html.escape(p)}'>{html.escape(p)}</a></li>" for p in html_pages[:120])
-    if not links:
-        links = "<li>No mirrored HTML pages were found.</li>"
-    source = html.escape(", ".join(pages))
-    body = f"""<!doctype html><html lang='en'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'><title>{html.escape(title)} Offline Guide</title><style>body{{margin:0;font-family:system-ui,Segoe UI,sans-serif;background:#101316;color:#f4f8f8}}main{{max-width:980px;margin:0 auto;padding:42px 20px}}a{{color:#9ec9ff}}p,li{{color:#c4d0d4;line-height:1.55}}.panel{{border:1px solid #33424b;border-radius:8px;background:#171f25;padding:18px}}</style></head><body><main><p><a href='../games/'>Back to Game Library</a></p><h1>{html.escape(title)} Offline Guide</h1><div class='panel'><p>Saved from: {source}</p></div><h2>Available Pages</h2><ul>{links}</ul></main></body></html>"""
+    cards = []
+    for item in landing:
+        path = str(item.get("path") or "").lstrip("/")
+        if not path or not (dest / path).is_file():
+            continue
+        label = html.escape(str(item.get("label") or Path(path).stem.replace("-", " ").title()))
+        description = html.escape(str(item.get("description") or "Open this locally saved guide."))
+        cards.append(
+            f"<article><h2>{label}</h2><p>{description}</p>"
+            f"<a href='{html.escape(path)}'>Open guide</a></article>"
+        )
+    if not cards:
+        html_pages = sorted(p.relative_to(dest).as_posix() for p in dest.rglob("*.html") if p.name != "index.html")
+        for path in html_pages[:12]:
+            label = html.escape(Path(path).stem.replace("-", " ").replace("_", " ").title())
+            cards.append(f"<article><h2>{label}</h2><p>Locally saved help page.</p><a href='{html.escape(path)}'>Open guide</a></article>")
+    card_html = "".join(cards) or "<p>No readable guide pages were found.</p>"
+    body = f"""<!doctype html><html lang='en'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>{html.escape(title)}</title><style>:root{{color-scheme:dark}}*{{box-sizing:border-box}}body{{margin:0;font-family:system-ui,-apple-system,Segoe UI,sans-serif;background:#0b1115;color:#f4f8f8}}main{{max-width:1060px;margin:0 auto;padding:36px 20px 64px}}a{{color:#07110c;background:#72d39b;border-radius:7px;padding:9px 12px;text-decoration:none;font-weight:800;display:inline-flex}}.back{{color:#cfe0ea;background:transparent;border:1px solid #3a4b55}}p{{color:#c4d0d4;line-height:1.55}}.intro{{max-width:760px}}.grid{{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;margin-top:26px}}article{{border:1px solid #33424b;border-radius:8px;background:#171f25;padding:18px}}article h2{{font-size:20px;margin:0 0 8px}}article p{{min-height:48px}}@media(max-width:600px){{main{{padding-top:20px}}article p{{min-height:0}}}}</style></head><body><main><a class='back' href='../games/'>Back to Game Library</a><h1>{html.escape(title)}</h1><p class='intro'>Choose what you need. These guides are stored on this arcade and work without internet.</p><div class='grid'>{card_html}</div></main></body></html>"""
     (dest / "index.html").write_text(body, encoding="utf-8")
 
 
@@ -130,14 +146,16 @@ def write_blocker(dest: Path, title: str, pages: list[str], detail: str) -> None
     (dest / "index.html").write_text(body, encoding="utf-8")
 
 
-def publish(staged_source: Path, dest: Path, title: str, pages: list[str], source_note: str) -> dict:
-    backup = dest.with_name(dest.name + ".backup-before-refresh")
+def publish(staged_source: Path, dest: Path, title: str, pages: list[str], source_note: str, landing: list[dict] | None = None) -> dict:
+    backup_root = Path(tempfile.gettempdir()) / "lan-arcade-doc-mirror-backups"
+    backup_root.mkdir(parents=True, exist_ok=True)
+    backup = backup_root / (dest.name + ".backup-before-refresh")
     tmp_dest = dest.with_name(dest.name + f".new-{int(time.time())}")
     if tmp_dest.exists():
         shutil.rmtree(tmp_dest)
     shutil.copytree(staged_source, tmp_dest)
     patch_result = patch_html_for_offline(tmp_dest)
-    make_root_index(tmp_dest, title, pages)
+    make_root_index(tmp_dest, title, pages, landing)
     (tmp_dest / "LAN_ARCADE_SOURCE.txt").write_text(
         f"Mirrored from {source_note}\nRefreshed {utc_stamp()}\n",
         encoding="utf-8",
@@ -226,12 +244,13 @@ def main() -> int:
     if not dest_name:
         raise SystemExit("--dest or recipe dest/slug is required")
     dest = safe_dest(args.mirror_root, str(dest_name))
+    landing = list(recipe.get('landing') or [])
 
     if args.repair_existing:
         if not dest.exists():
             raise SystemExit(f"cannot repair missing destination: {dest}")
         patch_result = patch_html_for_offline(dest)
-        make_root_index(dest, title, pages)
+        make_root_index(dest, title, pages, landing)
         (dest / "LAN_ARCADE_REPAIR.txt").write_text(f"Existing mirror repaired without network on {utc_stamp()}\n", encoding="utf-8")
         result = {"mode": "repair-existing", **patch_result, **validate(dest)}
     elif args.validate_only:
@@ -249,7 +268,7 @@ def main() -> int:
             )
             try:
                 source = copy_source_from_stage(stage, source_subdir)
-                patch_result = publish(source, dest, title, pages, source_note)
+                patch_result = publish(source, dest, title, pages, source_note, landing)
                 result = {"mode": "mirror", "status": "ready", "wget_status": status, **patch_result, **validate(dest)}
             except Exception as exc:
                 detail = f"wget_status={status}\nerror={exc}\nchecked={utc_stamp()}\n"

@@ -8,7 +8,16 @@ import re
 import urllib.parse
 from pathlib import Path
 
-URL_RE = re.compile(r"https?://[^\s<'\")]+", re.I)
+HTML_REF_RE = re.compile(
+    r"\b(?P<attr>href|src|action|poster|srcset)\s*=\s*"
+    r"(?:\"(?P<double>[^\"]*)\"|'(?P<single>[^']*)'|(?P<bare>[^\s>]+))",
+    re.I,
+)
+URL_TOKEN_RE = re.compile(r"(?:https?:)?//[^\s,'\")>]+", re.I)
+CSS_URL_RE = re.compile(
+    r"url\((?P<quote>['\"]?)(?P<value>(?:https?:)?//[^)'\"]+)(?P=quote)\)",
+    re.I,
+)
 SCAN_SUFFIXES = {'.html', '.htm', '.css'}
 INTERNAL_HOSTS = {'127.0.0.1', 'localhost', '192.168.1.106', 'gannannet.local', 'gannan.home.arpa', 'lan-arcade.invalid'}
 
@@ -31,12 +40,25 @@ def main() -> int:
     findings = []
     for path in sorted(p for p in root.rglob('*') if p.is_file() and p.suffix.lower() in SCAN_SUFFIXES):
         text = path.read_text(encoding='utf-8', errors='ignore')
-        for match in URL_RE.finditer(text):
-            url = match.group(0).rstrip('.,;')
+        references = []
+        if path.suffix.lower() == '.css':
+            references.extend((match.start(), match.group('value'), 'css-url') for match in CSS_URL_RE.finditer(text))
+        else:
+            for match in HTML_REF_RE.finditer(text):
+                value = match.group('double') or match.group('single') or match.group('bare') or ''
+                for token in URL_TOKEN_RE.finditer(value):
+                    references.append((match.start() + token.start(), token.group(0), match.group('attr').lower()))
+        for position, url, kind in references:
+            url = url.rstrip('.,;')
             if is_internal(url):
                 continue
-            line = text.count('\n', 0, match.start()) + 1
-            findings.append({'file': str(path.relative_to(root)), 'line': line, 'url': url[:260]})
+            line = text.count('\n', 0, position) + 1
+            findings.append({
+                'file': str(path.relative_to(root)),
+                'line': line,
+                'kind': kind,
+                'url': url[:260],
+            })
             if len(findings) >= args.limit:
                 break
         if len(findings) >= args.limit:
