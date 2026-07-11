@@ -15,6 +15,7 @@ LAN_ARCADE_CATALOG_SOURCE="${LAN_ARCADE_CATALOG_SOURCE:-all-dirs}"
 LAN_ARCADE_SKIP_DEVICE_CHECKS="${LAN_ARCADE_SKIP_DEVICE_CHECKS:-0}"
 LAN_ARCADE_SKIP_OFFLINE_PATCH="${LAN_ARCADE_SKIP_OFFLINE_PATCH:-0}"
 LAN_ARCADE_SKIP_TANK_SERVICE="${LAN_ARCADE_SKIP_TANK_SERVICE:-0}"
+LAN_ARCADE_REGISTRY_INDEX_ONLY="${LAN_ARCADE_REGISTRY_INDEX_ONLY:-0}"
 LAN_TANK_HOST="${LAN_TANK_HOST:-0.0.0.0}"
 LAN_TANK_PORT="${LAN_TANK_PORT:-8787}"
 
@@ -187,6 +188,9 @@ MIRRORS_DIR="/var/www/html/mirrors"
 INDEX_DIR="$MIRRORS_DIR/games"
 INDEX_FILE="$INDEX_DIR/index.html"
 CATALOG_FILE="$INDEX_DIR/catalog.json"
+CANONICAL_REGISTRY_FILE="$INDEX_DIR/canonical-registry.json"
+CANONICAL_REGISTRY_BUILDER="$SCRIPT_DIR/scripts/build_canonical_game_registry.py"
+CANONICAL_REGISTRY_OVERRIDES="$SCRIPT_DIR/config/canonical-game-overrides.json"
 LAUNCHER_ADAPTERS_FILE="$INDEX_DIR/launcher-adapters.json"
 LAUNCHER_ADAPTERS_SOURCE="$SCRIPT_DIR/config/launcher-adapters.json"
 FILTERS_FILE="$INDEX_DIR/admin.filters.json"
@@ -846,6 +850,29 @@ build_catalog_json() {
   chmod 644 "$LAUNCHER_ADAPTERS_FILE"
 }
 
+build_canonical_registry() {
+  if [ ! -f "$CANONICAL_REGISTRY_BUILDER" ]; then
+    echo "Canonical registry builder is missing: $CANONICAL_REGISTRY_BUILDER"
+    return 1
+  fi
+  if [ ! -f "$CANONICAL_REGISTRY_OVERRIDES" ]; then
+    echo "Canonical registry overrides are missing: $CANONICAL_REGISTRY_OVERRIDES"
+    return 1
+  fi
+
+  python3 "$CANONICAL_REGISTRY_BUILDER" \
+    --catalog "$CATALOG_FILE" \
+    --launcher-adapters "$LAUNCHER_ADAPTERS_FILE" \
+    --game-boy-vault "$MIRRORS_DIR/private-rom-vault/manifest.json" \
+    --game-boy-curated "$MIRRORS_DIR/private-rom-wave-1/manifest.json" \
+    --board-games "$MIRRORS_DIR/board-games-wave-1/manifest.json" \
+    --classic-pc "$MIRRORS_DIR/private-dos-vault/manifest.json" \
+    --native-packages "$INDEX_DIR/downloads/native" \
+    --overrides "$CANONICAL_REGISTRY_OVERRIDES" \
+    --output "$CANONICAL_REGISTRY_FILE"
+  chmod 644 "$CANONICAL_REGISTRY_FILE"
+}
+
 write_public_index() {
   local arcade_name_html
   arcade_name_html="$(html_escape "$ARCADE_NAME_USE")"
@@ -1307,10 +1334,10 @@ write_public_index() {
         { id: "research", label: "Needs setup", note: "Games waiting for files, fixes, or play testing" }
       ];
       var shelves = [
-        { id: "game-boy-wave-1", label: "Curated Game Boy Picks", note: "201 playable games", href: "../private-rom-wave-1/" },
+        { id: "game-boy-wave-1", label: "Curated Game Boy Picks", note: "201 vault picks", href: "../private-rom-wave-1/" },
         { id: "emulator-library", label: "Emulator Library", note: "All retro collections", href: "../emulator-library/" },
-        { id: "game-boy-vault", label: "743 Game Boy Games", note: "Ready in browser", href: "../private-rom-vault/" },
-        { id: "classic-pc-games", label: "Classic PC Games", note: "15 playable / 28 total", href: "../private-dos-vault/" },
+        { id: "game-boy-vault", label: "Game Boy Vault", note: "743 browser-ready editions", href: "../private-rom-vault/" },
+        { id: "classic-pc-games", label: "Classic PC Games", note: "14 ready to try / 28 listed", href: "../private-dos-vault/" },
         { id: "board-games-wave-1", label: "Board Game Shelf", note: "200 board games", href: "../board-games-wave-1/" },
         { id: "ready-shelf", label: "Ready now", note: "Quick filter", action: "profile", value: "ready" },
         { id: "guest-shelf", label: "Guest friendly", note: "Quick filter", action: "profile", value: "guest" },
@@ -1318,13 +1345,6 @@ write_public_index() {
         { id: "board-games", label: "Board games", note: "Catalog filter", action: "category", value: "board-game" },
         { id: "native-server", label: "Installed & LAN games", note: "Quick filter", action: "profile", value: "native" },
         { id: "research-shelf", label: "Needs setup", note: "Quick filter", action: "profile", value: "research" }
-      ];
-      var internalShelfStats = [
-        [743, "Game Boy games"],
-        [201, "curated Game Boy picks"],
-        [200, "board games"],
-        [28, "classic PC games"],
-        [15, "playable Classic PC games"]
       ];
       var deepSearchSources = [
         { id: "classic-pc", label: "Classic PC Games", type: "dos", manifest: "../private-dos-vault/manifest.json", basePath: "../private-dos-vault/" },
@@ -1341,6 +1361,7 @@ write_public_index() {
         catalog: { games: [], categories: [] },
         filters: { disabled_categories: [], disabled_games: [] },
         launcherAudit: { games: {} },
+        registry: { metrics: {} },
         deepGames: [],
         serverRecentGames: [],
         serverFavoriteGames: [],
@@ -2083,14 +2104,20 @@ write_public_index() {
       }
       function renderStatus(visible, profilePool, allEnabled) {
         var status = document.getElementById("status"); clear(status);
+        var metrics = state.registry && state.registry.metrics ? state.registry.metrics : {};
+        var canonicalTitles = Number(metrics.distinctCanonicalTitles);
+        var launcherCards = Number(metrics.topLevelLauncherCards);
+        var playableTitles = Number(metrics.playableNowTitles);
+        if (!Number.isFinite(canonicalTitles)) canonicalTitles = allEnabled.length;
+        if (!Number.isFinite(launcherCards)) launcherCards = allEnabled.length;
+        if (!Number.isFinite(playableTitles)) playableTitles = profilePool.filter(isReadyNow).length;
         var chips = [
-          [visible.length, state.query ? "search results" : "shown"],
-          [profilePool.length, "in this view"],
-          [allEnabled.length, "available"]
+          [canonicalTitles, "titles across every shelf"],
+          [launcherCards, "launch cards"],
+          [playableTitles, "ready to play"],
+          [visible.length, state.query ? "search results" : "shown in this view"]
         ];
-        chips = chips.concat(internalShelfStats);
-        if (state.query) chips.push(["search", state.query]);
-        if (state.category) chips.push(["genre", (categoryLabelMap(state.catalog)[state.category] || state.category)]);
+        if (state.category) chips.push([visible.length, (categoryLabelMap(state.catalog)[state.category] || state.category)]);
         if (state.filters.disabled_categories.length || state.filters.disabled_games.length) chips.push([state.filters.disabled_games.length, "hidden by settings"]);
         chips.forEach(function (parts) {
           var chip = document.createElement("span"); chip.className = "stat-pill";
@@ -2127,12 +2154,14 @@ write_public_index() {
       Promise.all([
         fetchJson("./catalog.json", { games: [], categories: [] }),
         fetchJson("./admin.filters.json", { disabled_categories: [], disabled_games: [] }),
-        fetchJson("./launcher-adapters.json", { games: {} })
+        fetchJson("./launcher-adapters.json", { games: {} }),
+        fetchJson("./canonical-registry.json", { metrics: {} })
       ].concat(deepSearchSources.map(function (source) { return fetchJson(source.manifest, { games: [] }).then(function (manifest) { return { source: source, manifest: manifest || { games: [] } }; }); }))).then(function (results) {
         state.catalog = results[0] || { games: [], categories: [] };
         state.filters = normalizeFilters(results[1]);
         state.launcherAudit = results[2] || { games: {} };
-        state.deepGames = results.slice(3).flatMap(function (entry) {
+        state.registry = results[3] || { metrics: {} };
+        state.deepGames = results.slice(4).flatMap(function (entry) {
           var games = Array.isArray(entry.manifest.games) ? entry.manifest.games : [];
           return games.map(function (game) { return normalizeNestedGame(entry.source, game); }).filter(Boolean);
         });
@@ -3689,6 +3718,16 @@ deploy_local_bundled_games() {
   done
 }
 
+if [ "$LAN_ARCADE_REGISTRY_INDEX_ONLY" = "1" ]; then
+  echo "===== Regenerating canonical registry and public library index only ====="
+  build_canonical_registry
+  write_public_index
+  chmod 644 "$CANONICAL_REGISTRY_FILE"
+  chmod 644 "$INDEX_FILE"
+  echo "Canonical registry and public library index regenerated."
+  exit 0
+fi
+
 deploy_shared_local_assets
 
 # ---------- Mirror each game ----------
@@ -3903,6 +3942,7 @@ else
   done
 fi
 
+
 if [ -x "$SCRIPT_DIR/scripts/build_lemmings_ts.py" ] && command -v python3 >/dev/null 2>&1; then
   echo "===== Building Lemmings browser adapter when private data is available ====="
   python3 "$SCRIPT_DIR/scripts/build_lemmings_ts.py" || echo "WARN Lemmings browser adapter build failed; the placeholder page may be shown."
@@ -3910,6 +3950,7 @@ fi
 
 echo "===== Building catalog and pages in $INDEX_DIR ====="
 build_catalog_json
+build_canonical_registry
 ensure_filters_file
 write_public_index
 write_account_index
@@ -3939,6 +3980,7 @@ chmod 755 "$DOWNLOADS_DIR"
 chmod 755 "$DOWNLOAD_SCREENSHOTS_DIR"
 chmod 644 "$INDEX_FILE"
 chmod 644 "$CATALOG_FILE"
+chmod 644 "$CANONICAL_REGISTRY_FILE"
 chmod 644 "$FILTERS_FILE"
 chmod 644 "$WIKI_INDEX_FILE"
 chmod 644 "$ACCOUNT_INDEX_FILE"

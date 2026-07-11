@@ -1,0 +1,227 @@
+{
+  "schemaVersion": 1,
+  "collectionWrappers": [
+    {
+      "catalogId": "board-games-wave-1",
+      "role": "research-shelf",
+      "memberCollections": ["board-games"]
+    },
+    {
+      "catalogId": "emulator-library",
+      "role": "aggregate-collection",
+      "memberCollections": ["game-boy-vault", "game-boy-curated", "classic-pc"]
+    },
+    {
+      "catalogId": "private-dos-classics",
+      "role": "collection-launcher",
+      "memberCollections": ["classic-pc"]
+    },
+    {
+      "catalogId": "private-gbc-vault",
+      "role": "collection-launcher",
+      "memberCollections": ["game-boy-vault"]
+    },
+    {
+      "catalogId": "private-rom-wave-1",
+      "role": "collection-launcher",
+      "memberCollections": ["game-boy-curated"]
+    },
+    {
+      "catalogId": "retro-emulator-lab",
+      "role": "intake-collection",
+      "memberCollections": []
+    },
+    {
+      "catalogId": "travian-like-lab",
+      "role": "research-shelf",
+      "memberCollections": []
+    }
+  ],
+  "canonicalGroups": [
+    {
+      "entityId": "game:board:go",
+      "canonicalTitle": "Go",
+      "confidence": "confirmed-source-link",
+      "note": "The board manifest links its Go row directly to the Kigo and GNU Go implementation.",
+      "recordRelationships": {
+        "record:board-games:go": "canonical-title",
+        "record:catalog:kigo-lan": "local-implementation"
+      }
+    },
+    {
+      "entityId": "game:board:backgammon",
+      "canonicalTitle": "Backgammon",
+      "confidence": "confirmed-source-link",
+      "note": "The board manifest links its Backgammon row directly to GNU Backgammon.",
+      "recordRelationships": {
+        "record:board-games:backgammon": "canonical-title",
+        "record:catalog:gnubg-lan": "local-implementation"
+      }
+    },
+    {
+      "entityId": "game:board:reversi",
+      "canonicalTitle": "Reversi / Othello-style",
+      "confidence": "confirmed-source-link",
+      "note": "The board manifest links this row directly to KReversi.",
+      "recordRelationships": {
+        "record:board-games:reversi-othello-style": "canonical-title",
+        "record:catalog:kreversi-lan": "local-implementation"
+      }
+    },
+    {
+      "entityId": "game:board:connect-four",
+      "canonicalTitle": "Connect Four-style",
+      "confidence": "confirmed-source-link",
+      "note": "The board manifest links this row directly to KFourInLine.",
+      "recordRelationships": {
+        "record:board-games:connect-four-style": "canonical-title",
+        "record:catalog:kfourinline-lan": "local-implementation"
+      }
+    },
+    {
+      "entityId": "game:board:battleship",
+      "canonicalTitle": "Battleship-style",
+      "confidence": "confirmed-source-link",
+      "note": "The board manifest links this row directly to KNavalBattle while retaining partial-play evidence.",
+      "recordRelationships": {
+        "record:board-games:battleship-style": "canonical-title",
+        "record:catalog:knavalbattle-lan": "local-implementation"
+      }
+    },
+    {
+      "entityId": "game:board:nine-mens-morris",
+      "canonicalTitle": "Nine Men's Morris",
+      "confidence": "confirmed-source-link",
+      "note": "The board manifest links this row directly to the matching native implementation.",
+      "recordRelationships": {
+        "record:board-games:nine-men-s-morris": "canonical-title",
+        "record:catalog:morris-lan": "local-implementation"
+      }
+    },
+    {
+      "entityId": "game:board:gomoku",
+      "canonicalTitle": "Gomoku / Five in a Row",
+      "confidence": "confirmed-source-link",
+      "note": "The board manifest links this row directly to Bovo Gomoku.",
+      "recordRelationships": {
+        "record:board-games:gomoku-five-in-a-row": "canonical-title",
+        "record:catalog:bovo-lan": "local-implementation"
+      }
+    },
+    {
+      "entityId": "game:game-boy:pocket-bomberman",
+      "canonicalTitle": "Pocket Bomberman",
+      "confidence": "confirmed-editions",
+      "note": "The vault contains distinct Game Boy and Game Boy Color ROM editions with the same title.",
+      "recordRelationships": {
+        "record:game-boy-vault:pocket-bomberman": "game-boy-edition",
+        "record:game-boy-vault:pocket-bomberman-952660d1": "game-boy-color-edition"
+      }
+    },
+    {
+      "entityId": "game:game-boy:space-invaders",
+      "canonicalTitle": "Space Invaders",
+      "confidence": "confirmed-editions",
+      "note": "The vault contains distinct Game Boy and Game Boy Color ROM editions with the same title.",
+      "recordRelationships": {
+        "record:game-boy-vault:space-invaders": "game-boy-edition",
+        "record:game-boy-vault:space-invaders-48f70d85": "game-boy-color-edition"
+      }
+    },
+    {
+      "entityId": "game:game-boy:wario-land-ii",
+      "canonicalTitle": "Wario Land II",
+      "confidence": "confirmed-editions",
+      "note": "The vault contains distinct Game Boy and Game Boy Color ROM editions with the same title.",
+      "recordRelationships": {
+        "record:game-boy-vault:wario-land-ii": "game-boy-edition",
+        "record:game-boy-vault:wario-land-ii-40f366cc": "game-boy-color-edition"
+      }
+    },
+    {
+      "entityId": "game:classic:lemmings",
+      "canonicalTitle": "Lemmings",
+      "confidence": "confirmed-shared-game-data",
+      "note": "The browser-native top-level adapter uses the locally cached DOS Lemmings data represented by the Classic PC row.",
+      "recordRelationships": {
+        "record:catalog:lemmings": "browser-adapter-edition",
+        "record:classic-pc:lemmings-ma": "classic-pc-edition"
+      }
+    }
+  ],
+  "recordOverrides": {
+    "record:catalog:lemmings": {
+      "platform": "Web browser",
+      "launcher": {
+        "adapter": "browser",
+        "target": "/mirrors/lemmings/"
+      },
+      "readiness": {
+        "playableNow": true,
+        "localPayload": true,
+        "qaVerified": true,
+        "state": "gameplay-smoked"
+      },
+      "evidence": {
+        "basis": "Explicit browser adapter with a local game-data load and started-level canvas smoke.",
+        "qaEvidenceId": "lemmings-ts-smoke/game-started"
+      }
+    }
+  },
+  "reviewRelationships": [
+    {
+      "id": "review:board-backgammon-vs-game-boy",
+      "type": "possible-duplicate",
+      "recordA": "record:board-games:backgammon",
+      "recordB": "record:game-boy-vault:backgammon",
+      "reason": "The board concept and Game Boy Color adaptation share a title, but the manifests do not establish edition identity.",
+      "reviewRequired": true,
+      "keepSeparate": true
+    },
+    {
+      "id": "review:board-uno-vs-game-boy",
+      "type": "possible-duplicate",
+      "recordA": "record:board-games:uno",
+      "recordB": "record:game-boy-vault:uno",
+      "reason": "The board row and Game Boy Color adaptation share a title, but the manifests do not establish edition identity.",
+      "reviewRequired": true,
+      "keepSeparate": true
+    },
+    {
+      "id": "review:gta-game-boy-vs-classic-pc",
+      "type": "possible-duplicate",
+      "recordA": "record:game-boy-vault:grand-theft-auto",
+      "recordB": "record:classic-pc:grand-theft-auto-1997-xtc",
+      "reason": "The records may be platform editions of the 1997 title, but neither manifest carries a shared release identifier.",
+      "reviewRequired": true,
+      "keepSeparate": true
+    },
+    {
+      "id": "review:prince-of-persia-game-boy-vs-classic-pc",
+      "type": "possible-duplicate",
+      "recordA": "record:game-boy-vault:prince-of-persia",
+      "recordB": "record:classic-pc:prince-of-persia-ma",
+      "reason": "The records likely represent platform editions, but title equality alone is not enough for an automatic merge.",
+      "reviewRequired": true,
+      "keepSeparate": true
+    },
+    {
+      "id": "review:road-rash-game-boy-vs-classic-pc",
+      "type": "possible-duplicate",
+      "recordA": "record:game-boy-vault:road-rash",
+      "recordB": "record:classic-pc:road-rash-ma",
+      "reason": "The records likely represent platform editions, but title equality alone is not enough for an automatic merge.",
+      "reviewRequired": true,
+      "keepSeparate": true
+    },
+    {
+      "id": "review:catan-vs-pioneers",
+      "type": "analog-implementation",
+      "recordA": "record:board-games:catan",
+      "recordB": "record:catalog:pioneers-lan",
+      "reason": "The board manifest explicitly links Pioneers as a source-clear Catan-like analog, not as the same title.",
+      "reviewRequired": true,
+      "keepSeparate": true
+    }
+  ]
+}
