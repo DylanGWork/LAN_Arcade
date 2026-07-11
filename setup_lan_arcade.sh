@@ -19,6 +19,17 @@ LAN_ARCADE_REGISTRY_INDEX_ONLY="${LAN_ARCADE_REGISTRY_INDEX_ONLY:-0}"
 LAN_TANK_HOST="${LAN_TANK_HOST:-0.0.0.0}"
 LAN_TANK_PORT="${LAN_TANK_PORT:-8787}"
 
+# Registry/index-only mode is safe by definition. Keep this guard before any
+# package, Apache, mirror, device, or service work.
+if [ "$LAN_ARCADE_REGISTRY_INDEX_ONLY" = "1" ]; then
+  LAN_ARCADE_SKIP_PACKAGE_INSTALL=1
+  LAN_ARCADE_SKIP_ADMIN_AUTH=1
+  LAN_ARCADE_SKIP_MIRROR=1
+  LAN_ARCADE_SKIP_DEVICE_CHECKS=1
+  LAN_ARCADE_SKIP_TANK_SERVICE=1
+  LAN_ARCADE_CATALOG_SOURCE=metadata-existing
+fi
+
 RUNNING_AS_ROOT=0
 if [ "$(id -u)" -eq 0 ]; then
   RUNNING_AS_ROOT=1
@@ -191,6 +202,11 @@ CATALOG_FILE="$INDEX_DIR/catalog.json"
 CANONICAL_REGISTRY_FILE="$INDEX_DIR/canonical-registry.json"
 CANONICAL_REGISTRY_BUILDER="$SCRIPT_DIR/scripts/build_canonical_game_registry.py"
 CANONICAL_REGISTRY_OVERRIDES="$SCRIPT_DIR/config/canonical-game-overrides.json"
+READINESS_FILE="$INDEX_DIR/readiness.json"
+READINESS_QUARANTINE_FILE="$INDEX_DIR/qa-quarantine.json"
+READINESS_BUILDER="$SCRIPT_DIR/qa/readiness/build-readiness.mjs"
+READINESS_POLICY="$SCRIPT_DIR/config/readiness-policy.json"
+READINESS_EVIDENCE="$SCRIPT_DIR/qa/readiness/evidence.json"
 LAUNCHER_ADAPTERS_FILE="$INDEX_DIR/launcher-adapters.json"
 LAUNCHER_ADAPTERS_SOURCE="$SCRIPT_DIR/config/launcher-adapters.json"
 FILTERS_FILE="$INDEX_DIR/admin.filters.json"
@@ -873,6 +889,21 @@ build_canonical_registry() {
   chmod 644 "$CANONICAL_REGISTRY_FILE"
 }
 
+build_readiness_authority() {
+  if [ ! -f "$READINESS_BUILDER" ] || [ ! -f "$READINESS_POLICY" ] || [ ! -f "$READINESS_EVIDENCE" ]; then
+    echo "Readiness authority inputs are incomplete."
+    return 1
+  fi
+  node "$READINESS_BUILDER" \
+    --repo-root "$SCRIPT_DIR" \
+    --registry "$CANONICAL_REGISTRY_FILE" \
+    --policy "$READINESS_POLICY" \
+    --evidence "$READINESS_EVIDENCE" \
+    --output "$READINESS_FILE" \
+    --quarantine "$READINESS_QUARANTINE_FILE"
+  chmod 644 "$READINESS_FILE" "$READINESS_QUARANTINE_FILE"
+}
+
 write_public_index() {
   local arcade_name_html
   arcade_name_html="$(html_escape "$ARCADE_NAME_USE")"
@@ -1362,6 +1393,7 @@ write_public_index() {
         filters: { disabled_categories: [], disabled_games: [] },
         launcherAudit: { games: {} },
         registry: { metrics: {} },
+        readiness: { metrics: {}, entries: {} },
         deepGames: [],
         serverRecentGames: [],
         serverFavoriteGames: [],
@@ -1695,6 +1727,11 @@ write_public_index() {
         var games = state.launcherAudit && state.launcherAudit.games ? state.launcherAudit.games : {};
         return games[id] || null;
       }
+      function readinessInfo(game) {
+        if (!game) return null;
+        var entries = state.readiness && state.readiness.entries ? state.readiness.entries : {};
+        return entries[String(game.id || "")] || null;
+      }
       function launcherAdapter(game) {
         var info = launcherInfo(game);
         return info ? String(info.adapter || "") : "";
@@ -1714,16 +1751,17 @@ write_public_index() {
         return id.slice(-4) === "-lan" || isServerService(game) || hasText(game, ["native", "client required", "installer"]);
       }
       function isResearchEntry(game) {
-        if (hasLauncherAdapter(game, ["linux-package", "desktop-client", "research-shelf", "needs-setup"])) return true;
-        if (isCollection(game)) return hasText(game, ["restore needed", "blocked", "waiting", "research", "candidate"]);
-        return hasText(game, ["research", "candidate", "blocked", "waiting", "needs qa", "partial smoke", "not yet", "restore needed"]);
+        var readiness = readinessInfo(game);
+        if (readiness) {
+          if (readiness.promotionState === "research" || readiness.promotionState === "quarantined") return true;
+          if (readiness.promotionState === "limited" && !isCollection(game)) return true;
+          return false;
+        }
+        return true;
       }
       function isReadyNow(game) {
-        var info = launcherInfo(game);
-        if (info && typeof info.readyNow === "boolean") return info.readyNow === true;
-        if (isResearchEntry(game) || hasText(game, ["restore needed", "blocked", "waiting"])) return false;
-        if (isCollection(game)) return true;
-        return !isNativeOrServerGame(game);
+        var readiness = readinessInfo(game);
+        return Boolean(readiness && readiness.promotionState === "ready");
       }
       function isGuestFriendly(game) {
         var info = launcherInfo(game);
@@ -1760,26 +1798,13 @@ write_public_index() {
         return "Browser ready";
       }
       function readinessLabel(game) {
-        if (game.deepType === "dos") return game.path && game.path.indexOf("play.html") >= 0 ? "Ready to play" : "Open collection";
-        if (game.deepType === "rom") return "Ready offline";
-        var info = launcherInfo(game);
-        if (info && info.readiness) return String(info.readiness);
-        if (hasText(game, ["restore needed"])) return "Needs files";
-        if (hasText(game, ["blocked", "waiting"])) return "Needs setup";
-        if (isResearchEntry(game)) return "Needs setup";
-        if (isServerService(game)) return "Start on demand";
-        if (isNativeOrServerGame(game)) return "Client install";
-        if (isCollection(game)) return "Collection ready";
-        if (hasCategory(game, "private")) return "Private";
-        return "Ready offline";
+        var readiness = readinessInfo(game);
+        return readiness ? String(readiness.displayLabel || "Needs play testing") : "Needs play testing";
       }
       function readinessTone(game) {
-        var info = launcherInfo(game);
-        if (info && typeof info.readyNow === "boolean") return info.readyNow ? "ready" : "warn";
-        var label = readinessLabel(game);
-        if (label === "Ready offline" || label === "Ready to play" || label === "Collection ready") return "ready";
-        if (label === "Needs setup" || label === "Needs files") return "warn";
-        return "";
+        var readiness = readinessInfo(game);
+        if (!readiness) return "warn";
+        return readiness.promotionState === "ready" ? "ready" : "warn";
       }
       function deviceLabel(game) {
         if (game.deepType === "dos") return "Browser DOSBox";
@@ -1805,7 +1830,9 @@ write_public_index() {
         return "Age unset";
       }
       function primaryActionLabel(game) {
-        if (game.deepType === "dos" && game.path && game.path.indexOf("play.html") >= 0) return "Play";
+        var readiness = readinessInfo(game);
+        if (readiness && readiness.actionLabel) return String(readiness.actionLabel);
+        if (game.deepType === "dos" && game.path && game.path.indexOf("play.html") >= 0) return "Try";
         if (game.deepType === "rom") return "Play";
         var info = launcherInfo(game);
         if (info && info.primaryAction) return String(info.primaryAction);
@@ -1923,8 +1950,10 @@ write_public_index() {
         });
         return sorted;
       }
-      function gameUrl(game) { var info = launcherInfo(game); if (info && info.launcherUrl) return String(info.launcherUrl); return game.path ? String(game.path) : "../" + encodeURIComponent(String(game.id || "")) + "/"; }
+      function gameUrl(game) { var readiness = readinessInfo(game); if (readiness && readiness.actionTarget) return String(readiness.actionTarget); var info = launcherInfo(game); if (info && info.launcherUrl) return String(info.launcherUrl); return game.path ? String(game.path) : "../" + encodeURIComponent(String(game.id || "")) + "/"; }
       function launchHint(game) {
+        var readiness = readinessInfo(game);
+        if (readiness && readiness.launchHint) return String(readiness.launchHint);
         if (game.deepType === "dos") return game.path && game.path.indexOf("play.html") >= 0 ? "browser play" : "classic PC collection";
         if (game.deepType === "rom") return "browser emulator";
         if (game.deepType === "board") return "rules and table notes";
@@ -2108,18 +2137,18 @@ write_public_index() {
         var canonicalTitles = Number(metrics.distinctCanonicalTitles);
         var localPayloadTitles = Number(metrics.localPayloadTitles);
         var launchCandidates = Number(metrics.localLaunchCandidateTitles);
-        var actionEvidence = Number(metrics.meaningfulActionEvidenceTitles);
+        var readyEntries = Number(state.readiness && state.readiness.metrics ? state.readiness.metrics.readyEntries : NaN);
         var launcherCards = Number(metrics.topLevelLauncherCards);
         if (!Number.isFinite(canonicalTitles)) canonicalTitles = allEnabled.length;
         if (!Number.isFinite(localPayloadTitles)) localPayloadTitles = 0;
         if (!Number.isFinite(launchCandidates)) launchCandidates = profilePool.filter(isReadyNow).length;
-        if (!Number.isFinite(actionEvidence)) actionEvidence = 0;
+        if (!Number.isFinite(readyEntries)) readyEntries = 0;
         if (!Number.isFinite(launcherCards)) launcherCards = allEnabled.length;
         var chips = [
           [canonicalTitles, "titles across every shelf"],
           [localPayloadTitles, "with local files"],
           [launchCandidates, "launch paths to try"],
-          [actionEvidence, "with recorded game actions"],
+          [readyEntries, "ready to play"],
           [launcherCards, "library cards"],
           [visible.length, state.query ? "search results" : "shown in this view"]
         ];
@@ -2161,13 +2190,15 @@ write_public_index() {
         fetchJson("./catalog.json", { games: [], categories: [] }),
         fetchJson("./admin.filters.json", { disabled_categories: [], disabled_games: [] }),
         fetchJson("./launcher-adapters.json", { games: {} }),
-        fetchJson("./canonical-registry.json", { metrics: {} })
+        fetchJson("./canonical-registry.json", { metrics: {} }),
+        fetchJson("./readiness.json", { metrics: {}, entries: {} })
       ].concat(deepSearchSources.map(function (source) { return fetchJson(source.manifest, { games: [] }).then(function (manifest) { return { source: source, manifest: manifest || { games: [] } }; }); }))).then(function (results) {
         state.catalog = results[0] || { games: [], categories: [] };
         state.filters = normalizeFilters(results[1]);
         state.launcherAudit = results[2] || { games: {} };
         state.registry = results[3] || { metrics: {} };
-        state.deepGames = results.slice(4).flatMap(function (entry) {
+        state.readiness = results[4] || { metrics: {}, entries: {} };
+        state.deepGames = results.slice(5).flatMap(function (entry) {
           var games = Array.isArray(entry.manifest.games) ? entry.manifest.games : [];
           return games.map(function (game) { return normalizeNestedGame(entry.source, game); }).filter(Boolean);
         });
@@ -3727,6 +3758,7 @@ deploy_local_bundled_games() {
 if [ "$LAN_ARCADE_REGISTRY_INDEX_ONLY" = "1" ]; then
   echo "===== Regenerating canonical registry and public library index only ====="
   build_canonical_registry
+  build_readiness_authority
   write_public_index
   chmod 644 "$CANONICAL_REGISTRY_FILE"
   chmod 644 "$INDEX_FILE"
@@ -3957,6 +3989,7 @@ fi
 echo "===== Building catalog and pages in $INDEX_DIR ====="
 build_catalog_json
 build_canonical_registry
+build_readiness_authority
 ensure_filters_file
 write_public_index
 write_account_index
@@ -3987,6 +4020,8 @@ chmod 755 "$DOWNLOAD_SCREENSHOTS_DIR"
 chmod 644 "$INDEX_FILE"
 chmod 644 "$CATALOG_FILE"
 chmod 644 "$CANONICAL_REGISTRY_FILE"
+chmod 644 "$READINESS_FILE"
+chmod 644 "$READINESS_QUARANTINE_FILE"
 chmod 644 "$FILTERS_FILE"
 chmod 644 "$WIKI_INDEX_FILE"
 chmod 644 "$ACCOUNT_INDEX_FILE"

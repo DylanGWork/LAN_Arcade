@@ -27,6 +27,8 @@ bash ./setup_lan_arcade.sh
 
 To also download or refresh mirrored games from metadata while still leaving nginx/Apache alone, remove only `LAN_ARCADE_SKIP_MIRROR=1`.
 
+For registry, readiness, and library-page changes only, use `LAN_ARCADE_REGISTRY_INDEX_ONLY=1`. The script forces every package, Apache, mirror, device, and service skip before any host work.
+
 The generated public files are browser-readable:
 
 ```text
@@ -154,7 +156,7 @@ Known blockers can be hidden from the public arcade after a smoke run:
 
 ```sh
 node qa/quarantine-blockers.mjs \
-  --report qa/reports/latest-regenerated/smoke-report.json \
+  --readiness /var/www/html/mirrors/games/readiness.json \
   --filters /var/www/html/mirrors/games/admin.filters.json
 ```
 

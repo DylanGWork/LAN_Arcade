@@ -1,0 +1,471 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-07-11T01:00:00Z",
+  "receipts": [
+    {
+      "receiptId": "pillage-create-world-20260618",
+      "entry": {
+        "entryId": "pillage-first-lan",
+        "recordId": "record:catalog:pillage-first-lan",
+        "entityId": "game:catalog:pillage-first-lan"
+      },
+      "contentType": "single-player",
+      "target": "/mirrors/pillage-first-lan/",
+      "fingerprint": {
+        "algorithm": "sha256",
+        "kind": "registry-source",
+        "sourceCollection": "catalog",
+        "value": "5b527efdd5107407e729b86e9978bd420a64af014ace78cac9920012a53b4057"
+      },
+      "runner": {
+        "name": "legacy-evidence-import",
+        "commit": "028b5da"
+      },
+      "environment": {
+        "lanOrigin": "http://192.168.1.106",
+        "deviceProfile": "desktop-chromium",
+        "offline": true
+      },
+      "tier": "T3",
+      "outcome": "pass",
+      "assertions": [
+        {
+          "id": "create-world",
+          "description": "Created a new local world and reached its game state",
+          "passed": true
+        }
+      ],
+      "observedAt": "2026-06-18T07:32:00Z",
+      "recordedAt": "2026-06-18T07:32:00Z",
+      "expiresAt": "2027-06-18T07:32:00Z",
+      "evidencePaths": [
+        "qa/reports/pillage-first-live-create-20260618T073200Z/result.json"
+      ]
+    },
+    {
+      "receiptId": "simcity-zoning-20260619",
+      "entry": {
+        "entryId": "classic-pc:simcity-classic-dos-ma",
+        "recordId": "record:classic-pc:simcity-classic-dos-ma",
+        "entityId": "game:classic-pc:simcity-classic-dos-ma"
+      },
+      "contentType": "single-player",
+      "target": "/mirrors/private-dos-vault/play.html?id=simcity-classic-dos-ma",
+      "fingerprint": {
+        "algorithm": "sha256",
+        "kind": "registry-source",
+        "sourceCollection": "classic-pc",
+        "value": "582f819dc5bdc52d352b86f1ea2358fbbcdfd56f7611451471f62ff612441c22"
+      },
+      "runner": {
+        "name": "legacy-evidence-import",
+        "commit": "028b5da"
+      },
+      "environment": {
+        "lanOrigin": "http://192.168.1.106",
+        "deviceProfile": "desktop-chromium",
+        "offline": true
+      },
+      "tier": "T3",
+      "outcome": "pass",
+      "assertions": [
+        {
+          "id": "city-state-change",
+          "description": "Started a city, placed residential zoning, and funds changed",
+          "passed": true
+        }
+      ],
+      "observedAt": "2026-06-19T12:28:55Z",
+      "recordedAt": "2026-06-19T12:28:55Z",
+      "expiresAt": "2027-06-19T12:28:55Z",
+      "evidencePaths": [
+        "qa/reports/private-dos-vault/20260619T122855Z/report.json"
+      ]
+    },
+    {
+      "receiptId": "lemmings-ts-launch-20260628",
+      "entry": {
+        "entryId": "lemmings",
+        "recordId": "record:catalog:lemmings",
+        "entityId": "game:classic:lemmings"
+      },
+      "contentType": "single-player",
+      "target": "/mirrors/lemmings/",
+      "fingerprint": {
+        "algorithm": "sha256",
+        "kind": "registry-source",
+        "sourceCollection": "catalog",
+        "value": "5b527efdd5107407e729b86e9978bd420a64af014ace78cac9920012a53b4057"
+      },
+      "runner": {
+        "name": "legacy-evidence-import",
+        "commit": "028b5da"
+      },
+      "environment": {
+        "lanOrigin": "http://192.168.1.106",
+        "deviceProfile": "desktop-chromium",
+        "offline": true
+      },
+      "tier": "T2",
+      "outcome": "partial",
+      "assertions": [
+        {
+          "id": "level-start",
+          "description": "Browser route reached a running level",
+          "passed": true
+        },
+        {
+          "id": "meaningful-skill-action",
+          "description": "No completed skill assignment or level completion was verified",
+          "passed": false
+        }
+      ],
+      "observedAt": "2026-06-28T08:00:00Z",
+      "recordedAt": "2026-06-28T08:00:00Z",
+      "expiresAt": "2026-09-28T08:00:00Z",
+      "evidencePaths": [
+        "qa/reports/lemmings-ts-smoke/report.json"
+      ]
+    },
+    {
+      "receiptId": "lemmings-dos-crash-20260628",
+      "entry": {
+        "entryId": "classic-pc:lemmings-ma",
+        "recordId": "record:classic-pc:lemmings-ma",
+        "entityId": "game:classic:lemmings"
+      },
+      "contentType": "single-player",
+      "target": "/mirrors/private-dos-vault/play.html?id=lemmings-ma",
+      "fingerprint": {
+        "algorithm": "sha256",
+        "kind": "registry-source",
+        "sourceCollection": "classic-pc",
+        "value": "582f819dc5bdc52d352b86f1ea2358fbbcdfd56f7611451471f62ff612441c22"
+      },
+      "runner": {
+        "name": "legacy-evidence-import",
+        "commit": "028b5da"
+      },
+      "environment": {
+        "lanOrigin": "http://192.168.1.106",
+        "deviceProfile": "desktop-chromium",
+        "offline": true
+      },
+      "tier": "T2",
+      "outcome": "fail",
+      "assertions": [
+        {
+          "id": "stable-level",
+          "description": "DOS browser runtime remained stable after level start",
+          "passed": false
+        }
+      ],
+      "observedAt": "2026-06-28T06:38:55Z",
+      "recordedAt": "2026-06-28T06:38:55Z",
+      "expiresAt": "2026-09-28T06:38:55Z",
+      "evidencePaths": [
+        "qa/reports/private-dos-vault-playtest/lemmings-variant-summary.json"
+      ]
+    },
+    {
+      "receiptId": "simant-input-partial-20260625",
+      "entry": {
+        "entryId": "classic-pc:simant-ma",
+        "recordId": "record:classic-pc:simant-ma",
+        "entityId": "game:classic-pc:simant-ma"
+      },
+      "contentType": "single-player",
+      "target": "/mirrors/private-dos-vault/play.html?id=simant-ma",
+      "fingerprint": {
+        "algorithm": "sha256",
+        "kind": "registry-source",
+        "sourceCollection": "classic-pc",
+        "value": "582f819dc5bdc52d352b86f1ea2358fbbcdfd56f7611451471f62ff612441c22"
+      },
+      "runner": {
+        "name": "legacy-evidence-import",
+        "commit": "028b5da"
+      },
+      "environment": {
+        "lanOrigin": "http://192.168.1.106",
+        "deviceProfile": "desktop-chromium",
+        "offline": true
+      },
+      "tier": "T2",
+      "outcome": "partial",
+      "assertions": [
+        {
+          "id": "launch-input",
+          "description": "Game launched and accepted input",
+          "passed": true
+        },
+        {
+          "id": "meaningful-colony-action",
+          "description": "A durable colony action was not recorded",
+          "passed": false
+        }
+      ],
+      "observedAt": "2026-06-25T22:15:43Z",
+      "recordedAt": "2026-06-25T22:15:43Z",
+      "expiresAt": "2026-09-25T22:15:43Z",
+      "evidencePaths": [
+        "qa/reports/audit-private-dos-simant-20260626/run-20260625T221543Z/report.json"
+      ]
+    },
+    {
+      "receiptId": "aladdin-black-output-20260710",
+      "entry": {
+        "entryId": "game-boy-vault:aladdin",
+        "recordId": "record:game-boy-vault:aladdin",
+        "entityId": "game:game-boy:aladdin"
+      },
+      "contentType": "single-player",
+      "target": "/mirrors/private-rom-vault/play.html?id=aladdin",
+      "fingerprint": {
+        "algorithm": "sha256",
+        "kind": "registry-source",
+        "sourceCollection": "game-boy-vault",
+        "value": "90fc07dfce6d4f5f22068f1a57702b98b08bc0a7b3c4a512fa52aecbe790243d"
+      },
+      "runner": {
+        "name": "legacy-evidence-import",
+        "commit": "028b5da"
+      },
+      "environment": {
+        "lanOrigin": "http://192.168.1.106",
+        "deviceProfile": "desktop-chromium",
+        "offline": true
+      },
+      "tier": "T2",
+      "outcome": "fail",
+      "assertions": [
+        {
+          "id": "visible-gameplay",
+          "description": "Emulator produced visible playable output",
+          "passed": false
+        }
+      ],
+      "observedAt": "2026-07-10T10:00:00Z",
+      "recordedAt": "2026-07-10T10:00:00Z",
+      "expiresAt": "2026-10-10T10:00:00Z",
+      "evidencePaths": [
+        "agent-handoffs/phase5-gameplay-qa/outbox/READY_FOR_MAIN_AGENT.md"
+      ]
+    },
+    {
+      "receiptId": "endless-sky-window-partial-20260617",
+      "entry": {
+        "entryId": "endless-sky-lan",
+        "recordId": "record:catalog:endless-sky-lan",
+        "entityId": "game:catalog:endless-sky-lan"
+      },
+      "contentType": "single-player",
+      "target": "/mirrors/endless-sky-lan/",
+      "fingerprint": {
+        "algorithm": "sha256",
+        "kind": "registry-source",
+        "sourceCollection": "catalog",
+        "value": "5b527efdd5107407e729b86e9978bd420a64af014ace78cac9920012a53b4057"
+      },
+      "runner": {
+        "name": "legacy-evidence-import",
+        "commit": "028b5da"
+      },
+      "environment": {
+        "lanOrigin": "http://192.168.1.106",
+        "deviceProfile": "desktop-chromium",
+        "offline": true
+      },
+      "tier": "T2",
+      "outcome": "partial",
+      "assertions": [
+        {
+          "id": "desktop-launch",
+          "description": "Desktop client window launched",
+          "passed": true
+        },
+        {
+          "id": "meaningful-flight",
+          "description": "A complete player action was not recorded",
+          "passed": false
+        }
+      ],
+      "observedAt": "2026-06-17T11:05:43Z",
+      "recordedAt": "2026-06-17T11:05:43Z",
+      "expiresAt": "2026-09-17T11:05:43Z",
+      "evidencePaths": [
+        "qa/reports/native-client-next-ten-endless-rerun/endless-sky-lan-20260617T110543Z/report.txt"
+      ]
+    },
+    {
+      "receiptId": "mindustry-service-only-20260614",
+      "entry": {
+        "entryId": "mindustry-lan",
+        "recordId": "record:catalog:mindustry-lan",
+        "entityId": "game:catalog:mindustry-lan"
+      },
+      "contentType": "hosted",
+      "target": "/mirrors/mindustry-lan/",
+      "fingerprint": {
+        "algorithm": "sha256",
+        "kind": "registry-source",
+        "sourceCollection": "catalog",
+        "value": "5b527efdd5107407e729b86e9978bd420a64af014ace78cac9920012a53b4057"
+      },
+      "runner": {
+        "name": "legacy-evidence-import",
+        "commit": "028b5da"
+      },
+      "environment": {
+        "lanOrigin": "http://192.168.1.106",
+        "deviceProfile": "desktop-chromium",
+        "offline": true
+      },
+      "tier": "T2",
+      "outcome": "partial",
+      "assertions": [
+        {
+          "id": "service-start",
+          "description": "Dedicated service start was checked",
+          "passed": true
+        },
+        {
+          "id": "two-client-session",
+          "description": "Two real clients did not complete a session",
+          "passed": false
+        }
+      ],
+      "observedAt": "2026-06-14T00:10:49Z",
+      "recordedAt": "2026-06-14T00:10:49Z",
+      "expiresAt": "2026-09-14T00:10:49Z",
+      "evidencePaths": [
+        "qa/reports/service-smoke/mindustry-host-final-20260614T001049Z.txt"
+      ]
+    },
+    {
+      "receiptId": "unciv-service-only-20260614",
+      "entry": {
+        "entryId": "unciv-lan",
+        "recordId": "record:catalog:unciv-lan",
+        "entityId": "game:catalog:unciv-lan"
+      },
+      "contentType": "hosted",
+      "target": "/mirrors/unciv-lan/",
+      "fingerprint": {
+        "algorithm": "sha256",
+        "kind": "registry-source",
+        "sourceCollection": "catalog",
+        "value": "5b527efdd5107407e729b86e9978bd420a64af014ace78cac9920012a53b4057"
+      },
+      "runner": {
+        "name": "legacy-evidence-import",
+        "commit": "028b5da"
+      },
+      "environment": {
+        "lanOrigin": "http://192.168.1.106",
+        "deviceProfile": "desktop-chromium",
+        "offline": true
+      },
+      "tier": "T2",
+      "outcome": "partial",
+      "assertions": [
+        {
+          "id": "turn-file-loop",
+          "description": "Local turn-file loop was checked",
+          "passed": true
+        },
+        {
+          "id": "two-client-turn",
+          "description": "Two real clients did not exchange and load a turn",
+          "passed": false
+        }
+      ],
+      "observedAt": "2026-06-14T00:15:55Z",
+      "recordedAt": "2026-06-14T00:15:55Z",
+      "expiresAt": "2026-09-14T00:15:55Z",
+      "evidencePaths": [
+        "qa/reports/service-smoke/unciv-file-loop-final-20260614T001555Z.json"
+      ]
+    },
+    {
+      "receiptId": "tank-backend-down-20260711",
+      "entry": {
+        "entryId": "lan-tank-arena",
+        "recordId": "record:catalog:lan-tank-arena",
+        "entityId": "game:catalog:lan-tank-arena"
+      },
+      "contentType": "hosted",
+      "target": "/mirrors/lan-tank-arena/",
+      "fingerprint": {
+        "algorithm": "sha256",
+        "kind": "registry-source",
+        "sourceCollection": "catalog",
+        "value": "5b527efdd5107407e729b86e9978bd420a64af014ace78cac9920012a53b4057"
+      },
+      "runner": {
+        "name": "legacy-evidence-import",
+        "commit": "028b5da"
+      },
+      "environment": {
+        "lanOrigin": "http://192.168.1.106",
+        "deviceProfile": "desktop-chromium",
+        "offline": true
+      },
+      "tier": "T1",
+      "outcome": "blocked",
+      "assertions": [
+        {
+          "id": "backend-health",
+          "description": "Tank backend health endpoint responded",
+          "passed": false
+        }
+      ],
+      "observedAt": "2026-07-11T01:00:00Z",
+      "recordedAt": "2026-07-11T01:00:00Z",
+      "expiresAt": "2026-08-11T01:00:00Z",
+      "evidencePaths": [
+        "qa/readiness/baseline-observations.json"
+      ]
+    },
+    {
+      "receiptId": "veloren-no-session-20260614",
+      "entry": {
+        "entryId": "veloren-lan",
+        "recordId": "record:catalog:veloren-lan",
+        "entityId": "game:catalog:veloren-lan"
+      },
+      "contentType": "hosted",
+      "target": "/mirrors/veloren-lan/",
+      "fingerprint": {
+        "algorithm": "sha256",
+        "kind": "registry-source",
+        "sourceCollection": "catalog",
+        "value": "5b527efdd5107407e729b86e9978bd420a64af014ace78cac9920012a53b4057"
+      },
+      "runner": {
+        "name": "legacy-evidence-import",
+        "commit": "028b5da"
+      },
+      "environment": {
+        "lanOrigin": "http://192.168.1.106",
+        "deviceProfile": "desktop-chromium",
+        "offline": true
+      },
+      "tier": "T1",
+      "outcome": "blocked",
+      "assertions": [
+        {
+          "id": "playable-session",
+          "description": "A local server and client completed a playable session",
+          "passed": false
+        }
+      ],
+      "observedAt": "2026-06-14T05:33:00Z",
+      "recordedAt": "2026-06-14T05:33:00Z",
+      "expiresAt": "2026-09-14T05:33:00Z",
+      "evidencePaths": [
+        "qa/reports/service-smoke/veloren-lan-20260614T053300Z/report.txt"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,115 @@
+{
+  "schemaVersion": 1,
+  "policyId": "lan-arcade-qa-readiness-v1",
+  "tiers": {
+    "T0": {
+      "rank": 0,
+      "label": "Inventory",
+      "meaning": "Identity, catalog, or local-file observation only."
+    },
+    "T1": {
+      "rank": 1,
+      "label": "Surface",
+      "meaning": "Page, service, canvas, or package surface is reachable."
+    },
+    "T2": {
+      "rank": 2,
+      "label": "Launch and input",
+      "meaning": "The target launches and accepts relevant player input."
+    },
+    "T3": {
+      "rank": 3,
+      "label": "Meaningful single-player action",
+      "meaning": "A title-specific action changes meaningful game state."
+    },
+    "T4": {
+      "rank": 4,
+      "label": "End-to-end multiplayer or persistence",
+      "meaning": "Real clients complete a multiplayer flow, or a save/reload flow restores meaningful state."
+    }
+  },
+  "outcomes": [
+    "pass",
+    "partial",
+    "fail",
+    "blocked",
+    "unverified"
+  ],
+  "promotionStates": [
+    "ready",
+    "limited",
+    "quarantined",
+    "research"
+  ],
+  "contentTypes": [
+    "single-player",
+    "hosted",
+    "multiplayer",
+    "collection",
+    "research"
+  ],
+  "readyThresholds": {
+    "single-player": "T3",
+    "hosted": "T4",
+    "multiplayer": "T4"
+  },
+  "requireOfflineForReady": true,
+  "requireExplicitExpiry": true,
+  "entrySources": {
+    "catalog": {
+      "prefix": "",
+      "recordTypes": [
+        "launcher-card"
+      ],
+      "collectionTarget": "/mirrors/games/"
+    },
+    "classic-pc": {
+      "prefix": "classic-pc:",
+      "recordTypes": [
+        "title-record"
+      ],
+      "collectionTarget": "/mirrors/private-dos-vault/"
+    },
+    "game-boy-vault": {
+      "prefix": "game-boy-vault:",
+      "recordTypes": [
+        "title-record"
+      ],
+      "collectionTarget": "/mirrors/private-rom-vault/"
+    },
+    "game-boy-curated": {
+      "prefix": "game-boy-wave-1:",
+      "recordTypes": [
+        "collection-membership"
+      ],
+      "collectionTarget": "/mirrors/private-rom-wave-1/"
+    },
+    "board-games": {
+      "prefix": "board-games-wave-1:",
+      "recordTypes": [
+        "research-row"
+      ],
+      "collectionTarget": "/mirrors/board-games-wave-1/"
+    }
+  },
+  "adapterContentTypes": {
+    "browser": "single-player",
+    "browser-emulator": "single-player",
+    "desktop-client": "single-player",
+    "hosted-lan": "hosted",
+    "linux-package": "single-player",
+    "package-download": "single-player"
+  },
+  "contentTypeOverrides": {
+    "pillage-first-lan": "single-player",
+    "evolab": "single-player",
+    "gene-garden": "single-player"
+  },
+  "publicLabels": {
+    "ready": "Ready to play",
+    "limited": "Needs play testing",
+    "quarantined": "Not ready",
+    "research": "Planning only",
+    "collection": "Open collection"
+  }
+}

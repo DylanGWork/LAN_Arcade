@@ -49,7 +49,10 @@
     "qa:offline-links": "python3 scripts/audit_public_external_links.py --root ${MIRRORS_DIR:-/var/www/html/mirrors} && npm run qa:blocked-guides",
     "lemmings:build": "python3 scripts/build_lemmings_ts.py",
     "qa:lemmings": "node qa/lemmings-ts-smoke.mjs",
-    "qa:blocked-guides": "python3 scripts/audit_blocked_public_guides.py --root ${MIRRORS_DIR:-/var/www/html/mirrors}"
+    "qa:blocked-guides": "python3 scripts/audit_blocked_public_guides.py --root ${MIRRORS_DIR:-/var/www/html/mirrors}",
+    "qa:readiness": "node --test qa/readiness/core.test.mjs && node qa/readiness/live-invariants.mjs",
+    "qa:readiness:compile": "node qa/readiness/build-readiness.mjs",
+    "qa:readiness:browser": "node qa/readiness/browser-smoke.mjs"
   },
   "devDependencies": {
     "@types/node": "20.19.1",

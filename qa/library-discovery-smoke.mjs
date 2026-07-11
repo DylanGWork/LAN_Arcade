@@ -60,11 +60,13 @@ try {
     title: node.querySelector('.card-title')?.textContent?.trim() || '',
     href: node.href || node.querySelector('.card-link')?.href || '',
     launch: node.querySelector('.launch')?.textContent?.trim() || '',
+    chips: Array.from(node.querySelectorAll('.detail-chip')).map((chip) => chip.textContent?.trim() || ''),
   })));
   const simant = cards.find((card) => card.title === 'SimAnt');
   addCheck(result, 'SimAnt search result appears', Boolean(simant));
   addCheck(result, 'SimAnt result is direct play link', Boolean(simant && simant.href.includes('/mirrors/private-dos-vault/play.html?id=simant-ma')));
-  addCheck(result, 'SimAnt action is Play', Boolean(simant && simant.launch === 'Play'));
+  addCheck(result, 'SimAnt action is truthful Try', Boolean(simant && simant.launch === 'Try'));
+  addCheck(result, 'SimAnt is not falsely promoted', Boolean(simant && simant.chips && simant.chips.includes('Needs play testing')));
 
   const simantCard = page.locator('.game-card, .featured-card').filter({ hasText: 'SimAnt' }).first();
   await simantCard.locator('.favorite-button').click();

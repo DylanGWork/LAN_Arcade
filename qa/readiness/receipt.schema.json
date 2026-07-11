@@ -1,0 +1,155 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://gannannet.local/schemas/lan-arcade-readiness-receipt-v1.json",
+  "title": "LAN Arcade QA readiness receipt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "receiptId",
+    "entry",
+    "contentType",
+    "target",
+    "fingerprint",
+    "runner",
+    "environment",
+    "tier",
+    "outcome",
+    "assertions",
+    "observedAt",
+    "recordedAt",
+    "expiresAt",
+    "evidencePaths"
+  ],
+  "properties": {
+    "receiptId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "entry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "entryId",
+        "recordId",
+        "entityId"
+      ],
+      "properties": {
+        "entryId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "recordId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "entityId": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "contentType": {
+      "enum": [
+        "single-player",
+        "hosted",
+        "multiplayer",
+        "collection",
+        "research"
+      ]
+    },
+    "target": {
+      "type": "string",
+      "pattern": "^/mirrors/"
+    },
+    "fingerprint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "algorithm",
+        "kind",
+        "sourceCollection",
+        "value"
+      ],
+      "properties": {
+        "algorithm": {
+          "const": "sha256"
+        },
+        "kind": {
+          "const": "registry-source"
+        },
+        "sourceCollection": {
+          "type": "string",
+          "minLength": 1
+        },
+        "value": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    },
+    "runner": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "commit"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "commit": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "environment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "lanOrigin",
+        "deviceProfile",
+        "offline"
+      ],
+      "properties": {
+        "lanOrigin": {
+          "type": "string",
+          "minLength": 1
+        },
+        "deviceProfile": {
+          "type": "string",
+          "minLength": 1
+        },
+        "offline": {
+          "type": "boolean"
+        }
+      }
+    },
+    "tier": { "enum": ["T0", "T1", "T2", "T3", "T4"] },
+    "outcome": { "enum": ["pass", "partial", "fail", "blocked", "unverified"] },
+    "assertions": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "description", "passed"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "description": { "type": "string", "minLength": 1 },
+          "passed": { "type": "boolean" }
+        }
+      }
+    },
+    "observedAt": { "type": "string", "format": "date-time" },
+    "recordedAt": { "type": "string", "format": "date-time" },
+    "expiresAt": { "type": "string", "format": "date-time" },
+    "evidencePaths": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 }
+    }
+  }
+}

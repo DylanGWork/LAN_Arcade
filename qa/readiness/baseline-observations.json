@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "observedAt": "2026-07-11T01:00:00Z",
+  "host": "GannanNet",
+  "observations": {
+    "webserver": {
+      "status": "healthy",
+      "evidence": "Docker container webserver reported Up and healthy"
+    },
+    "tankStatic": {
+      "httpStatus": 200,
+      "url": "http://127.0.0.1/mirrors/lan-tank-arena/"
+    },
+    "tankBackend": {
+      "httpStatus": 0,
+      "url": "http://127.0.0.1:8787/tank-arena/healthz",
+      "error": "connection refused"
+    },
+    "mindustryContainers": [],
+    "uncivContainers": [],
+    "velorenContainers": []
+  }
+}
