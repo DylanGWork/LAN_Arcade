@@ -57,7 +57,9 @@
     "qa:account-saves": "node qa/account-save-isolation-smoke.mjs",
     "qa:family-accounts": "node qa/family-account-browser-smoke.mjs",
     "qa:deployment-profiles": "node qa/deployment-profile.test.mjs",
-    "qa:deployment-profile:browser": "node qa/deployment-profile-browser-smoke.mjs"
+    "qa:deployment-profile:browser": "node qa/deployment-profile-browser-smoke.mjs",
+    "qa:player-guides": "node qa/player-guides-smoke.mjs",
+    "qa:release": "bash scripts/run_release_gate.sh"
   },
   "devDependencies": {
     "@types/node": "20.19.1",

@@ -64,19 +64,22 @@ local mail stack; the full mode can use it for account recovery and invitations.
 
 ## Safe VM Regeneration
 
-On GannanNet, regenerate the catalog and pages without installing packages, configuring Apache, or touching nginx:
+On GannanNet, regenerate player pages without rebuilding the catalog, copying
+game payloads, installing packages, configuring Apache, or touching nginx:
 
 ```sh
 ARCADE_NAME="GannanNet" \
 LAN_ARCADE_DEPLOYMENT_PROFILE=full \
-LAN_ARCADE_SKIP_PACKAGE_INSTALL=1 \
-LAN_ARCADE_SKIP_ADMIN_AUTH=1 \
-LAN_ARCADE_SKIP_MIRROR=1 \
-LAN_ARCADE_CATALOG_SOURCE=metadata-existing \
+LAN_ARCADE_PAGES_ONLY=1 \
 bash ./setup_lan_arcade.sh
 ```
 
-Remove only `LAN_ARCADE_SKIP_MIRROR=1` when you intentionally want to refresh game mirrors while still leaving the web server alone.
+This preserves catalog/readiness fingerprints while rebuilding the library,
+account page, and Guides & Manuals. Use
+`LAN_ARCADE_REGISTRY_INDEX_ONLY=1` when only registry/readiness/library output
+changed. Run the broader skip-variable regeneration only when intentionally
+rebuilding catalog inputs or local payloads, after a backup and clean-input
+review.
 
 ## Generic First Install
 
@@ -126,6 +129,18 @@ Player pages should say `Open offline website`, `Guides & Manuals`, or `Download
 ## QA Rules
 
 A page returning 200 is not enough.
+
+Before a release or major deployment, run the combined gate:
+
+```sh
+npm run qa:release
+```
+
+It checks identity and secrets, deployment profiles, readiness, canonical
+inventory/search, player guides, offline links, account/save isolation, and a
+live two-client Tank Arena match. Set `ARCADE_QA_USERNAME` and
+`ARCADE_QA_PASSWORD` to include the credentialed family-account browser flow.
+
 
 Recommended checks while developing:
 

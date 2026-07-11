@@ -2,6 +2,35 @@
 
 LAN Arcade is growing from a camping-friendly static arcade into an offline game library for local entertainment when internet access is unavailable. The model is closer to a small LAN Steam library than a single web page: games can be browser-playable, emulator-backed, native-client LAN services, or heavier experimental servers that are started on demand.
 
+## 2026-07-11 Platform Baseline
+
+The current platform foundation is deliberately split into bounded systems:
+
+1. **Canonical registry:** one title identity across overlapping shelves and source rows.
+2. **Readiness authority:** evidence-backed Ready, Limited, Quarantined, and Research states.
+3. **Launcher adapters:** browser, emulator, desktop/package, and hosted-service actions remain distinct.
+4. **Family accounts:** stable local UUIDs, adult/child/admin roles, favourites, activity, and scoped save records.
+5. **Deployment profiles:** one codebase with `full` home-server and `pi` camping modes.
+6. **Player guides:** public language and play instructions are separated from operator runbooks.
+7. **Game repositories:** complex games such as Pillage First evolve outside the platform repository and integrate through a release/launcher boundary.
+
+Current inventory semantics:
+
+- 1,106 canonical game titles;
+- 7 collection wrappers;
+- 879 titles with local payloads;
+- 790 titles with a launch path to try;
+- 153 top-level library cards;
+- only 3 entries currently satisfy the evidence-backed Ready contract.
+
+The next expansion priority is not raw intake volume. It is raising Limited entries
+to Ready through reproducible full-flow gameplay checks, offline guides, truthful
+launch actions, and account/save adapters where the game supports progress.
+
+Helper agents may research artwork, intake, or gameplay evidence, but the main
+platform agent owns schema changes, readiness promotion, deployment, and release
+approval. No helper may mark a game Ready from a page-load result.
+
 ## Operating Rules
 
 - Do not accept a 200 response as proof that a game works. Every playable entry needs a content/render check and an interaction check.

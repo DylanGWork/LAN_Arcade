@@ -1,5 +1,28 @@
 # VM Development and QA
 
+## 2026-07-11 Current Authority
+
+- The public library is generated from 1,106 canonical game titles plus 7 collection wrappers. The 153 top-level cards are launchers and shelves, not the total game count.
+- `readiness.json` is authoritative for public claims: current evidence records 3 Ready entries, 1,099 Limited entries, 3 Quarantined entries, and 213 Research entries.
+- `LAN_ARCADE_DEPLOYMENT_PROFILE=full|pi` selects one of two modes from the same codebase. GannanNet must finish in `full`.
+- The live Tank client uses the same-origin `/tank-arena/ws` proxy and `lan-tank-arena.service`; verify both health and a real two-client match.
+- The Arcade API enforces family-account roles and account-scoped save records. Only three original games currently use the shared synchronized save adapter.
+- Public `/mirrors/games/wiki/` is the player-facing Guides & Manuals page. Technical procedures belong here or under `/mirrors/games/admin/`, never on the player guide.
+- Pillage First development is bounded by the separate `/home/dylan/Pillage-First-LAN` repository. Arcade integration should consume a release/adapter instead of growing game logic in this repository.
+- Never treat HTTP 200, a menu, or an emulator canvas as gameplay proof. Readiness promotion requires the meaningful evidence tier defined in `config/readiness-policy.json`.
+
+The smallest safe VM-only regeneration remains registry/index mode:
+
+```sh
+ARCADE_NAME=GannanNet \
+LAN_ARCADE_DEPLOYMENT_PROFILE=full \
+LAN_ARCADE_REGISTRY_INDEX_ONLY=1 \
+bash ./setup_lan_arcade.sh
+```
+
+Use the broader safe regeneration later in this document only when generated
+account, download, and player-guide pages also need rebuilding.
+
 This project is currently a script-driven LAN arcade, not a conventional app server.
 
 ## Current Architecture
@@ -14,20 +37,29 @@ This project is currently a script-driven LAN arcade, not a conventional app ser
 
 ## Safe VM Regeneration
 
-Regenerate catalog/pages against already mirrored games without installing packages, configuring Apache, or touching nginx:
+Regenerate player pages without rebuilding catalog inputs or game payloads:
 
 ```sh
 ARCADE_NAME="GannanNet" \
-LAN_ARCADE_SKIP_PACKAGE_INSTALL=1 \
-LAN_ARCADE_SKIP_ADMIN_AUTH=1 \
-LAN_ARCADE_SKIP_MIRROR=1 \
-LAN_ARCADE_CATALOG_SOURCE=metadata-existing \
+LAN_ARCADE_DEPLOYMENT_PROFILE=full \
+LAN_ARCADE_PAGES_ONLY=1 \
 bash ./setup_lan_arcade.sh
 ```
 
-To also download or refresh mirrored games from metadata while still leaving nginx/Apache alone, remove only `LAN_ARCADE_SKIP_MIRROR=1`.
+Pages-only mode forces package, Apache/admin, mirror, device, and service skips.
+It rebuilds canonical/readiness output from the existing deployed catalog, then
+writes the library, account, and Guides & Manuals pages.
 
-For registry, readiness, and library-page changes only, use `LAN_ARCADE_REGISTRY_INDEX_ONLY=1`. The script forces every package, Apache, mirror, device, and service skip before any host work.
+For registry, readiness, and library-index changes only, use
+`LAN_ARCADE_REGISTRY_INDEX_ONLY=1`.
+
+The older broad skip-variable regeneration also redeploys local bundles and
+rebuilds `catalog.json`. That can legitimately change source fingerprints and
+invalidate gameplay receipts. Use it only after backing up generated pages,
+confirming relevant generator inputs are intentional, and planning to re-run
+affected gameplay gates. Remove `LAN_ARCADE_SKIP_MIRROR=1` only when
+intentionally refreshing remote game content.
+
 
 The generated public files are browser-readable:
 

@@ -1,8 +1,32 @@
 # LAN Arcade Game Library Account And Email Architecture
 
-Last updated: 2026-06-28
-Status: foundation in progress; full save migration is not implemented yet.
+Last updated: 2026-07-11
+Status: family-account foundation live; launcher save migration remains partial.
 
+## 2026-07-11 Implemented Authority
+
+Confirmed and regression-tested on GannanNet:
+
+- stable UUID-backed local accounts and sessions;
+- admin, adult, child, and guest roles with server-enforced account-creation rules;
+- adult family organizers can create and switch to their own child accounts;
+- anonymous callers cannot list accounts or assign privileged roles;
+- favourites and recent activity follow the signed-in account;
+- the shared save API isolates records by account UUID, game ID, and slot;
+- two-account A-to-B-to-A restore behavior is covered by `qa/account-save-isolation-smoke.mjs`;
+- user-data backups use `scripts/backup_arcade_user_data.sh` and SQLite integrity checks.
+
+Current save limits must remain visible in operator documentation:
+
+- Breachline Tactics, Circuit Foundry, and Outpost Siege use the shared synchronized save adapter.
+- EvoLab is account-local in its browser but is not yet a cross-device synchronized save.
+- EmulatorJS, js-dos, and most native/hosted games do not yet have account-isolated save adapters.
+- Email verification and password-reset delivery are planned against the local Mailu server but are not wired into the Arcade API yet.
+- Pillage First currently has its own world/session model and is not yet an Arcade-account multiplayer world.
+
+The `full` deployment profile uses full local accounts and recommends local
+mail. The `pi` profile allows guest or simple local accounts and does not
+require mail. Both profiles keep stable account UUIDs as the identity key.
 
 ## 2026-06-28 Implementation Update
 

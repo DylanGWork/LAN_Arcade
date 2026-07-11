@@ -70,3 +70,26 @@ Do not stop Docker globally.
 ## Current Known Issue
 
 As of 2026-06-12, the static LAN Tank Arena page returns `200`, but `lan-tank-arena.service` is inactive and `http://127.0.0.1:8787/tank-arena/healthz` does not respond. Treat Tank multiplayer as needing a service check/fix before claiming it is working.
+## Agent Ownership
+
+The main LAN Arcade agent is the release orchestrator. It owns:
+
+- canonical registry and readiness schemas;
+- launcher contracts and public wording;
+- deployment profiles, generation, and live deployment;
+- account/save architecture and the final release gate.
+
+Helper agents may gather artwork, research game intake, or produce gameplay QA
+evidence in their assigned workspace. They must not silently edit platform
+schemas, deploy services, promote readiness, or mix game-development work into
+the platform. Complex games use their own repository and hand back a versioned
+release or launcher adapter.
+
+## Current Authority
+
+- The live GannanNet deployment profile is `full`; use `pi` only for a lightweight export/test and restore `full` afterward.
+- Canonical inventory is generated from `canonical-registry.json`; 153 cards are not the total game count.
+- Public readiness comes only from `readiness.json` and its current evidence receipts.
+- `lan-tank-arena.service` is active/enabled and the same-origin WebSocket proxy is live. Re-run `npm run qa:tank:live` before claiming multiplayer remains healthy.
+- Pillage First development belongs in `/home/dylan/Pillage-First-LAN`; this repository owns only its Arcade integration.
+- Public `wiki/` is Guides & Manuals. Operator commands and internals belong in repository docs or the protected admin area.

@@ -16,6 +16,7 @@ LAN_ARCADE_SKIP_DEVICE_CHECKS="${LAN_ARCADE_SKIP_DEVICE_CHECKS:-0}"
 LAN_ARCADE_SKIP_OFFLINE_PATCH="${LAN_ARCADE_SKIP_OFFLINE_PATCH:-0}"
 LAN_ARCADE_SKIP_TANK_SERVICE="${LAN_ARCADE_SKIP_TANK_SERVICE:-0}"
 LAN_ARCADE_REGISTRY_INDEX_ONLY="${LAN_ARCADE_REGISTRY_INDEX_ONLY:-0}"
+LAN_ARCADE_PAGES_ONLY="${LAN_ARCADE_PAGES_ONLY:-0}"
 LAN_ARCADE_DEPLOYMENT_PROFILE="${LAN_ARCADE_DEPLOYMENT_PROFILE:-full}"
 LAN_TANK_HOST="${LAN_TANK_HOST:-0.0.0.0}"
 LAN_TANK_PORT="${LAN_TANK_PORT:-8787}"
@@ -34,9 +35,9 @@ if [ "$LAN_ARCADE_DEPLOYMENT_PROFILE" = "pi" ]; then
   LAN_ARCADE_SKIP_TANK_SERVICE=1
 fi
 
-# Registry/index-only mode is safe by definition. Keep this guard before any
-# package, Apache, mirror, device, or service work.
-if [ "$LAN_ARCADE_REGISTRY_INDEX_ONLY" = "1" ]; then
+# Registry/index-only and pages-only modes are safe by definition. Keep this
+# guard before any package, Apache, mirror, device, or service work.
+if [ "$LAN_ARCADE_REGISTRY_INDEX_ONLY" = "1" ] || [ "$LAN_ARCADE_PAGES_ONLY" = "1" ]; then
   LAN_ARCADE_SKIP_PACKAGE_INSTALL=1
   LAN_ARCADE_SKIP_ADMIN_AUTH=1
   LAN_ARCADE_SKIP_MIRROR=1
@@ -252,7 +253,7 @@ MIRROR_MISSING_REF_FAIL_THRESHOLD="${MIRROR_MISSING_REF_FAIL_THRESHOLD:-3}"
 # ---------- Arcade name prompt ----------
 DEFAULT_ARCADE_NAME="GannanNet"
 
-if [ "$LAN_ARCADE_REGISTRY_INDEX_ONLY" = "1" ]; then
+if [ "$LAN_ARCADE_REGISTRY_INDEX_ONLY" = "1" ] || [ "$LAN_ARCADE_PAGES_ONLY" = "1" ]; then
   ARCADE_NAME_USE="${ARCADE_NAME:-$DEFAULT_ARCADE_NAME}"
 elif [ -n "${ARCADE_NAME:-}" ]; then
   ARCADE_NAME_USE="$ARCADE_NAME"
@@ -2689,546 +2690,227 @@ write_wiki_index() {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>${arcade_name_html} LAN Arcade Wiki</title>
+  <title>${arcade_name_html} Guides &amp; Manuals</title>
   <style>
     :root {
-      --bg: #0a1420;
-      --panel: #122235;
-      --panel-soft: #0f1d2e;
-      --text: #eef4fa;
-      --muted: #a2b0bf;
-      --accent: #6bcf78;
-      --accent-soft: rgba(107, 207, 120, 0.15);
-      --border: #213245;
-      --danger: #ff8a80;
-      --radius: 12px;
+      color-scheme: dark;
+      --bg: #0a0d0f;
+      --panel: #151b1f;
+      --panel-soft: #1b2328;
+      --text: #f4f7f8;
+      --muted: #aeb8bd;
+      --line: #344047;
+      --green: #58d68d;
+      --green-soft: rgba(88,214,141,.14);
     }
     * { box-sizing: border-box; }
     body {
       margin: 0;
+      background: var(--bg);
+      color: var(--text);
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: radial-gradient(circle at top left, #10253a 0, #07101a 52%, #040a10 100%);
-      color: var(--text);
     }
-    .wrap {
-      max-width: 1150px;
-      margin: 0 auto;
-      padding: 1.4rem;
-    }
-    h1 {
-      margin: 0 0 0.45rem;
-      font-size: 1.9rem;
-    }
-    .subtitle {
-      margin: 0;
-      color: var(--muted);
-      line-height: 1.4;
-    }
-    .toolbar {
-      margin-top: 1rem;
-      display: flex;
-      gap: 0.55rem;
-      flex-wrap: wrap;
-    }
-    .link-btn {
-      text-decoration: none;
-      color: var(--text);
-      border: 1px solid var(--border);
-      border-radius: 999px;
-      padding: 0.4rem 0.9rem;
-      background: rgba(14, 26, 40, 0.85);
-      font-size: 0.84rem;
+    .wrap { width: min(1180px, calc(100% - 2rem)); margin: 0 auto; padding: 1.4rem 0 3rem; }
+    h1 { margin: 0; font-size: clamp(1.8rem, 4vw, 2.7rem); }
+    h2 { margin: 0; font-size: 1.12rem; }
+    p { color: var(--muted); line-height: 1.5; }
+    .toolbar { display: flex; gap: .55rem; flex-wrap: wrap; margin: 1rem 0 1.2rem; }
+    .button, .game-link {
       display: inline-flex;
       align-items: center;
-    }
-    .link-btn:hover { border-color: var(--accent); }
-    .grid {
-      margin-top: 1rem;
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-      gap: 0.85rem;
-    }
-    .screenshots {
-      margin-top: 1rem;
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      gap: 0.75rem;
-    }
-    .screenshots a {
-      display: block;
+      min-height: 42px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: .55rem .8rem;
       color: var(--text);
+      background: var(--panel);
       text-decoration: none;
-      font-size: 0.82rem;
       font-weight: 700;
     }
-    .screenshots img {
-      width: 100%;
-      display: block;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      background: #050b12;
-      margin-bottom: 0.35rem;
-    }
-    .panel {
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      background: linear-gradient(160deg, var(--panel-soft), #0c1826);
-      padding: 0.9rem;
-    }
-    .panel h2 {
-      margin: 0 0 0.55rem;
-      font-size: 1.05rem;
-    }
-    .panel p, .panel li {
-      margin: 0;
-      color: var(--muted);
-      line-height: 1.45;
-      font-size: 0.92rem;
-    }
-    .panel ul, .panel ol {
-      margin: 0.4rem 0 0;
-      padding-left: 1rem;
+    .button:hover, .game-link:hover { border-color: var(--green); }
+    .guide-grid, .game-grid {
       display: grid;
-      gap: 0.35rem;
+      grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr));
+      gap: .75rem;
     }
-    code {
-      background: rgba(162, 176, 191, 0.15);
-      color: #d7e7f6;
-      border-radius: 6px;
-      padding: 0.1rem 0.3rem;
-      font-size: 0.85em;
+    .guide, .game-card {
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: var(--panel);
+      padding: .9rem;
     }
-    .library {
-      margin-top: 1rem;
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      background: linear-gradient(160deg, #0d1d2d, #0a1622);
-      padding: 0.9rem;
-    }
-    .library-head {
-      display: flex;
-      justify-content: space-between;
-      align-items: end;
-      gap: 0.8rem;
-      flex-wrap: wrap;
-      margin-bottom: 0.75rem;
-    }
-    .library h2 {
-      margin: 0;
-      font-size: 1.1rem;
-    }
-    .summary {
-      color: var(--muted);
-      font-size: 0.88rem;
-    }
+    .guide p { margin: .45rem 0 0; }
+    .library { margin-top: 1.4rem; }
+    .library-head { display: flex; justify-content: space-between; gap: 1rem; align-items: end; flex-wrap: wrap; }
     .controls {
       display: grid;
-      grid-template-columns: 1fr 220px auto;
-      gap: 0.5rem;
-      margin-bottom: 0.7rem;
-      align-items: center;
+      grid-template-columns: minmax(220px, 1fr) minmax(180px, 280px);
+      gap: .6rem;
+      margin: .8rem 0;
     }
-    .controls input[type="search"], .controls select {
+    input, select {
       width: 100%;
-      border-radius: 10px;
-      border: 1px solid var(--border);
-      background: var(--panel);
+      min-height: 44px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--panel-soft);
       color: var(--text);
-      padding: 0.48rem 0.6rem;
+      padding: .55rem .7rem;
+      font: inherit;
     }
-    .controls label {
-      color: var(--muted);
-      font-size: 0.86rem;
-      display: inline-flex;
-      align-items: center;
-      gap: 0.35rem;
-      white-space: nowrap;
-    }
-    .table-wrap {
-      overflow: auto;
-      border: 1px solid var(--border);
-      border-radius: 10px;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      min-width: 800px;
-    }
-    thead th {
-      text-align: left;
-      font-size: 0.78rem;
-      text-transform: uppercase;
-      letter-spacing: 0.07em;
-      color: var(--muted);
-      background: rgba(13, 25, 38, 0.95);
-      position: sticky;
-      top: 0;
-      z-index: 1;
-    }
-    th, td {
-      border-bottom: 1px solid rgba(33, 50, 69, 0.7);
-      padding: 0.55rem 0.6rem;
-      vertical-align: top;
-      font-size: 0.86rem;
-    }
-    tbody tr:hover {
-      background: rgba(107, 207, 120, 0.06);
-    }
-    .game-link {
-      color: #c8f7d0;
-      text-decoration: none;
-      font-weight: 600;
-    }
-    .game-link:hover { text-decoration: underline; }
-    .hidden-yes { color: var(--danger); font-weight: 600; }
-    .hidden-no { color: #b9f6ca; }
-    .chip-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.3rem;
-    }
+    .game-card { display: grid; align-content: start; gap: .55rem; }
+    .game-card h3 { margin: 0; font-size: 1rem; }
+    .game-card p { margin: 0; font-size: .9rem; }
+    .chips { display: flex; flex-wrap: wrap; gap: .3rem; }
     .chip {
       border-radius: 999px;
-      padding: 0.1rem 0.45rem;
-      background: rgba(162, 176, 191, 0.16);
-      color: var(--muted);
-      font-size: 0.75rem;
-      line-height: 1.35;
+      background: var(--green-soft);
+      color: #dfffea;
+      padding: .15rem .45rem;
+      font-size: .73rem;
     }
-    .chip--category {
-      background: var(--accent-soft);
-      color: #d9f8df;
-    }
-    @media (max-width: 900px) {
-      .controls {
-        grid-template-columns: 1fr;
-      }
+    .empty { color: var(--muted); padding: 1rem 0; }
+    @media (max-width: 620px) {
+      .controls { grid-template-columns: 1fr; }
+      .wrap { width: min(100% - 1rem, 1180px); }
     }
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <h1>${arcade_name_html} LAN Arcade Wiki</h1>
-    <p class="subtitle">
-      Offline documentation and searchable game catalog for this LAN Arcade install.
-    </p>
+  <main class="wrap">
+    <h1>Guides &amp; Manuals</h1>
+    <p>Choose a game, learn what you need, and start playing without an internet connection.</p>
 
-    <div class="toolbar">
-      <a class="link-btn" href="../">Back To Arcade</a>
-      <a class="link-btn" href="../admin/">Admin Controls</a>
-      <a class="link-btn" href="../downloads/">Downloads</a>
-      <a class="link-btn" href="../downloads/lan-arcade-companion-debug.apk">Companion APK</a>
-    </div>
+    <nav class="toolbar" aria-label="Arcade links">
+      <a class="button" href="../">Back to game library</a>
+      <a class="button" href="../downloads/">Get games and apps</a>
+      <a class="button" href="../account/">Your account</a>
+    </nav>
 
-    <section class="grid">
-      <article class="panel">
-        <h2>Admin Controls</h2>
-        <ol>
-          <li>Open <code>/mirrors/games/admin/</code> and sign in.</li>
-          <li>Tick categories and games you want disabled.</li>
-          <li>Click <strong>Save Changes</strong> to write <code>admin.filters.json</code>.</li>
-          <li>Public arcade updates immediately using those filters.</li>
-        </ol>
+    <section class="guide-grid" aria-label="How to play">
+      <article class="guide">
+        <h2>Play in your browser</h2>
+        <p>Select <strong>Play</strong> or <strong>Try</strong>. Click inside the game before using its keyboard, mouse, or controller.</p>
       </article>
-
-      <article class="panel">
-        <h2>Core Files</h2>
-        <ul>
-          <li><code>/mirrors/games/catalog.json</code> - generated game data + categories.</li>
-          <li><code>/mirrors/games/admin.filters.json</code> - disabled categories and games.</li>
-          <li><code>/mirrors/games/index.html</code> - public arcade page.</li>
-          <li><code>/mirrors/games/wiki/index.html</code> - this offline wiki page.</li>
-          <li><code>/mirrors/games/downloads/</code> - Android APK and companion screenshots.</li>
-        </ul>
+      <article class="guide">
+        <h2>Classic and retro games</h2>
+        <p>Open the retro collection, choose a title, then use its on-screen controls. Each game page shows any special keys it needs.</p>
       </article>
-
-      <article class="panel">
-        <h2>Original Browser Games</h2>
-        <ul>
-          <li><code>outpost-siege</code> - tower defense with waves, upgrades, and local save progress.</li>
-          <li><code>breachline-tactics</code> - turn-based tactical grid combat with squad abilities.</li>
-          <li><code>circuit-foundry</code> - mini factory automation with generators, belts, and assemblers.</li>
-          <li><code>lan-tank-arena</code> - LAN multiplayer tank combat backed by a local WebSocket server.</li>
-        </ul>
+      <article class="guide">
+        <h2>Install on a computer</h2>
+        <p>Select <strong>Install / play</strong>, choose the Windows or Linux download for your device, and follow the short local instructions.</p>
       </article>
-
-      <article class="panel">
-        <h2>LAN Tank Arena</h2>
-        <ul>
-          <li>Play URL: <code>/mirrors/lan-tank-arena/</code>.</li>
-          <li>Service: <code>lan-tank-arena.service</code>.</li>
-          <li>Default health check: <code>http://127.0.0.1:8787/tank-arena/healthz</code>.</li>
-          <li>Players join with a callsign and shared room code from any LAN browser.</li>
-        </ul>
+      <article class="guide">
+        <h2>Join a LAN game</h2>
+        <p>Select <strong>Start / join</strong>. The game page shows whether you need a client, room code, server address, or another player.</p>
       </article>
-
-      <article class="panel">
-        <h2>Companion App</h2>
-        <ul>
-          <li>Android APK: <code>/mirrors/games/downloads/lan-arcade-companion-debug.apk</code>.</li>
-          <li>Downloads and install notes: <code>/mirrors/games/downloads/</code>.</li>
-          <li>Server URL on phones: <code>http://&lt;pi-ip&gt;/arcade-api/</code>.</li>
-          <li>Includes app-only games, local profiles, scores, and Pi service cards.</li>
-          <li>Mirrors the PestSense WiFi provisioning app handoff style: a direct APK download plus simple local instructions.</li>
-        </ul>
+      <article class="guide">
+        <h2>Play together at a table</h2>
+        <p>Board-game pages show player count, expected session length, and the locally saved rules or companion material available.</p>
       </article>
-
-      <article class="panel">
-        <h2>Update Flow</h2>
-        <ul>
-          <li>Edit <code>games.meta.sh</code> for new games or metadata.</li>
-          <li>Run <code>sudo ./setup_lan_arcade.sh</code> again.</li>
-          <li>Catalog, pages, and admin controls are regenerated.</li>
-          <li>Game folders with completion markers are skipped safely.</li>
-        </ul>
+      <article class="guide">
+        <h2>Keep your progress</h2>
+        <p>Sign in before playing account-aware games. Guest progress may stay only on the current device and browser.</p>
       </article>
-
-      <article class="panel">
-        <h2>QA Flow</h2>
-        <ul>
-          <li>Static mirror audit: <code>npm run qa:static</code>.</li>
-          <li>Catalog browser smoke: <code>npm run qa:smoke -- --catalog</code>.</li>
-          <li>Focused game gate: <code>npm run qa:game -- &lt;game-id&gt;</code>.</li>
-          <li>Tank multiplayer gate: <code>npm run qa:tank</code>.</li>
-          <li>Chunk long runs with <code>--offset</code> and <code>--limit</code>.</li>
-        </ul>
-      </article>
-    </section>
-
-    <section class="panel">
-      <h2>Companion Screenshots</h2>
-      <p>These screenshots are copied into the offline downloads folder when setup runs.</p>
-      <div class="screenshots">
-        <a href="../downloads/screenshots/companion-catalog.png"><img src="../downloads/screenshots/companion-catalog.png" alt="Companion catalog screenshot">Catalog and profiles</a>
-        <a href="../downloads/screenshots/companion-trailguard.png"><img src="../downloads/screenshots/companion-trailguard.png" alt="Trailguard TD screenshot">Trailguard TD</a>
-        <a href="../downloads/screenshots/companion-unciv-service.png"><img src="../downloads/screenshots/companion-unciv-service.png" alt="Unciv service screenshot">Unciv service card</a>
-        <a href="../downloads/screenshots/companion-mindustry-service.png"><img src="../downloads/screenshots/companion-mindustry-service.png" alt="Mindustry service screenshot">Mindustry service card</a>
-      </div>
     </section>
 
     <section class="library">
       <div class="library-head">
-        <h2>Game Library</h2>
-        <div id="gamesSummary" class="summary">Loading game catalog...</div>
+        <div>
+          <h2>Find a game guide</h2>
+          <p id="gamesSummary">Loading available library cards...</p>
+        </div>
       </div>
-
       <div class="controls">
-        <input id="searchInput" type="search" placeholder="Search title, id, tags, categories, description...">
-        <select id="categoryFilter">
-          <option value="">All categories</option>
-        </select>
-        <label><input id="showHiddenToggle" type="checkbox" checked> Show admin-hidden games</label>
+        <input id="searchInput" type="search" placeholder="Search games, genres, or tags" aria-label="Search game guides">
+        <select id="categoryFilter" aria-label="Filter by category"><option value="">All categories</option></select>
       </div>
-
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Game</th>
-              <th>Categories</th>
-              <th>Tags</th>
-              <th>Admin Hidden</th>
-              <th>Description</th>
-            </tr>
-          </thead>
-          <tbody id="gamesBody"></tbody>
-        </table>
-      </div>
+      <div id="gameGrid" class="game-grid"></div>
+      <div id="emptyState" class="empty" hidden>No available games match this search.</div>
     </section>
-  </div>
+  </main>
 
   <script>
     (function () {
       "use strict";
+      var state = { catalog: { categories: [], games: [] }, filters: { disabled_categories: [], disabled_games: [] }, query: "", category: "" };
 
-      var state = {
-        catalog: { categories: [], games: [] },
-        filters: { disabled_categories: [], disabled_games: [] },
-        query: "",
-        category: "",
-        showHidden: true
-      };
-
-      function toStringArray(value) {
-        if (!Array.isArray(value)) return [];
-        return value.map(function (item) { return String(item).trim(); }).filter(function (item) { return item.length > 0; });
+      function array(value) {
+        return Array.isArray(value) ? value.map(function (item) { return String(item).trim(); }).filter(Boolean) : [];
       }
-
-      function uniqueArray(items) {
-        var seen = Object.create(null);
-        var output = [];
-        items.forEach(function (item) {
-          if (!seen[item]) {
-            seen[item] = true;
-            output.push(item);
-          }
-        });
-        return output;
+      function fetchJson(url, fallback) {
+        return fetch(url, { cache: "no-store" }).then(function (response) {
+          if (!response.ok) throw new Error("HTTP " + response.status);
+          return response.json();
+        }).catch(function () { return fallback; });
       }
-
-      function normalizeFilters(raw) {
-        var source = raw || {};
-        return {
-          disabled_categories: uniqueArray(toStringArray(source.disabled_categories)),
-          disabled_games: uniqueArray(toStringArray(source.disabled_games))
-        };
-      }
-
-      function fetchJson(url, fallbackValue) {
-        return fetch(url, { cache: "no-store" })
-          .then(function (response) {
-            if (!response.ok) throw new Error("HTTP " + response.status);
-            return response.json();
-          })
-          .catch(function () {
-            return fallbackValue;
-          });
-      }
-
-      function categoryLabelMap() {
+      function labels() {
         var map = Object.create(null);
-        (Array.isArray(state.catalog.categories) ? state.catalog.categories : []).forEach(function (category) {
-          if (!category || !category.id) return;
-          map[String(category.id)] = category.label ? String(category.label) : String(category.id);
+        (state.catalog.categories || []).forEach(function (category) {
+          if (category && category.id) map[String(category.id)] = String(category.label || category.id);
         });
         return map;
       }
-
-      function hiddenByAdmin(game) {
-        var disabledGames = new Set(state.filters.disabled_games);
-        var disabledCategories = new Set(state.filters.disabled_categories);
-        if (disabledGames.has(String(game.id || ""))) return true;
-        return toStringArray(game.categories).some(function (categoryId) {
-          return disabledCategories.has(categoryId);
-        });
+      function available(game) {
+        var disabledGames = new Set(array(state.filters.disabled_games));
+        var disabledCategories = new Set(array(state.filters.disabled_categories));
+        if (disabledGames.has(String(game.id || ""))) return false;
+        return !array(game.categories).some(function (category) { return disabledCategories.has(category); });
       }
-
-      function clearChildren(el) {
-        el.textContent = "";
-      }
-
-      function populateCategoryFilter() {
+      function populateCategories() {
         var select = document.getElementById("categoryFilter");
+        var map = labels();
         var used = new Set();
-        var labelMap = categoryLabelMap();
-        state.catalog.games.forEach(function (game) {
-          toStringArray(game.categories).forEach(function (categoryId) {
-            used.add(categoryId);
-          });
+        (state.catalog.games || []).filter(available).forEach(function (game) {
+          array(game.categories).forEach(function (category) { used.add(category); });
         });
-
-        clearChildren(select);
-        var allOption = document.createElement("option");
-        allOption.value = "";
-        allOption.textContent = "All categories";
-        select.appendChild(allOption);
-
-        (Array.isArray(state.catalog.categories) ? state.catalog.categories : []).forEach(function (category) {
-          var id = String(category && category.id ? category.id : "");
+        (state.catalog.categories || []).forEach(function (category) {
+          var id = String(category && category.id || "");
           if (!id || !used.has(id)) return;
           var option = document.createElement("option");
           option.value = id;
-          option.textContent = labelMap[id] || id;
+          option.textContent = map[id] || id;
           select.appendChild(option);
         });
-
-        select.value = state.category || "";
       }
-
-      function createChipRow(values, map, extraClass) {
-        var wrap = document.createElement("div");
-        wrap.className = "chip-row";
-        values.forEach(function (value) {
-          var chip = document.createElement("span");
-          chip.className = "chip" + (extraClass ? " " + extraClass : "");
-          chip.textContent = map && map[value] ? map[value] : value;
-          wrap.appendChild(chip);
-        });
-        return wrap;
+      function chip(text) {
+        var element = document.createElement("span");
+        element.className = "chip";
+        element.textContent = text;
+        return element;
       }
+      function render() {
+        var map = labels();
+        var games = (state.catalog.games || []).filter(available).filter(function (game) {
+          var categories = array(game.categories);
+          var search = [game.title, game.description, categories.join(" "), array(game.tags).join(" ")].join(" ").toLowerCase();
+          return (!state.query || search.indexOf(state.query) >= 0) && (!state.category || categories.includes(state.category));
+        }).sort(function (a, b) { return String(a.title || a.id).localeCompare(String(b.title || b.id)); });
 
-      function renderGames() {
-        var body = document.getElementById("gamesBody");
-        var summary = document.getElementById("gamesSummary");
-        var labelMap = categoryLabelMap();
-        var games = Array.isArray(state.catalog.games) ? state.catalog.games.slice() : [];
-
-        games.sort(function (a, b) {
-          return String(a.title || a.id).localeCompare(String(b.title || b.id));
-        });
-
-        var filtered = games.filter(function (game) {
-          var categories = toStringArray(game.categories);
-          var tags = toStringArray(game.tags);
-          var searchable = [
-            String(game.id || ""),
-            String(game.title || ""),
-            String(game.description || ""),
-            tags.join(" "),
-            categories.join(" ")
-          ].join(" ").toLowerCase();
-
-          if (state.query && searchable.indexOf(state.query) < 0) return false;
-          if (state.category && categories.indexOf(state.category) < 0) return false;
-          if (!state.showHidden && hiddenByAdmin(game)) return false;
-          return true;
-        });
-
-        clearChildren(body);
-        var hiddenInView = 0;
-
-        filtered.forEach(function (game) {
-          var isHidden = hiddenByAdmin(game);
-          if (isHidden) hiddenInView += 1;
-
-          var tr = document.createElement("tr");
-
-          var gameTd = document.createElement("td");
+        var grid = document.getElementById("gameGrid");
+        grid.textContent = "";
+        games.forEach(function (game) {
+          var card = document.createElement("article");
+          card.className = "game-card";
+          var heading = document.createElement("h3");
+          heading.textContent = String(game.title || game.id || "Game");
+          card.appendChild(heading);
+          var description = document.createElement("p");
+          description.textContent = String(game.description || "Open the game page for play and setup details.");
+          card.appendChild(description);
+          var chips = document.createElement("div");
+          chips.className = "chips";
+          array(game.categories).slice(0, 4).forEach(function (category) { chips.appendChild(chip(map[category] || category)); });
+          card.appendChild(chips);
           var link = document.createElement("a");
           link.className = "game-link";
           link.href = game.path ? String(game.path) : "../" + encodeURIComponent(String(game.id || "")) + "/";
-          link.textContent = String(game.title || game.id || "Unknown");
-          gameTd.appendChild(link);
-          var idText = document.createElement("div");
-          idText.style.color = "var(--muted)";
-          idText.style.fontSize = "0.77rem";
-          idText.textContent = String(game.id || "");
-          gameTd.appendChild(idText);
-          tr.appendChild(gameTd);
-
-          var categoriesTd = document.createElement("td");
-          categoriesTd.appendChild(createChipRow(toStringArray(game.categories), labelMap, "chip--category"));
-          tr.appendChild(categoriesTd);
-
-          var tagsTd = document.createElement("td");
-          tagsTd.appendChild(createChipRow(toStringArray(game.tags), null, ""));
-          tr.appendChild(tagsTd);
-
-          var hiddenTd = document.createElement("td");
-          hiddenTd.className = isHidden ? "hidden-yes" : "hidden-no";
-          hiddenTd.textContent = isHidden ? "Yes" : "No";
-          tr.appendChild(hiddenTd);
-
-          var descTd = document.createElement("td");
-          descTd.textContent = String(game.description || "");
-          tr.appendChild(descTd);
-
-          body.appendChild(tr);
+          link.textContent = "Open game";
+          card.appendChild(link);
+          grid.appendChild(card);
         });
-
-        if (filtered.length === 0) {
-          var emptyRow = document.createElement("tr");
-          var emptyCell = document.createElement("td");
-          emptyCell.colSpan = 5;
-          emptyCell.style.color = "var(--muted)";
-          emptyCell.textContent = "No games match the current filters.";
-          emptyRow.appendChild(emptyCell);
-          body.appendChild(emptyRow);
-        }
-
-        summary.textContent =
-          "Showing " + filtered.length + " of " + games.length + " games." +
-          " Hidden by admin in this view: " + hiddenInView + ".";
+        document.getElementById("gamesSummary").textContent = "Showing " + games.length + " available library cards.";
+        document.getElementById("emptyState").hidden = games.length !== 0;
       }
 
       Promise.all([
@@ -3236,26 +2918,18 @@ write_wiki_index() {
         fetchJson("../admin.filters.json", { disabled_categories: [], disabled_games: [] })
       ]).then(function (results) {
         state.catalog = results[0] || { categories: [], games: [] };
-        state.filters = normalizeFilters(results[1]);
-        populateCategoryFilter();
-        renderGames();
-      }).catch(function () {
-        document.getElementById("gamesSummary").textContent = "Failed to load game catalog.";
+        state.filters = results[1] || { disabled_categories: [], disabled_games: [] };
+        populateCategories();
+        render();
       });
 
       document.getElementById("searchInput").addEventListener("input", function (event) {
         state.query = String(event.target.value || "").toLowerCase().trim();
-        renderGames();
+        render();
       });
-
       document.getElementById("categoryFilter").addEventListener("change", function (event) {
         state.category = String(event.target.value || "");
-        renderGames();
-      });
-
-      document.getElementById("showHiddenToggle").addEventListener("change", function (event) {
-        state.showHidden = !!event.target.checked;
-        renderGames();
+        render();
       });
     })();
   </script>
@@ -3870,6 +3544,20 @@ if [ "$LAN_ARCADE_REGISTRY_INDEX_ONLY" = "1" ]; then
   echo "Canonical registry and public library index regenerated."
   exit 0
 fi
+
+if [ "$LAN_ARCADE_PAGES_ONLY" = "1" ]; then
+  echo "===== Regenerating public pages without rebuilding catalog or game payloads ====="
+  build_canonical_registry
+  build_readiness_authority
+  write_deployment_profile
+  write_public_index
+  write_account_index
+  write_wiki_index
+  chmod 644 "$CANONICAL_REGISTRY_FILE" "$INDEX_FILE" "$ACCOUNT_INDEX_FILE" "$WIKI_INDEX_FILE"
+  echo "Public library, account, and guide pages regenerated."
+  exit 0
+fi
+
 
 deploy_shared_local_assets
 

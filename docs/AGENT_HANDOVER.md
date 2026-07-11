@@ -1,3 +1,22 @@
+# Current Platform Authority - 2026-07-11
+
+Read this section before the dated history below.
+
+- Main repository: `/home/dylan/LAN_Arcade`.
+- Pillage First product repository: `/home/dylan/Pillage-First-LAN`; do not resume game-feature development in the platform repository.
+- Live deployment profile: `full`. The `pi` profile uses the same codebase and defaults to the camping shelf without requiring local mail.
+- Inventory authority: 1,106 canonical game titles plus 7 collection wrappers. The 153 top-level cards are not the total game count.
+- Readiness authority: `/var/www/html/mirrors/games/readiness.json`; only evidence-backed entries may say Ready.
+- Public guides: `/mirrors/games/wiki/` is player-facing Guides & Manuals. Admin and QA instructions belong in repository docs or the protected admin area.
+- Tank Arena: service active/enabled, same-origin WebSocket proxy live, and T4 two-client smoke available through `npm run qa:tank:live`.
+- Accounts: family-role enforcement and account-scoped save records are live. Emulator/native save isolation and email reset delivery remain incomplete.
+- Safe library-only regeneration: `ARCADE_NAME=GannanNet LAN_ARCADE_DEPLOYMENT_PROFILE=full LAN_ARCADE_REGISTRY_INDEX_ONLY=1 bash ./setup_lan_arcade.sh`.
+- Release gate: `npm run qa:release`.
+- User-data backup: `npm run backup:user-data`.
+
+The older dated sections below are historical evidence. Where they conflict with
+this section or the 2026-07-11 phase reviews, use the newer authority.
+
 # Preservation And Secret Baseline - 2026-07-11
 
 Before repository extraction, catalogue refactors, or service migrations, use
