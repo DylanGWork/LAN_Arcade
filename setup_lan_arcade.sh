@@ -1142,6 +1142,7 @@ write_public_index() {
       grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
     }
     #recentGrid .game-card, #favoriteGrid .game-card { box-shadow: 0 10px 22px rgba(0,0,0,.22); }
+    #recentGrid .launch-row, #favoriteGrid .launch-row { min-width: 0; }
     #recentGrid .game-card .media, #favoriteGrid .game-card .media { aspect-ratio: 16 / 6.6; }
     #recentGrid .desc, #favoriteGrid .desc,
     #recentGrid .tags, #favoriteGrid .tags,
@@ -1312,7 +1313,6 @@ write_public_index() {
         <a class="side-link" href="./account/">Account</a>
         <a class="side-link" href="./wiki/">Guides & Manuals</a>
         <a class="side-link" href="./downloads/">Downloads</a>
-        <a class="side-link" href="./admin/">Operator Tools</a>
       </nav>
     </aside>
     <main class="main">
@@ -1599,7 +1599,7 @@ write_public_index() {
       function mailboxStatusLabel(account) {
         var status = String(account && account.mailboxStatus || "pending");
         if (status === "ready") return "Mailbox ready";
-        if (status === "alias") return "Mailbox routed to family/admin";
+        if (status === "alias") return "Mailbox routed to your family organizer";
         if (status === "disabled") return "Mailbox disabled";
         if (status === "error") return "Mailbox needs attention";
         return "Mailbox setup pending";
@@ -2142,16 +2142,19 @@ write_public_index() {
         var metrics = state.registry && state.registry.metrics ? state.registry.metrics : {};
         var canonicalTitles = Number(metrics.distinctCanonicalTitles);
         var localPayloadTitles = Number(metrics.localPayloadTitles);
+        var collectionWrappers = Number(metrics.canonicalCollectionWrappers);
         var launchCandidates = Number(metrics.localLaunchCandidateTitles);
         var readyEntries = Number(state.readiness && state.readiness.metrics ? state.readiness.metrics.readyEntries : NaN);
         var launcherCards = Number(metrics.topLevelLauncherCards);
         if (!Number.isFinite(canonicalTitles)) canonicalTitles = allEnabled.length;
         if (!Number.isFinite(localPayloadTitles)) localPayloadTitles = 0;
+        if (!Number.isFinite(collectionWrappers)) collectionWrappers = 0;
         if (!Number.isFinite(launchCandidates)) launchCandidates = profilePool.filter(isReadyNow).length;
         if (!Number.isFinite(readyEntries)) readyEntries = 0;
         if (!Number.isFinite(launcherCards)) launcherCards = allEnabled.length;
         var chips = [
-          [canonicalTitles, "titles across every shelf"],
+          [canonicalTitles, "game titles across every shelf"],
+          [collectionWrappers, "collections"],
           [localPayloadTitles, "with local files"],
           [launchCandidates, "launch paths to try"],
           [readyEntries, "ready to play"],
@@ -2328,7 +2331,7 @@ write_account_index() {
       function mailboxStatusLabel(account) {
         var status = String(account && account.mailboxStatus || "pending");
         if (status === "ready") return "Ready";
-        if (status === "alias") return "Routed to family/admin";
+        if (status === "alias") return "Routed to your family organizer";
         if (status === "disabled") return "Disabled";
         if (status === "error") return "Needs attention";
         return "Setup pending";

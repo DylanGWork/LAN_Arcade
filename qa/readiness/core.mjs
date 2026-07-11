@@ -218,6 +218,13 @@ function semanticReceiptStatus(receipt, entry, now) {
 }
 
 function displayFor(entry, state, policy) {
+function limitedActionFor(entry) {
+  if (["desktop-client", "linux-package", "package-download"].includes(entry.adapter)) return "Install";
+  if (["hosted-lan", "browser-stream"].includes(entry.adapter) || entry.contentType === "hosted") return "Start / join";
+  if (entry.contentType === "multiplayer") return "Start / join";
+  return "Try";
+}
+
   const labels = policy.publicLabels || {};
   if (entry.collectionOnly) {
     return { label: labels.collection || "Open collection", actionLabel: "Open collection", actionTarget: entry.target, launchHint: "Browse this collection" };
@@ -231,7 +238,7 @@ function displayFor(entry, state, policy) {
   if (state === "research") {
     return { label: labels.research || "Planning only", actionLabel: "Read details", actionTarget: entry.collectionTarget, launchHint: "Not yet available to play" };
   }
-  return { label: labels.limited || "Needs play testing", actionLabel: "Try", actionTarget: entry.target, launchHint: "Launch exists, but gameplay has not been fully verified" };
+  return { label: labels.limited || "Needs play testing", actionLabel: limitedActionFor(entry), actionTarget: entry.target, launchHint: "Launch exists, but gameplay has not been fully verified" };
 }
 
 function limitedReason(receipts, current, expired, mismatched, policy, entry) {

@@ -51,6 +51,8 @@ try {
   addCheck(result, 'no top-level card wording', !bodyText.includes('top-level cards'));
   addCheck(result, 'no Native / services wording', !bodyText.includes('Native / services'));
   addCheck(result, 'recent shelf initially hidden', await page.locator('#recentShelf').evaluate((el) => el.hidden));
+  addCheck(result, 'player library has no operator tools link', !bodyText.includes('Operator Tools'));
+  addCheck(result, 'player library has no family admin jargon', !bodyText.includes('family/admin'));
 
   await page.fill('#searchInput', options.query);
   await page.waitForTimeout(1000);
@@ -90,9 +92,24 @@ try {
   const recentHidden = await page.locator('#recentShelf').evaluate((el) => el.hidden);
   const recentTitles = await page.locator('#recentGrid .card-title').evaluateAll((nodes) => nodes.map((node) => node.textContent?.trim() || ''));
   const recentStorage = await page.evaluate(() => JSON.parse(localStorage.getItem('lanArcadeRecentlyPlayed.v1') || '[]').map((item) => ({ title: item.title, path: item.path })));
+  const recentLayout = await page.locator('#recentGrid .game-card').evaluateAll((nodes) => nodes.map((node) => {
+    const media = node.querySelector('.media');
+    const hiddenSelectors = ['.desc', '.tags', '.detail-chips'];
+    return {
+      cardWidth: node.getBoundingClientRect().width,
+      mediaWidth: media ? media.getBoundingClientRect().width : 0,
+      compactDetailsHidden: hiddenSelectors.every((selector) => {
+        const child = node.querySelector(selector);
+        return !child || getComputedStyle(child).display === 'none';
+      }),
+    };
+  }));
   addCheck(result, 'recent shelf appears after launch', !recentHidden);
   addCheck(result, 'recent shelf contains SimAnt', recentTitles.includes('SimAnt'));
   addCheck(result, 'recent localStorage records SimAnt', recentStorage.some((item) => item.title === 'SimAnt' && String(item.path || '').includes('simant-ma')));
+  addCheck(result, 'recent shelf contains at most four cards', recentTitles.length <= 4, recentTitles);
+  addCheck(result, 'recent cards hide long details', recentLayout.every((item) => item.compactDetailsHidden), recentLayout);
+  addCheck(result, 'recent media stays inside its card', recentLayout.every((item) => item.mediaWidth <= item.cardWidth + 1), recentLayout);
 
   addCheck(result, 'no page errors', result.pageErrors.length === 0, result.pageErrors);
   addCheck(result, 'no local HTTP failures', result.failedResponses.length === 0, result.failedResponses);

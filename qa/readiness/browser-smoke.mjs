@@ -82,6 +82,11 @@ try {
   await page.waitForTimeout(400);
   const tank = (await cards(page)).find(function (card) { return card.title === "LAN Tank Arena"; });
   check("Tank is ready after a live two-client session", Boolean(tank && tank.action === "Start / join" && tank.chips.includes("Ready to play")), tank);
+  await page.fill("#searchInput", "atlantik");
+  await page.waitForTimeout(400);
+  const atlantik = (await cards(page)).find(function (card) { return card.title === "Atlantik / monopd"; });
+  check("desktop client uses an Install action", Boolean(atlantik && atlantik.action === "Install"), atlantik);
+
 
   check("no outbound network requests", result.externalRequests.length === 0, result.externalRequests);
   check("no page errors", result.pageErrors.length === 0, result.pageErrors);

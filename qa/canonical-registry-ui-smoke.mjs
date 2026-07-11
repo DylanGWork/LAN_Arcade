@@ -71,12 +71,12 @@ try {
 
   const statusPills = await page.locator('#status .stat-pill').evaluateAll((nodes) => nodes.map((node) => node.textContent?.trim() || ''));
   result.statusPills = statusPills;
-  addCheck(result, 'complete inventory is the leading count', statusPills[0] === '1106 titles across every shelf', statusPills);
-  addCheck(result, 'local file count is explicit', statusPills[1] === '879 with local files', statusPills);
-  addCheck(result, 'launch candidates do not claim readiness', statusPills[2] === '790 launch paths to try', statusPills);
-  addCheck(result, 'meaningful action evidence is separate', statusPills[3] === '2 with recorded game actions', statusPills);
-  addCheck(result, 'launch cards are a secondary metric', statusPills[4] === '153 library cards', statusPills);
-  addCheck(result, 'status makes no ready-to-play total claim', !statusPills.some((text) => text.includes('ready to play')), statusPills);
+  addCheck(result, 'complete inventory is the leading count', statusPills[0] === '1106 game titles across every shelf', statusPills);
+  addCheck(result, 'collection wrappers are explicit', statusPills[1] === '7 collections', statusPills);
+  addCheck(result, 'local file count is explicit', statusPills[2] === '879 with local files', statusPills);
+  addCheck(result, 'launch candidates do not claim readiness', statusPills[3] === '790 launch paths to try', statusPills);
+  addCheck(result, 'readiness count is evidence backed', statusPills[4] === '3 ready to play', statusPills);
+  addCheck(result, 'launch cards are a secondary metric', statusPills[5] === '153 library cards', statusPills);
 
   const bodyText = await page.locator('body').innerText();
   addCheck(result, 'page does not claim 153 games', !bodyText.includes('153 games'));
@@ -96,7 +96,7 @@ try {
     Boolean(simant?.href.includes('/mirrors/private-dos-vault/play.html?id=simant-ma')),
     simant,
   );
-  addCheck(result, 'SimAnt action is Play', simant?.action === 'Play', simant);
+  addCheck(result, 'SimAnt action is truthful Try', simant?.action === 'Try', simant);
   await screenshot(page, result, '02-search-simant');
   if (simant) {
     const launch = await page.goto(simant.href, { waitUntil: 'domcontentloaded', timeout: 45000 });
@@ -113,7 +113,7 @@ try {
     Boolean(gameBoy?.href.includes('/mirrors/private-rom-vault/play.html?id=adventures-of-lolo')),
     gameBoy,
   );
-  addCheck(result, 'Game Boy action is Play', gameBoy?.action === 'Play', gameBoy);
+  addCheck(result, 'Game Boy action is truthful Try', gameBoy?.action === 'Try', gameBoy);
   await screenshot(page, result, '03-search-game-boy');
   if (gameBoy) {
     const launch = await page.goto(gameBoy.href, { waitUntil: 'domcontentloaded', timeout: 45000 });

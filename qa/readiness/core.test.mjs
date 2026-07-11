@@ -23,7 +23,7 @@ function policy() {
       catalog: { prefix: "", recordTypes: ["launcher-card"], collectionTarget: "/mirrors/games/" },
       board: { prefix: "board:", recordTypes: ["research-row"], collectionTarget: "/mirrors/board/" }
     },
-    adapterContentTypes: { browser: "single-player", "hosted-lan": "hosted" }
+    adapterContentTypes: { browser: "single-player", "browser-emulator": "single-player", "desktop-client": "single-player", "hosted-lan": "hosted", "linux-package": "single-player", "package-download": "single-player" }
   };
 }
 
@@ -119,6 +119,19 @@ test("expired evidence and changed source fingerprints cannot promote", function
   const changed = record("changed");
   assert.equal(decision([stale], [receipt(stale, { expiresAt: "2026-07-10T12:00:00Z" })], "stale").reason, "stale-evidence");
   assert.equal(decision([changed], [receipt(changed, { hash: OTHER_HASH })], "changed").reason, "fingerprint-or-identity-mismatch");
+});
+
+test("limited action labels match the launcher adapter", function () {
+  const browser = record("browser-limited", "browser");
+  const desktop = record("desktop-limited", "desktop-client");
+  const packageDownload = record("package-limited", "package-download");
+  const hosted = record("hosted-limited", "hosted-lan");
+  const rows = [browser, desktop, packageDownload, hosted];
+  const result = compileReadiness({ registry: registry(rows), policy: policy(), evidence: { schemaVersion: 1, receipts: [] }, generatedAt: NOW });
+  assert.equal(result.readiness.entries["browser-limited"].actionLabel, "Try");
+  assert.equal(result.readiness.entries["desktop-limited"].actionLabel, "Install");
+  assert.equal(result.readiness.entries["package-limited"].actionLabel, "Install");
+  assert.equal(result.readiness.entries["hosted-limited"].actionLabel, "Start / join");
 });
 
 test("missing evidence is limited and research rows remain research", function () {
