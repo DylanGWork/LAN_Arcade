@@ -110,7 +110,11 @@ async function runSmoke(rawBaseUrl, reportDir) {
     await page.screenshot({ path: path.join(reportDir, 'screenshots', '02-create-world.png'), fullPage: true });
 
     await page.getByRole('button', { name: /^Create world$/ }).click();
-    await page.waitForURL(/\/mirrors\/pillage-first\/game\/[^/]+\/[^/]+\/resources\/?$/, { timeout: 30000 });
+    const gamePath = `${new URL(baseUrl).pathname.replace(/\/$/, '')}/game/`;
+    await page.waitForURL((url) => (
+      url.pathname.startsWith(gamePath)
+      && /\/game\/[^/]+\/[^/]+\/resources\/?$/.test(url.pathname)
+    ), { timeout: 30000 });
     await page.getByText(/Woodcutter|Wheat Field|Clay Pit|Iron Mine/).first().waitFor({ timeout: 15000 });
     await page.screenshot({ path: path.join(reportDir, 'screenshots', '03-resources.png'), fullPage: true });
 
@@ -123,7 +127,7 @@ async function runSmoke(rawBaseUrl, reportDir) {
       && consoleErrors.length === 0
       && pageErrors.length === 0
       && missingTerms.length === 0
-      && finalUrl.includes('/mirrors/pillage-first/game/');
+      && new URL(finalUrl).pathname.startsWith(gamePath);
 
     const report = {
       generatedAt: new Date().toISOString(),
