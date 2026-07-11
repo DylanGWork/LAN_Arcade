@@ -5,10 +5,10 @@
   "sourcePath": "/home/dylan/Pillage-First-LAN",
   "sourceRemote": null,
   "sourceRemoteStatus": "GitHub repository creation requires a token or app with repository-creation permission",
-  "expectedCommit": "2e466eac976de7619f7630c5b80a7c7712579383",
-  "releasePath": "/home/dylan/backups/lan-arcade/pillage-first-extraction/release-2e466eac976d",
+  "expectedCommit": "074204563883e04feb87884325a095e25b292571",
+  "releasePath": "/home/dylan/backups/lan-arcade/pillage-first-extraction/release-07420456",
   "basePath": "/mirrors/pillage-first/",
   "liveTarget": "/var/www/html/mirrors/pillage-first",
-  "deploymentStatus": "verified-not-deployed",
+  "deploymentStatus": "preview-verified-not-deployed",
   "cutoverGate": "Export s-dd7a from Chrome Profile 2, verify two copies, and pass a disposable-profile import drill before an atomic live cutover"
 }
