@@ -22,7 +22,7 @@ const expected = {
   "endless-sky-lan": "limited",
   "mindustry-lan": "limited",
   "unciv-lan": "limited",
-  "lan-tank-arena": "quarantined",
+  "lan-tank-arena": "ready",
   "veloren-lan": "quarantined"
 };
 for (const [id, state] of Object.entries(expected)) {
@@ -30,8 +30,8 @@ for (const [id, state] of Object.entries(expected)) {
   assert.equal(entries[id].promotionState, state, id + " readiness");
 }
 const ready = Object.values(entries).filter(function (entry) { return entry.promotionState === "ready"; }).map(function (entry) { return entry.entryId; }).sort();
-assert.deepEqual(ready, ["classic-pc:simcity-classic-dos-ma", "pillage-first-lan"]);
-assert.equal(result.readiness.metrics.quarantinedEntries, 4);
+assert.deepEqual(ready, ["classic-pc:simcity-classic-dos-ma", "lan-tank-arena", "pillage-first-lan"]);
+assert.equal(result.readiness.metrics.quarantinedEntries, 3);
 assert(result.readiness.metrics.researchEntries >= 200);
 assert(Object.values(entries).every(function (entry) { return entry.displayLabel !== "Quarantined"; }));
 console.log(JSON.stringify(result.readiness.metrics));

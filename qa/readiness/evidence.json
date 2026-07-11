@@ -466,6 +466,68 @@
       "evidencePaths": [
         "qa/reports/service-smoke/veloren-lan-20260614T053300Z/report.txt"
       ]
+    },
+    {
+      "receiptId": "tank-live-two-client-pass-20260711",
+      "entry": {
+        "entryId": "lan-tank-arena",
+        "recordId": "record:catalog:lan-tank-arena",
+        "entityId": "game:catalog:lan-tank-arena"
+      },
+      "contentType": "hosted",
+      "target": "/mirrors/lan-tank-arena/",
+      "fingerprint": {
+        "algorithm": "sha256",
+        "kind": "registry-source",
+        "sourceCollection": "catalog",
+        "value": "5b527efdd5107407e729b86e9978bd420a64af014ace78cac9920012a53b4057"
+      },
+      "runner": {
+        "name": "tank-arena-live-smoke",
+        "commit": "d1697a4"
+      },
+      "environment": {
+        "lanOrigin": "https://192.168.1.106",
+        "deviceProfile": "desktop-and-mobile-chromium",
+        "offline": true
+      },
+      "tier": "T4",
+      "outcome": "pass",
+      "assertions": [
+        {
+          "id": "backend-health",
+          "description": "The deployed same-origin Tank Arena health endpoint returned HTTP 200",
+          "passed": true
+        },
+        {
+          "id": "two-client-session",
+          "description": "Two real browser clients joined the same deployed LAN room and both observed two players",
+          "passed": true
+        },
+        {
+          "id": "shared-gameplay-state",
+          "description": "Player input changed shared position and projectile state for both clients",
+          "passed": true
+        },
+        {
+          "id": "blocked-network",
+          "description": "The complete two-client flow made no requests outside the LAN origin",
+          "passed": true
+        },
+        {
+          "id": "visual-evidence",
+          "description": "Desktop and mobile screenshots show the live two-player arena",
+          "passed": true
+        }
+      ],
+      "observedAt": "2026-07-11T04:58:33Z",
+      "recordedAt": "2026-07-11T04:58:33Z",
+      "expiresAt": "2026-10-09T04:58:33Z",
+      "evidencePaths": [
+        "qa/readiness/evidence/tank-arena-live-20260711/tank-live-smoke.json",
+        "qa/readiness/evidence/tank-arena-live-20260711/screenshots/alpha.png",
+        "qa/readiness/evidence/tank-arena-live-20260711/screenshots/bravo.png"
+      ]
     }
   ]
 }

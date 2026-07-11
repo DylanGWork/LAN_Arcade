@@ -1,0 +1,179 @@
+{
+  "generatedAt": "2026-07-11T05:31:07.118Z",
+  "baseUrl": "https://192.168.1.106/mirrors/lan-tank-arena/",
+  "room": "LIVEQA",
+  "passed": true,
+  "errors": [],
+  "externalRequests": [],
+  "clients": {
+    "alpha": {
+      "screenshot": "qa/readiness/evidence/tank-arena-live-20260711/screenshots/alpha.png",
+      "errors": [],
+      "snapshot": {
+        "playerId": "874af1b6-750e-44da-8c85-bf70d41e2296",
+        "state": {
+          "connected": true,
+          "room": "LIVEQA",
+          "arena": {
+            "width": 1600,
+            "height": 1000
+          },
+          "players": [
+            {
+              "id": "906d8a9d-0a5e-471b-aeaf-50fa4c44b637",
+              "name": "Bravo",
+              "color": "#5ec8f2",
+              "x": 180,
+              "y": 170,
+              "angle": -3.91,
+              "hp": 100,
+              "shield": 0,
+              "score": 0,
+              "respawn": 0
+            },
+            {
+              "id": "874af1b6-750e-44da-8c85-bf70d41e2296",
+              "name": "Alpha",
+              "color": "#ef6b73",
+              "x": 1139.17,
+              "y": 830,
+              "angle": 3.14,
+              "hp": 100,
+              "shield": 0,
+              "score": 0,
+              "respawn": 0
+            }
+          ],
+          "bullets": [
+            {
+              "id": 4,
+              "x": 617.02,
+              "y": 830
+            },
+            {
+              "id": 6,
+              "x": 784.33,
+              "y": 830
+            }
+          ],
+          "pickups": [
+            {
+              "id": "repair-a",
+              "type": "repair",
+              "x": 800,
+              "y": 500,
+              "active": true
+            },
+            {
+              "id": "shield-a",
+              "type": "shield",
+              "x": 420,
+              "y": 500,
+              "active": true
+            },
+            {
+              "id": "shield-b",
+              "type": "shield",
+              "x": 1180,
+              "y": 500,
+              "active": true
+            }
+          ]
+        }
+      }
+    },
+    "bravo": {
+      "screenshot": "qa/readiness/evidence/tank-arena-live-20260711/screenshots/bravo.png",
+      "errors": [],
+      "snapshot": {
+        "playerId": "906d8a9d-0a5e-471b-aeaf-50fa4c44b637",
+        "state": {
+          "connected": true,
+          "room": "LIVEQA",
+          "arena": {
+            "width": 1600,
+            "height": 1000
+          },
+          "players": [
+            {
+              "id": "906d8a9d-0a5e-471b-aeaf-50fa4c44b637",
+              "name": "Bravo",
+              "color": "#5ec8f2",
+              "x": 180,
+              "y": 170,
+              "angle": -3.91,
+              "hp": 100,
+              "shield": 0,
+              "score": 0,
+              "respawn": 0
+            },
+            {
+              "id": "874af1b6-750e-44da-8c85-bf70d41e2296",
+              "name": "Alpha",
+              "color": "#ef6b73",
+              "x": 1139.17,
+              "y": 830,
+              "angle": 3.14,
+              "hp": 100,
+              "shield": 0,
+              "score": 0,
+              "respawn": 0
+            }
+          ],
+          "bullets": [
+            {
+              "id": 4,
+              "x": 617.02,
+              "y": 830
+            },
+            {
+              "id": 6,
+              "x": 784.33,
+              "y": 830
+            }
+          ],
+          "pickups": [
+            {
+              "id": "repair-a",
+              "type": "repair",
+              "x": 800,
+              "y": 500,
+              "active": true
+            },
+            {
+              "id": "shield-a",
+              "type": "shield",
+              "x": 420,
+              "y": 500,
+              "active": true
+            },
+            {
+              "id": "shield-b",
+              "type": "shield",
+              "x": 1180,
+              "y": 500,
+              "active": true
+            }
+          ]
+        }
+      }
+    }
+  },
+  "interaction": {
+    "alphaMoved": true,
+    "bravoMoved": true,
+    "projectileObserved": true
+  },
+  "health": {
+    "status": 200,
+    "body": {
+      "ok": true,
+      "rooms": 1,
+      "sockets": 2
+    }
+  },
+  "playerCounts": [
+    2,
+    2
+  ]
+}

@@ -57,8 +57,8 @@ try {
     return response.json();
   });
   check("readiness authority loads", readiness.authority === "lan-arcade-qa-readiness-v1");
-  check("truthful readiness counts", readiness.metrics.readyEntries === 2 && readiness.metrics.quarantinedEntries === 4, readiness.metrics);
-  check("public status reports two ready titles", (await page.locator("#status").innerText()).includes("2 ready to play"));
+  check("truthful readiness counts", readiness.metrics.readyEntries === 3 && readiness.metrics.quarantinedEntries === 3, readiness.metrics);
+  check("public status reports three ready titles", (await page.locator("#status").innerText()).includes("3 ready to play"));
 
   await page.fill("#searchInput", "simcity");
   await page.waitForTimeout(400);
@@ -81,7 +81,7 @@ try {
   await page.fill("#searchInput", "lan tank arena");
   await page.waitForTimeout(400);
   const tank = (await cards(page)).find(function (card) { return card.title === "LAN Tank Arena"; });
-  check("Tank backend blocker is visible", Boolean(tank && tank.action === "View issue" && tank.chips.includes("Not ready")), tank);
+  check("Tank is ready after a live two-client session", Boolean(tank && tank.action === "Start / join" && tank.chips.includes("Ready to play")), tank);
 
   check("no outbound network requests", result.externalRequests.length === 0, result.externalRequests);
   check("no page errors", result.pageErrors.length === 0, result.pageErrors);

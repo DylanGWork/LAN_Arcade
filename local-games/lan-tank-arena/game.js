@@ -128,8 +128,9 @@
   function defaultServerUrl() {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const host = params.get('host') || window.location.hostname || '127.0.0.1';
-    const port = params.get('port') || '8787';
-    return `${protocol}//${host}:${port}/tank-arena/ws`;
+    const port = params.get('port');
+    if (port) return protocol + '//' + host + ':' + port + '/tank-arena/ws';
+    return protocol + '//' + host + '/tank-arena/ws';
   }
 
   function closeSocket() {

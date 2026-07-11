@@ -233,7 +233,9 @@ MIRROR_MISSING_REF_FAIL_THRESHOLD="${MIRROR_MISSING_REF_FAIL_THRESHOLD:-3}"
 # ---------- Arcade name prompt ----------
 DEFAULT_ARCADE_NAME="GannanNet"
 
-if [ -n "${ARCADE_NAME:-}" ]; then
+if [ "$LAN_ARCADE_REGISTRY_INDEX_ONLY" = "1" ]; then
+  ARCADE_NAME_USE="${ARCADE_NAME:-$DEFAULT_ARCADE_NAME}"
+elif [ -n "${ARCADE_NAME:-}" ]; then
   ARCADE_NAME_USE="$ARCADE_NAME"
 else
   echo
@@ -732,6 +734,10 @@ Restart=on-failure
 RestartSec=2
 User=$LOCAL_USER
 Group=$service_group
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
 
 [Install]
 WantedBy=multi-user.target

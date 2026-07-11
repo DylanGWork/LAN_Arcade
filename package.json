@@ -52,7 +52,8 @@
     "qa:blocked-guides": "python3 scripts/audit_blocked_public_guides.py --root ${MIRRORS_DIR:-/var/www/html/mirrors}",
     "qa:readiness": "node --test qa/readiness/core.test.mjs && node qa/readiness/live-invariants.mjs",
     "qa:readiness:compile": "node qa/readiness/build-readiness.mjs",
-    "qa:readiness:browser": "node qa/readiness/browser-smoke.mjs"
+    "qa:readiness:browser": "node qa/readiness/browser-smoke.mjs",
+    "qa:tank:live": "node qa/tank-arena-live-smoke.mjs"
   },
   "devDependencies": {
     "@types/node": "20.19.1",
