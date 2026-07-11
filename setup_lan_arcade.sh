@@ -16,8 +16,23 @@ LAN_ARCADE_SKIP_DEVICE_CHECKS="${LAN_ARCADE_SKIP_DEVICE_CHECKS:-0}"
 LAN_ARCADE_SKIP_OFFLINE_PATCH="${LAN_ARCADE_SKIP_OFFLINE_PATCH:-0}"
 LAN_ARCADE_SKIP_TANK_SERVICE="${LAN_ARCADE_SKIP_TANK_SERVICE:-0}"
 LAN_ARCADE_REGISTRY_INDEX_ONLY="${LAN_ARCADE_REGISTRY_INDEX_ONLY:-0}"
+LAN_ARCADE_DEPLOYMENT_PROFILE="${LAN_ARCADE_DEPLOYMENT_PROFILE:-full}"
 LAN_TANK_HOST="${LAN_TANK_HOST:-0.0.0.0}"
 LAN_TANK_PORT="${LAN_TANK_PORT:-8787}"
+
+case "$LAN_ARCADE_DEPLOYMENT_PROFILE" in
+  full|pi) ;;
+  *)
+    echo "Unsupported LAN Arcade deployment profile: $LAN_ARCADE_DEPLOYMENT_PROFILE"
+    echo "Choose full or pi."
+    exit 1
+    ;;
+esac
+
+# The lightweight profile never starts the optional live Tank service.
+if [ "$LAN_ARCADE_DEPLOYMENT_PROFILE" = "pi" ]; then
+  LAN_ARCADE_SKIP_TANK_SERVICE=1
+fi
 
 # Registry/index-only mode is safe by definition. Keep this guard before any
 # package, Apache, mirror, device, or service work.
@@ -207,6 +222,10 @@ READINESS_QUARANTINE_FILE="$INDEX_DIR/qa-quarantine.json"
 READINESS_BUILDER="$SCRIPT_DIR/qa/readiness/build-readiness.mjs"
 READINESS_POLICY="$SCRIPT_DIR/config/readiness-policy.json"
 READINESS_EVIDENCE="$SCRIPT_DIR/qa/readiness/evidence.json"
+DEPLOYMENT_PROFILES_SOURCE="$SCRIPT_DIR/config/deployment-profiles.json"
+DEPLOYMENT_PROFILE_BUILDER="$SCRIPT_DIR/scripts/build_deployment_profile.mjs"
+DEPLOYMENT_PROFILES_FILE="$INDEX_DIR/deployment-profiles.json"
+DEPLOYMENT_PROFILE_FILE="$INDEX_DIR/deployment-profile.json"
 LAUNCHER_ADAPTERS_FILE="$INDEX_DIR/launcher-adapters.json"
 LAUNCHER_ADAPTERS_SOURCE="$SCRIPT_DIR/config/launcher-adapters.json"
 FILTERS_FILE="$INDEX_DIR/admin.filters.json"
@@ -910,6 +929,19 @@ build_readiness_authority() {
   chmod 644 "$READINESS_FILE" "$READINESS_QUARANTINE_FILE"
 }
 
+write_deployment_profile() {
+  if [ ! -f "$DEPLOYMENT_PROFILES_SOURCE" ] || [ ! -f "$DEPLOYMENT_PROFILE_BUILDER" ]; then
+    echo "Deployment profile inputs are incomplete."
+    return 1
+  fi
+  cp "$DEPLOYMENT_PROFILES_SOURCE" "$DEPLOYMENT_PROFILES_FILE"
+  node "$DEPLOYMENT_PROFILE_BUILDER" \
+    --profiles "$DEPLOYMENT_PROFILES_SOURCE" \
+    --profile "$LAN_ARCADE_DEPLOYMENT_PROFILE" \
+    --output "$DEPLOYMENT_PROFILE_FILE"
+  chmod 644 "$DEPLOYMENT_PROFILES_FILE" "$DEPLOYMENT_PROFILE_FILE"
+}
+
 write_public_index() {
   local arcade_name_html
   arcade_name_html="$(html_escape "$ARCADE_NAME_USE")"
@@ -1400,6 +1432,7 @@ write_public_index() {
         launcherAudit: { games: {} },
         registry: { metrics: {} },
         readiness: { metrics: {}, entries: {} },
+        deployment: { selectedProfile: "full", defaultLibraryProfile: "all", label: "Home server" },
         deepGames: [],
         serverRecentGames: [],
         serverFavoriteGames: [],
@@ -2257,14 +2290,19 @@ write_public_index() {
         fetchJson("./admin.filters.json", { disabled_categories: [], disabled_games: [] }),
         fetchJson("./launcher-adapters.json", { games: {} }),
         fetchJson("./canonical-registry.json", { metrics: {} }),
-        fetchJson("./readiness.json", { metrics: {}, entries: {} })
+        fetchJson("./readiness.json", { metrics: {}, entries: {} }),
+        fetchJson("./deployment-profile.json", { selectedProfile: "full", defaultLibraryProfile: "all", label: "Home server" })
       ].concat(deepSearchSources.map(function (source) { return fetchJson(source.manifest, { games: [] }).then(function (manifest) { return { source: source, manifest: manifest || { games: [] } }; }); }))).then(function (results) {
         state.catalog = results[0] || { games: [], categories: [] };
         state.filters = normalizeFilters(results[1]);
         state.launcherAudit = results[2] || { games: {} };
         state.registry = results[3] || { metrics: {} };
         state.readiness = results[4] || { metrics: {}, entries: {} };
-        state.deepGames = results.slice(5).flatMap(function (entry) {
+        state.deployment = results[5] || { selectedProfile: "full", defaultLibraryProfile: "all", label: "Home server" };
+        if (profiles.some(function (profile) { return profile.id === state.deployment.defaultLibraryProfile; })) {
+          state.profile = state.deployment.defaultLibraryProfile;
+        }
+        state.deepGames = results.slice(6).flatMap(function (entry) {
           var games = Array.isArray(entry.manifest.games) ? entry.manifest.games : [];
           return games.map(function (game) { return normalizeNestedGame(entry.source, game); }).filter(Boolean);
         });
@@ -3825,6 +3863,7 @@ if [ "$LAN_ARCADE_REGISTRY_INDEX_ONLY" = "1" ]; then
   echo "===== Regenerating canonical registry and public library index only ====="
   build_canonical_registry
   build_readiness_authority
+  write_deployment_profile
   write_public_index
   chmod 644 "$CANONICAL_REGISTRY_FILE"
   chmod 644 "$INDEX_FILE"
@@ -4056,6 +4095,7 @@ echo "===== Building catalog and pages in $INDEX_DIR ====="
 build_catalog_json
 build_canonical_registry
 build_readiness_authority
+write_deployment_profile
 ensure_filters_file
 write_public_index
 write_account_index

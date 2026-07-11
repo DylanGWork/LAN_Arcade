@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "defaultProfile": "full",
+  "profiles": {
+    "full": {
+      "label": "Home server",
+      "description": "Complete household library with accounts, local email integration, installers, and hosted LAN games.",
+      "defaultLibraryProfile": "all",
+      "accountMode": "full-local-accounts",
+      "emailMode": "local-mail-recommended",
+      "hostedServices": "on-demand",
+      "hardwareTarget": "VM or home server"
+    },
+    "pi": {
+      "label": "Camping / Raspberry Pi",
+      "description": "Lightweight offline library focused on browser games, compact emulation, guest play, and static guides.",
+      "defaultLibraryProfile": "pi",
+      "accountMode": "guest-or-local-accounts",
+      "emailMode": "not-required",
+      "hostedServices": "disabled-by-default",
+      "hardwareTarget": "Raspberry Pi 4 or modest device"
+    }
+  }
+}

@@ -50,12 +50,25 @@ The VM serves `/var/www/html/mirrors` through the existing nginx route at `/mirr
 
 Use this for lightweight offline trips. Keep the browser games, small emulator shelves, simple account/profile handling, and static guides. Do not require the local email stack or heavy hosted services on small hardware.
 
+Both deployment modes use the same codebase and catalog. Select the lightweight
+first screen and disable the optional live Tank service with:
+
+```sh
+LAN_ARCADE_DEPLOYMENT_PROFILE=pi bash ./setup_lan_arcade.sh
+```
+
+Use `LAN_ARCADE_DEPLOYMENT_PROFILE=full` for the complete home-server first
+screen. The generated `deployment-profile.json` records the active mode so
+browser QA can verify the deployed result. The Pi mode does not require the
+local mail stack; the full mode can use it for account recovery and invitations.
+
 ## Safe VM Regeneration
 
 On GannanNet, regenerate the catalog and pages without installing packages, configuring Apache, or touching nginx:
 
 ```sh
 ARCADE_NAME="GannanNet" \
+LAN_ARCADE_DEPLOYMENT_PROFILE=full \
 LAN_ARCADE_SKIP_PACKAGE_INSTALL=1 \
 LAN_ARCADE_SKIP_ADMIN_AUTH=1 \
 LAN_ARCADE_SKIP_MIRROR=1 \

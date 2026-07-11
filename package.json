@@ -55,7 +55,9 @@
     "qa:readiness:browser": "node qa/readiness/browser-smoke.mjs",
     "qa:tank:live": "node qa/tank-arena-live-smoke.mjs",
     "qa:account-saves": "node qa/account-save-isolation-smoke.mjs",
-    "qa:family-accounts": "node qa/family-account-browser-smoke.mjs"
+    "qa:family-accounts": "node qa/family-account-browser-smoke.mjs",
+    "qa:deployment-profiles": "node qa/deployment-profile.test.mjs",
+    "qa:deployment-profile:browser": "node qa/deployment-profile-browser-smoke.mjs"
   },
   "devDependencies": {
     "@types/node": "20.19.1",
