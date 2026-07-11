@@ -150,18 +150,67 @@ async function handleRequest(
   }
 
   if (method === 'GET' && pathname === '/accounts') {
-    sendJson(response, 200, { accounts: db.listAccounts() });
+    const session = readAccountSession(request, db);
+    if (!session) return sendJson(response, 401, { error: 'Missing or invalid account session' });
+    const actorRecord = db.findAccountById(session.account_id);
+    if (!actorRecord) return sendJson(response, 401, { error: 'Account not found' });
+    const actor = accountFromRecord(actorRecord);
+    const accounts = db.listAccounts();
+    const visibleAccounts = actor.role === 'admin'
+      ? accounts
+      : actor.role === 'adult'
+        ? accounts.filter((account) => account.id === actor.id || account.parentAccountId === actor.id)
+        : accounts.filter((account) => account.id === actor.id);
+    sendJson(response, 200, { accounts: visibleAccounts });
     return;
   }
 
   if (method === 'POST' && pathname === '/accounts') {
     const parsed = createAccountSchema.safeParse(await readJson(request));
     if (!parsed.success) return sendJson(response, 400, { error: 'Invalid account payload', details: parsed.error.flatten() });
+
+    const existingAccounts = db.listAccounts();
+    const session = readAccountSession(request, db);
+    const actorRecord = session ? db.findAccountById(session.account_id) : undefined;
+    let accountInput = { ...parsed.data };
+
+    if (existingAccounts.length === 0) {
+      accountInput = { ...accountInput, role: 'admin', parentAccountId: null };
+    } else if (!actorRecord) {
+      if (accountInput.role !== 'adult' || accountInput.parentAccountId) {
+        return sendJson(response, 403, { error: 'Sign in as a family organizer to create child or privileged accounts' });
+      }
+      accountInput = { ...accountInput, role: 'adult', parentAccountId: null };
+    } else {
+      const actor = accountFromRecord(actorRecord);
+      if (!['admin', 'adult'].includes(actor.role)) {
+        return sendJson(response, 403, { error: 'This account cannot create family accounts' });
+      }
+      if (accountInput.role === 'child') {
+        if (accountInput.parentAccountId && accountInput.parentAccountId !== actor.id) {
+          return sendJson(response, 403, { error: 'Child accounts must belong to the signed-in family organizer' });
+        }
+        accountInput = { ...accountInput, parentAccountId: actor.id };
+      } else if (accountInput.role === 'adult') {
+        if (accountInput.parentAccountId) {
+          return sendJson(response, 400, { error: 'Adult accounts cannot have a parent account' });
+        }
+        accountInput = { ...accountInput, parentAccountId: null };
+      } else if (['admin', 'service'].includes(accountInput.role)) {
+        if (actor.role !== 'admin') {
+          return sendJson(response, 403, { error: 'Only an admin account can create privileged accounts' });
+        }
+        accountInput = { ...accountInput, parentAccountId: null };
+      } else {
+        return sendJson(response, 403, { error: 'Guest mode does not create a persistent account' });
+      }
+    }
+
     try {
-      const created = db.createAccount(parsed.data);
+      const created = db.createAccount(accountInput);
       const accountRecord = db.findAccountById(created.account.id);
       if (!accountRecord) return sendJson(response, 500, { error: 'Account was created but could not be loaded' });
-      const token = db.createAccountSession(accountRecord, parsed.data.password);
+      const token = db.createAccountSession(accountRecord, accountInput.password);
       return sendJson(response, 201, {
         token,
         account: created.account,

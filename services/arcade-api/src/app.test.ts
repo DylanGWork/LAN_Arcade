@@ -136,6 +136,81 @@ test('accounts create local email, linked player, and login session', async () =
   });
 });
 
+test('family account listing and child creation require an authorized session', async () => {
+  const fixture = tempFixture();
+  await withServer(fixture, async (baseUrl) => {
+    const bootstrap = await request<{ token: string; account: { id: string; role: string } }>(baseUrl, '/accounts', {
+      method: 'POST',
+      body: JSON.stringify({ username: 'Owner', displayName: 'Owner', password: 'correct-horse-battery' })
+    });
+    assert.equal(bootstrap.account.role, 'admin');
+
+    const anonymousList = await fetch(new URL('/accounts', baseUrl));
+    assert.equal(anonymousList.status, 401);
+
+    const anonymousChild = await fetch(new URL('/accounts', baseUrl), {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        username: 'InjectedChild',
+        displayName: 'Injected Child',
+        password: 'correct-horse-battery',
+        role: 'child',
+        parentAccountId: bootstrap.account.id
+      })
+    });
+    assert.equal(anonymousChild.status, 403);
+
+    const adult = await request<{ token: string; account: { id: string; role: string } }>(baseUrl, '/accounts', {
+      method: 'POST',
+      body: JSON.stringify({ username: 'Parent', displayName: 'Parent', password: 'correct-horse-battery' })
+    });
+    assert.equal(adult.account.role, 'adult');
+
+    const child = await request<{ token: string; account: { id: string; role: string; parentAccountId: string | null } }>(baseUrl, '/accounts', {
+      method: 'POST',
+      headers: { 'x-arcade-account-session': adult.token },
+      body: JSON.stringify({
+        username: 'Child',
+        displayName: 'Child',
+        password: 'correct-horse-battery',
+        role: 'child'
+      })
+    });
+    assert.equal(child.account.role, 'child');
+    assert.equal(child.account.parentAccountId, adult.account.id);
+
+    const family = await request<{ accounts: Array<{ id: string; username: string }> }>(baseUrl, '/accounts', {
+      headers: { 'x-arcade-account-session': adult.token }
+    });
+    assert.deepEqual(family.accounts.map((account) => account.username).sort(), ['child', 'parent']);
+
+    const childView = await request<{ accounts: Array<{ id: string; username: string }> }>(baseUrl, '/accounts', {
+      headers: { 'x-arcade-account-session': child.token }
+    });
+    assert.deepEqual(childView.accounts.map((account) => account.username), ['child']);
+
+    const childCreatesAccount = await fetch(new URL('/accounts', baseUrl), {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-arcade-account-session': child.token
+      },
+      body: JSON.stringify({
+        username: 'Nope',
+        displayName: 'Nope',
+        password: 'correct-horse-battery',
+        role: 'child'
+      })
+    });
+    assert.equal(childCreatesAccount.status, 403);
+
+    const adminView = await request<{ accounts: Array<{ username: string }> }>(baseUrl, '/accounts', {
+      headers: { 'x-arcade-account-session': bootstrap.token }
+    });
+    assert.deepEqual(adminView.accounts.map((account) => account.username).sort(), ['child', 'owner', 'parent']);
+  });
+});
 test('signed-in accounts can record and list recent game activity', async () => {
   const fixture = tempFixture();
   await withServer(fixture, async (baseUrl) => {
@@ -338,6 +413,34 @@ test('signed-in accounts can store and retrieve isolated save slots', async () =
     });
     assert.notEqual(updated.save.checksum, first.save.checksum);
     assert.deepEqual(JSON.parse(updated.save.payload), { board: [16], score: 16 });
+    const secondAccount = await request<{ token: string }>(baseUrl, '/accounts', {
+      method: 'POST',
+      body: JSON.stringify({ username: 'Taylor', displayName: 'Taylor', password: 'correct-horse-battery' })
+    });
+    const missingForSecond = await fetch(new URL('/account/saves/browser-localstorage/2048/autosave', baseUrl), {
+      headers: { 'x-arcade-account-session': secondAccount.token }
+    });
+    assert.equal(missingForSecond.status, 404);
+
+    await request(baseUrl, '/account/saves', {
+      method: 'PUT',
+      headers: { 'x-arcade-account-session': secondAccount.token },
+      body: JSON.stringify({
+        adapter: 'browser-localstorage',
+        gameId: '2048',
+        slot: 'autosave',
+        payload: JSON.stringify({ board: [32], score: 32 })
+      })
+    });
+
+    const firstStillIsolated = await request<{ save: { payload: string } }>(baseUrl, '/account/saves/browser-localstorage/2048/autosave', {
+      headers: { 'x-arcade-account-session': created.token }
+    });
+    const secondIsolated = await request<{ save: { payload: string } }>(baseUrl, '/account/saves/browser-localstorage/2048/autosave', {
+      headers: { 'x-arcade-account-session': secondAccount.token }
+    });
+    assert.deepEqual(JSON.parse(firstStillIsolated.save.payload), { board: [16], score: 16 });
+    assert.deepEqual(JSON.parse(secondIsolated.save.payload), { board: [32], score: 32 });
   });
 });
 

@@ -53,7 +53,9 @@
     "qa:readiness": "node --test qa/readiness/core.test.mjs && node qa/readiness/live-invariants.mjs",
     "qa:readiness:compile": "node qa/readiness/build-readiness.mjs",
     "qa:readiness:browser": "node qa/readiness/browser-smoke.mjs",
-    "qa:tank:live": "node qa/tank-arena-live-smoke.mjs"
+    "qa:tank:live": "node qa/tank-arena-live-smoke.mjs",
+    "qa:account-saves": "node qa/account-save-isolation-smoke.mjs",
+    "qa:family-accounts": "node qa/family-account-browser-smoke.mjs"
   },
   "devDependencies": {
     "@types/node": "20.19.1",

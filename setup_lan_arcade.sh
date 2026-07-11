@@ -1596,6 +1596,61 @@ write_public_index() {
         button.addEventListener("click", onClick);
         return button;
       }
+      function beginAccountSwitch(username) {
+        clearStoredAccount();
+        setAccountState({ mode: "guest", message: "Choose a player" });
+        window.setTimeout(function () {
+          var user = document.getElementById("accountLoginUsername");
+          var password = document.getElementById("accountLoginPassword");
+          if (!user || !password) return;
+          user.value = String(username || "");
+          var details = user.closest("details");
+          if (details) details.open = true;
+          password.focus();
+        }, 0);
+      }
+      function loadFamilyAccounts(panel, current) {
+        if (!current || !current.token || !current.account) return;
+        accountRequest("accounts", { headers: { "x-arcade-account-session": current.token } }).then(function (body) {
+          if (!state.account || !state.account.account || state.account.account.id !== current.account.id) return;
+          var rows = Array.isArray(body.accounts) ? body.accounts.filter(function (account) { return account.id !== current.account.id; }) : [];
+          if (!rows.length) return;
+          var label = document.createElement("div"); label.className = "account-note"; label.textContent = "Switch player"; panel.appendChild(label);
+          rows.forEach(function (account) {
+            panel.appendChild(accountButton(account.displayName || account.username, "secondary", function () { beginAccountSwitch(account.username); }));
+          });
+        }).catch(function () {});
+      }
+      function appendChildAccountForm(panel, current) {
+        if (!current || !current.account || ["admin", "adult"].indexOf(current.account.role) < 0) return;
+        var details = document.createElement("details");
+        var summary = document.createElement("summary"); summary.textContent = "Add family player"; details.appendChild(summary);
+        var form = document.createElement("div"); form.className = "account-row"; details.appendChild(form);
+        var username = accountInput(form, "familyCreateUsername", "Username", "text");
+        var displayName = accountInput(form, "familyCreateDisplay", "Display name", "text");
+        var password = accountInput(form, "familyCreatePassword", "Password", "password");
+        var status = document.createElement("div"); status.className = "account-note";
+        form.appendChild(accountButton("Create child account", "", function () {
+          status.textContent = "Creating...";
+          accountRequest("accounts", {
+            method: "POST",
+            headers: { "x-arcade-account-session": current.token },
+            body: JSON.stringify({
+              username: username.value,
+              displayName: displayName.value || username.value,
+              password: password.value,
+              role: "child"
+            })
+          }).then(function () {
+            status.textContent = "Family player created.";
+            renderAccountPanel();
+          }).catch(function (error) {
+            status.textContent = error.message || "Could not create family player";
+          });
+        }));
+        form.appendChild(status);
+        panel.appendChild(details);
+      }
       function mailboxStatusLabel(account) {
         var status = String(account && account.mailboxStatus || "pending");
         if (status === "ready") return "Mailbox ready";
@@ -1616,7 +1671,9 @@ write_public_index() {
           var name = document.createElement("div"); name.className = "account-name"; name.textContent = current.account.displayName || current.account.username; panel.appendChild(name);
           var email = document.createElement("div"); email.className = "account-note"; email.textContent = current.account.localEmail || "Local account"; panel.appendChild(email);
           var mailState = document.createElement("div"); mailState.className = "account-note"; mailState.textContent = mailboxStatusLabel(current.account) + " - " + emailVerificationLabel(current.account); panel.appendChild(mailState);
-          var note = document.createElement("div"); note.className = "account-note"; note.textContent = "Recent games are kept separate for this account on this browser."; panel.appendChild(note);
+          appendChildAccountForm(panel, current);
+          var note = document.createElement("div"); note.className = "account-note"; note.textContent = "Recent games and supported saves are kept separate for this account."; panel.appendChild(note);
+          loadFamilyAccounts(panel, current);
           panel.appendChild(accountButton("Switch to guest", "secondary", function () { clearStoredAccount(); setAccountState({ mode: "guest", message: "Guest mode" }); }));
           return;
         }
