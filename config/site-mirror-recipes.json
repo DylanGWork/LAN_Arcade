@@ -17,6 +17,9 @@
       "https://wiki.openttd.org/en/Manual/Orders",
       "https://wiki.openttd.org/en/Manual/Multiplayer",
       "https://wiki.openttd.org/en/Manual/Hotkeys"
+    ],
+    "gameIds": [
+      "openttd-lan"
     ]
   },
   "mindustry-docs": {
@@ -24,7 +27,10 @@
     "dest": "mindustry-docs",
     "source_subdir": "mindustrygame.github.io/wiki",
     "level": 3,
-    "url": "https://mindustrygame.github.io/wiki/"
+    "url": "https://mindustrygame.github.io/wiki/",
+    "gameIds": [
+      "mindustry-lan"
+    ]
   },
   "freeciv-docs": {
     "title": "Freeciv Website",
@@ -34,6 +40,9 @@
     "pages": [
       "https://www.freeciv.org/",
       "https://www.freeciv.org/download.html"
+    ],
+    "gameIds": [
+      "freeciv-lan"
     ]
   },
   "supertuxkart-site": {
@@ -46,7 +55,11 @@
       "https://supertuxkart.net/Discover",
       "https://supertuxkart.net/FAQ",
       "https://supertuxkart.net/Download"
-    ]
+    ],
+    "gameIds": [
+      "supertuxkart-lan"
+    ],
+    "recursive": false
   },
   "xonotic-site": {
     "title": "Xonotic Site",
@@ -58,7 +71,11 @@
       "https://xonotic.org/download/",
       "https://xonotic.org/guide/",
       "https://xonotic.org/faq/"
-    ]
+    ],
+    "gameIds": [
+      "xonotic-lan"
+    ],
+    "recursive": false
   },
   "freedoom-site": {
     "title": "Freedoom Site",
@@ -68,6 +85,82 @@
     "pages": [
       "https://freedoom.github.io/",
       "https://freedoom.github.io/download.html"
+    ],
+    "gameIds": [
+      "freedoom-lan"
+    ]
+  },
+  "supertux-wiki": {
+    "title": "SuperTux Player Manual",
+    "gameIds": [
+      "supertux-lan"
+    ],
+    "dest": "supertux-wiki",
+    "source_subdir": "github.com",
+    "level": 1,
+    "pages": [
+      "https://github.com/SuperTux/supertux/wiki",
+      "https://github.com/SuperTux/supertux/wiki/User-Manual"
+    ],
+    "recursive": false
+  },
+  "ddnet-wiki": {
+    "title": "DDNet Player Wiki",
+    "gameIds": [
+      "teeworlds-ddnet-lan"
+    ],
+    "dest": "ddnet-wiki",
+    "source_subdir": "wiki.ddnet.org",
+    "level": 1,
+    "pages": [
+      "https://wiki.ddnet.org/wiki/Special%3AMyLanguage/Main_Page",
+      "https://wiki.ddnet.org/wiki/Getting_started/en",
+      "https://wiki.ddnet.org/wiki/Common_Terminology/en",
+      "https://wiki.ddnet.org/wiki/FAQ/en",
+      "https://wiki.ddnet.org/wiki/Tiles/en",
+      "https://wiki.ddnet.org/wiki/Binds/en",
+      "https://wiki.ddnet.org/wiki/Troubleshooting/en"
+    ]
+  },
+  "endless-sky-wiki": {
+    "title": "Endless Sky Player Manual",
+    "gameIds": [
+      "endless-sky-lan"
+    ],
+    "dest": "endless-sky-wiki",
+    "source_subdir": "github.com",
+    "level": 1,
+    "pages": [
+      "https://github.com/endless-sky/endless-sky/wiki/PlayersManual"
+    ],
+    "recursive": false
+  },
+  "luanti-player-docs": {
+    "title": "Luanti Player Guide",
+    "gameIds": [
+      "luanti-lan"
+    ],
+    "dest": "luanti-player-docs",
+    "source_subdir": "docs.luanti.org",
+    "level": 2,
+    "pages": [
+      "https://docs.luanti.org/for-players/",
+      "https://docs.luanti.org/for-players/getting-started/",
+      "https://docs.luanti.org/for-players/controls/",
+      "https://docs.luanti.org/for-players/servers/"
+    ]
+  },
+  "triplea-guide": {
+    "title": "TripleA User Guide",
+    "gameIds": [
+      "triplea-lan"
+    ],
+    "dest": "triplea-guide",
+    "source_subdir": "triplea-game.org",
+    "level": 2,
+    "pages": [
+      "https://triplea-game.org/user-guide/",
+      "https://triplea-game.org/user-guide/rule-book"
     ]
   }
 }

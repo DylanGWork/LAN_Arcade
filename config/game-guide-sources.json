@@ -1,0 +1,175 @@
+[
+  {
+    "gameId": "mindustry-lan",
+    "title": "Mindustry",
+    "officialUrl": "https://mindustrygame.github.io/wiki/",
+    "kind": "wiki",
+    "priority": "high",
+    "status": "local-visible",
+    "localPath": "/mirrors/mindustry-docs/"
+  },
+  {
+    "gameId": "supertux-lan",
+    "title": "SuperTux",
+    "officialUrl": "https://github.com/SuperTux/supertux/wiki/User-Manual",
+    "kind": "manual",
+    "priority": "medium",
+    "status": "local-visible",
+    "localPath": "/mirrors/supertux-wiki/"
+  },
+  {
+    "gameId": "supertuxkart-lan",
+    "title": "SuperTuxKart",
+    "officialUrl": "https://supertuxkart.net/Main_Page",
+    "kind": "website-and-faq",
+    "priority": "medium",
+    "status": "local-visible",
+    "localPath": "/mirrors/supertuxkart-site/"
+  },
+  {
+    "gameId": "xonotic-lan",
+    "title": "Xonotic",
+    "officialUrl": "https://xonotic.org/guide/",
+    "kind": "new-player-guide",
+    "priority": "high",
+    "status": "local-visible",
+    "localPath": "/mirrors/xonotic-site/"
+  },
+  {
+    "gameId": "teeworlds-ddnet-lan",
+    "title": "DDNet",
+    "officialUrl": "https://wiki.ddnet.org/wiki/Special%3AMyLanguage/Main_Page",
+    "kind": "wiki",
+    "priority": "high",
+    "status": "local-visible",
+    "localPath": "/mirrors/ddnet-wiki/"
+  },
+  {
+    "gameId": "endless-sky-lan",
+    "title": "Endless Sky",
+    "officialUrl": "https://github.com/endless-sky/endless-sky/wiki/PlayersManual",
+    "kind": "player-manual",
+    "priority": "high",
+    "status": "local-visible",
+    "localPath": "/mirrors/endless-sky-wiki/"
+  },
+  {
+    "gameId": "widelands-lan",
+    "title": "Widelands",
+    "officialUrl": "https://www.widelands.org/wiki/Game%20Manual/",
+    "kind": "game-manual",
+    "priority": "high",
+    "status": "official-found"
+  },
+  {
+    "gameId": "freeorion-lan",
+    "title": "FreeOrion",
+    "officialUrl": "https://www.freeorion.org/index.php/V0.3_Quick_Play_Guide",
+    "kind": "quick-play-guide",
+    "priority": "high",
+    "status": "official-found",
+    "notes": "Official source found, but the surfaced guide is old and needs version review before promotion."
+  },
+  {
+    "gameId": "cataclysm-dda-lan",
+    "title": "Cataclysm: Dark Days Ahead",
+    "officialUrl": "https://docs.cataclysmdda.org/JSON/HELP_MENU.html",
+    "kind": "in-game-help-reference",
+    "priority": "high",
+    "status": "official-found"
+  },
+  {
+    "gameId": "luanti-lan",
+    "title": "Luanti",
+    "officialUrl": "https://docs.luanti.org/for-players/",
+    "kind": "player-guide",
+    "priority": "high",
+    "status": "local-visible",
+    "localPath": "/mirrors/luanti-player-docs/"
+  },
+  {
+    "gameId": "veloren-lan",
+    "title": "Veloren",
+    "officialUrl": "https://book.veloren.net/",
+    "kind": "owners-manual",
+    "priority": "high",
+    "status": "official-found"
+  },
+  {
+    "gameId": "stendhal-lan",
+    "title": "Stendhal",
+    "officialUrl": "https://stendhalgame.org/wiki/Stendhal/manual",
+    "kind": "manual",
+    "priority": "high",
+    "status": "official-found"
+  },
+  {
+    "gameId": "triplea-lan",
+    "title": "TripleA",
+    "officialUrl": "https://triplea-game.org/user-guide/",
+    "kind": "user-guide-and-rulebook",
+    "priority": "high",
+    "status": "local-visible",
+    "localPath": "/mirrors/triplea-guide/"
+  },
+  {
+    "gameId": "crawl-tiles-lan",
+    "title": "Dungeon Crawl Stone Soup",
+    "officialUrl": "https://crawl.develz.org/wordpress/documentation",
+    "kind": "manual-and-quick-start",
+    "priority": "high",
+    "status": "official-found"
+  },
+  {
+    "gameId": "nethack-x11-lan",
+    "title": "NetHack",
+    "officialUrl": "https://nethack.org/common/info.html",
+    "kind": "guidebook",
+    "priority": "high",
+    "status": "official-found"
+  },
+  {
+    "gameId": "simutrans-lan",
+    "title": "Simutrans",
+    "officialUrl": "https://simutrans-germany.com/wiki/wiki/en_Index",
+    "kind": "wiki",
+    "priority": "high",
+    "status": "official-found"
+  },
+  {
+    "gameId": "openttd-lan",
+    "title": "OpenTTD",
+    "officialUrl": "https://wiki.openttd.org/en/Manual/",
+    "kind": "manual",
+    "priority": "high",
+    "status": "local-visible",
+    "localPath": "/mirrors/openttd-wiki/"
+  },
+  {
+    "gameId": "wesnoth-lan",
+    "title": "Battle for Wesnoth",
+    "officialUrl": "https://wiki.wesnoth.org/",
+    "kind": "wiki",
+    "priority": "high",
+    "status": "local-visible",
+    "localPath": "/mirrors/wesnoth/wiki.wesnoth.org/"
+  },
+  {
+    "gameId": "zero-ad-lan",
+    "title": "0 A.D.",
+    "officialUrl": "https://trac.wildfiregames.com/wiki/0adManual",
+    "kind": "manual",
+    "priority": "high",
+    "status": "local-visible",
+    "localPath": "/mirrors/0ad/"
+  },
+  {
+    "gameId": "freeciv-lan",
+    "title": "Freeciv",
+    "officialUrl": "https://www.freeciv.org/",
+    "kind": "website-and-help",
+    "priority": "high",
+    "status": "local-visible",
+    "localPath": "/mirrors/freeciv-docs/"
+  }
+]

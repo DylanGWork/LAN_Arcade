@@ -160,32 +160,41 @@ def validate(dest: Path) -> dict:
         hits = [noise for noise in EXTERNAL_NOISE if noise in text]
         if hits:
             noisy.append({"path": path.relative_to(dest).as_posix(), "hits": hits})
+    blocked = (dest / "LAN_ARCADE_DOCS_BLOCKED.txt").exists()
+    has_index = (dest / "index.html").exists()
     return {
         "dest": str(dest),
         "exists": dest.exists(),
         "html_pages": len(html_pages),
-        "has_index": (dest / "index.html").exists(),
+        "has_index": has_index,
+        "blocked": blocked,
+        "usable": bool(dest.exists() and has_index and html_pages and not blocked),
         "external_noise_pages": noisy[:20],
     }
 
 
-def run_wget(stage: Path, pages: list[str], level: int, timeout: int, tries: int, reject_regex: str, user_agent: str, no_parent: bool) -> int:
+def run_wget(
+    stage: Path, pages: list[str], level: int, timeout: int, tries: int,
+    reject_regex: str, user_agent: str, no_parent: bool, recursive: bool,
+) -> int:
     cmd = [
         "wget",
         "--quiet",
         "--convert-links",
         "--adjust-extension",
         "--page-requisites",
-        "--recursive",
-        "--level", str(level),
         "--timeout", str(timeout),
         "--tries", str(tries),
         "--user-agent", user_agent,
         "--reject-regex", reject_regex,
         "--directory-prefix", str(stage),
     ]
-    if no_parent:
-        cmd.append("--no-parent")
+    if recursive:
+        cmd.extend(["--recursive", "--level", str(level)])
+        if no_parent:
+            cmd.append("--no-parent")
+    else:
+        cmd.append("--force-directories")
     cmd.extend(pages)
     return subprocess.run(cmd, check=False).returncode
 
@@ -230,10 +239,14 @@ def main() -> int:
     else:
         source_subdir = args.source_subdir or recipe.get("source_subdir")
         level = args.level if args.level is not None else int(recipe.get("level", 2))
+        recursive = bool(recipe.get("recursive", True))
         source_note = recipe.get("url") or ", ".join(pages)
         with tempfile.TemporaryDirectory(prefix=f"lan-arcade-docs-{dest.name}-") as tmp_name:
             stage = Path(tmp_name)
-            status = run_wget(stage, pages, level, args.timeout, args.tries, args.reject_regex, args.user_agent, not args.allow_parent)
+            status = run_wget(
+                stage, pages, level, args.timeout, args.tries, args.reject_regex,
+                args.user_agent, not args.allow_parent, recursive,
+            )
             try:
                 source = copy_source_from_stage(stage, source_subdir)
                 patch_result = publish(source, dest, title, pages, source_note)
@@ -247,7 +260,7 @@ def main() -> int:
         args.report.parent.mkdir(parents=True, exist_ok=True)
         args.report.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
     print(json.dumps(result, indent=2))
-    return 0 if result.get("exists") and result.get("html_pages", 0) > 0 else 1
+    return 0 if result.get("usable") else 1
 
 
 if __name__ == "__main__":

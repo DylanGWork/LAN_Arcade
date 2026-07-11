@@ -59,6 +59,7 @@
     "qa:deployment-profiles": "node qa/deployment-profile.test.mjs",
     "qa:deployment-profile:browser": "node qa/deployment-profile-browser-smoke.mjs",
     "qa:player-guides": "node qa/player-guides-smoke.mjs",
+    "qa:guidance": "python3 scripts/audit_game_guidance.py --output-dir qa/reports/guidance-audit",
     "qa:release": "bash scripts/run_release_gate.sh"
   },
   "devDependencies": {
