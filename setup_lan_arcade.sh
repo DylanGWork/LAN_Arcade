@@ -2106,15 +2106,21 @@ write_public_index() {
         var status = document.getElementById("status"); clear(status);
         var metrics = state.registry && state.registry.metrics ? state.registry.metrics : {};
         var canonicalTitles = Number(metrics.distinctCanonicalTitles);
+        var localPayloadTitles = Number(metrics.localPayloadTitles);
+        var launchCandidates = Number(metrics.localLaunchCandidateTitles);
+        var actionEvidence = Number(metrics.meaningfulActionEvidenceTitles);
         var launcherCards = Number(metrics.topLevelLauncherCards);
-        var playableTitles = Number(metrics.playableNowTitles);
         if (!Number.isFinite(canonicalTitles)) canonicalTitles = allEnabled.length;
+        if (!Number.isFinite(localPayloadTitles)) localPayloadTitles = 0;
+        if (!Number.isFinite(launchCandidates)) launchCandidates = profilePool.filter(isReadyNow).length;
+        if (!Number.isFinite(actionEvidence)) actionEvidence = 0;
         if (!Number.isFinite(launcherCards)) launcherCards = allEnabled.length;
-        if (!Number.isFinite(playableTitles)) playableTitles = profilePool.filter(isReadyNow).length;
         var chips = [
           [canonicalTitles, "titles across every shelf"],
-          [launcherCards, "launch cards"],
-          [playableTitles, "ready to play"],
+          [localPayloadTitles, "with local files"],
+          [launchCandidates, "launch paths to try"],
+          [actionEvidence, "with recorded game actions"],
+          [launcherCards, "library cards"],
           [visible.length, state.query ? "search results" : "shown in this view"]
         ];
         if (state.category) chips.push([visible.length, (categoryLabelMap(state.catalog)[state.category] || state.category)]);

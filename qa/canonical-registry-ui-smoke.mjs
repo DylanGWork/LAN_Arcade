@@ -58,7 +58,7 @@ try {
 
   const response = await page.goto(options.baseUrl, { waitUntil: 'networkidle', timeout: 45000 });
   addCheck(result, 'library returns HTTP 200', response?.status() === 200, response?.status());
-  await page.waitForFunction(() => document.querySelectorAll('#status .stat-pill').length >= 3, null, { timeout: 30000 });
+  await page.waitForFunction(() => document.querySelectorAll('#status .stat-pill').length >= 5, null, { timeout: 30000 });
 
   const registry = await page.evaluate(async () => {
     const response = await fetch('./canonical-registry.json', { cache: 'no-store' });
@@ -72,8 +72,11 @@ try {
   const statusPills = await page.locator('#status .stat-pill').evaluateAll((nodes) => nodes.map((node) => node.textContent?.trim() || ''));
   result.statusPills = statusPills;
   addCheck(result, 'complete inventory is the leading count', statusPills[0] === '1106 titles across every shelf', statusPills);
-  addCheck(result, 'launch cards are a secondary metric', statusPills[1] === '153 launch cards', statusPills);
-  addCheck(result, 'playable count is canonical', statusPills[2] === '790 ready to play', statusPills);
+  addCheck(result, 'local file count is explicit', statusPills[1] === '879 with local files', statusPills);
+  addCheck(result, 'launch candidates do not claim readiness', statusPills[2] === '790 launch paths to try', statusPills);
+  addCheck(result, 'meaningful action evidence is separate', statusPills[3] === '2 with recorded game actions', statusPills);
+  addCheck(result, 'launch cards are a secondary metric', statusPills[4] === '153 library cards', statusPills);
+  addCheck(result, 'status makes no ready-to-play total claim', !statusPills.some((text) => text.includes('ready to play')), statusPills);
 
   const bodyText = await page.locator('body').innerText();
   addCheck(result, 'page does not claim 153 games', !bodyText.includes('153 games'));

@@ -18,13 +18,14 @@ EXPECTED_STABLE_METRICS = {
     "collectionAndResearchRows": 207,
     "curatedGameBoyMemberships": 201,
     "distinctCanonicalTitles": 1106,
-    "localPackageRecords": 882,
+    "localLaunchCandidateTitles": 790,
+    "localPayloadRecords": 883,
     "locallyInstalledNativeTitles": 0,
-    "locallyPackagedTitles": 879,
+    "localPayloadTitles": 879,
     "manualReviewRelationships": 6,
     "nativePackageManifests": 124,
-    "playableNowTitles": 790,
-    "qaVerifiedTitles": 12,
+    "checksRecordedTitles": 12,
+    "meaningfulActionEvidenceTitles": 2,
     "researchRows": 200,
     "resolvedDuplicateTitleRecords": 11,
     "topLevelLauncherCards": 153,
@@ -105,11 +106,22 @@ def main() -> int:
 
     metrics = registry["metrics"]
     check(metrics == EXPECTED_STABLE_METRICS, f"Metric drift: {json.dumps(metrics, sort_keys=True)}")
+    encoded = json.dumps(registry, sort_keys=True)
+    for legacy_key in ('"playableNow"', '"qaVerified"', '"readyNow"'):
+        check(legacy_key not in encoded, f"Legacy readiness key leaked: {legacy_key}")
     sources = {row["sourceCollection"]: row["recordCount"] for row in registry["sources"]}
     check(sources == EXPECTED_SOURCE_COUNTS, f"Source-count drift: {sources}")
 
     records = {record["recordId"]: record for record in registry["records"]}
     entities = {entity["entityId"]: entity for entity in registry["entities"]}
+    check(
+        not entities["game:classic:lemmings"]["dimensions"]["meaningfulActionEvidence"],
+        "Lemmings canvas-start check must not count as meaningful-action evidence",
+    )
+    check(
+        entities["game:catalog:pillage-first-lan"]["dimensions"]["meaningfulActionEvidence"],
+        "Pillage First create-world action evidence missing",
+    )
     check(len(records) == metrics["totalSourceRecords"], "totalSourceRecords does not match records")
     check(len(entities) == metrics["canonicalEntities"], "canonicalEntities does not match entities")
     check(

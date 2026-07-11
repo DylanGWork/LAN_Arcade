@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "collectionWrappers": [
     {
       "catalogId": "board-games-wave-1",
@@ -156,15 +156,16 @@
         "adapter": "browser",
         "target": "/mirrors/lemmings/"
       },
-      "readiness": {
-        "playableNow": true,
+      "dimensions": {
+        "localLaunchCandidate": true,
         "localPayload": true,
-        "qaVerified": true,
-        "state": "gameplay-smoked"
+        "checksRecorded": true,
+        "meaningfulActionEvidence": false,
+        "state": "canvas-start-check"
       },
       "evidence": {
-        "basis": "Explicit browser adapter with a local game-data load and started-level canvas smoke.",
-        "qaEvidenceId": "lemmings-ts-smoke/game-started"
+        "basis": "Local game data loaded and a level canvas started. This is a launch check, not a Phase 3/T3 meaningful-action gameplay pass.",
+        "checkEvidenceId": "lemmings-ts-smoke/game-started"
       }
     }
   },

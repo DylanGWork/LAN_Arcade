@@ -17,9 +17,10 @@ from typing import Any
 from urllib.parse import quote, unquote, urlparse
 
 
-SCHEMA_VERSION = 1
-QA_VERIFIED_LAUNCHER_STATES = {"gameplay-smoked", "service-smoke-passed"}
-PLAYABLE_CLASSIC_PC_STATES = {"smoke-pass", "source-ready", "partial"}
+SCHEMA_VERSION = 2
+CHECK_RECORDED_LAUNCHER_STATES = {"gameplay-smoked", "service-smoke-passed"}
+MEANINGFUL_ACTION_LAUNCHER_STATES = {"gameplay-smoked"}
+CLASSIC_PC_LAUNCH_CANDIDATE_STATES = {"smoke-pass", "source-ready", "partial"}
 TITLE_RECORD_TYPES = {"launcher-card", "title-record", "research-row"}
 
 
@@ -161,23 +162,25 @@ def catalog_platform(adapter: str) -> str:
     }.get(adapter, "Platform not audited")
 
 
-def readiness(
+def inventory_dimensions(
     *,
-    playable_now: bool = False,
+    local_launch_candidate: bool = False,
     local_payload: bool = False,
     local_package: bool = False,
     locally_installed: bool = False,
-    qa_verified: bool = False,
+    checks_recorded: bool = False,
+    meaningful_action_evidence: bool = False,
     research_only: bool = False,
     state: str = "listed",
 ) -> dict[str, Any]:
     return {
         "listed": True,
-        "playableNow": bool(playable_now),
+        "localLaunchCandidate": bool(local_launch_candidate),
         "localPayload": bool(local_payload),
         "localPackage": bool(local_package),
         "locallyInstalled": bool(locally_installed),
-        "qaVerified": bool(qa_verified),
+        "checksRecorded": bool(checks_recorded),
+        "meaningfulActionEvidence": bool(meaningful_action_evidence),
         "researchOnly": bool(research_only),
         "state": state,
     }
@@ -193,7 +196,7 @@ def add_record(records: dict[str, dict[str, Any]], record: dict[str, Any]) -> No
 def apply_record_override(record: dict[str, Any], override: dict[str, Any]) -> None:
     if "platform" in override:
         record["platform"] = str(override["platform"])
-    for field in ("launcher", "readiness", "evidence"):
+    for field in ("launcher", "dimensions", "evidence"):
         patch = override.get(field)
         if patch is None:
             continue
@@ -371,15 +374,19 @@ def build_registry(args: argparse.Namespace) -> dict[str, Any]:
                     "adapter": adapter or "not-audited",
                     "target": public_target(str(row.get("path") or ""), f"/mirrors/{catalog_id}/"),
                 },
-                "readiness": readiness(
-                    playable_now=bool(audit.get("readyNow")),
-                    qa_verified=qa_status in QA_VERIFIED_LAUNCHER_STATES,
+                "dimensions": inventory_dimensions(
+                    local_launch_candidate=bool(audit.get("readyNow")),
+                    checks_recorded=qa_status in CHECK_RECORDED_LAUNCHER_STATES,
+                    meaningful_action_evidence=(
+                        qa_status in MEANINGFUL_ACTION_LAUNCHER_STATES
+                    ),
                     research_only=is_wrapper and str(wrapper.get("role")) == "research-shelf",
                     state=str(audit.get("promotionState") or qa_status),
                 ),
                 "evidence": {
                     "launcherAuditPresent": bool(audit),
-                    "qaStatus": qa_status,
+                    "sourceQaStatus": qa_status,
+                    "sourceLaunchCandidateFlag": bool(audit.get("readyNow")),
                     "launcherTargetObserved": bool(row.get("path")),
                 },
                 "relationshipToCanonical": "source-record",
@@ -416,11 +423,11 @@ def build_registry(args: argparse.Namespace) -> dict[str, Any]:
                     "adapter": "browser-emulator",
                     "target": f"/mirrors/private-rom-vault/play.html?id={quote(game_id, safe='')}",
                 },
-                "readiness": readiness(
-                    playable_now=rom_present,
+                "dimensions": inventory_dimensions(
+                    local_launch_candidate=rom_present,
                     local_payload=rom_present,
                     local_package=rom_present,
-                    state="ready-offline" if rom_present else "rom-missing",
+                    state="local-rom-observed" if rom_present else "rom-missing",
                 ),
                 "evidence": {
                     "localRomDeclared": bool(rom),
@@ -452,8 +459,8 @@ def build_registry(args: argparse.Namespace) -> dict[str, Any]:
                     "adapter": "local-implementation" if local_implementation else "research-shelf",
                     "target": public_target(str(row.get("url") or ""), "/mirrors/board-games-wave-1/"),
                 },
-                "readiness": readiness(
-                    qa_verified=status == "playable-local",
+                "dimensions": inventory_dimensions(
+                    checks_recorded=status == "playable-local",
                     research_only=True,
                     state=status,
                 ),
@@ -476,7 +483,8 @@ def build_registry(args: argparse.Namespace) -> dict[str, Any]:
         bundle_present = bool(bundle) and (classic_root / bundle).is_file()
         package_present = bool(package) and (classic_root / package).is_file()
         packaged = source_state == "packaged" and bundle_present and package_present
-        playable = packaged and status in PLAYABLE_CLASSIC_PC_STATES
+        launch_candidate = packaged and status in CLASSIC_PC_LAUNCH_CANDIDATE_STATES
+        meaningful_action = status == "smoke-pass" and bool(row.get("qaReport"))
         add_record(
             records,
             {
@@ -497,11 +505,12 @@ def build_registry(args: argparse.Namespace) -> dict[str, Any]:
                         else "/mirrors/private-dos-vault/"
                     ),
                 },
-                "readiness": readiness(
-                    playable_now=playable,
+                "dimensions": inventory_dimensions(
+                    local_launch_candidate=launch_candidate,
                     local_payload=packaged,
                     local_package=packaged,
-                    qa_verified=status == "smoke-pass",
+                    checks_recorded=meaningful_action,
+                    meaningful_action_evidence=meaningful_action,
                     research_only=not packaged,
                     state=status,
                 ),
@@ -510,7 +519,7 @@ def build_registry(args: argparse.Namespace) -> dict[str, Any]:
                     "sourceState": source_state,
                     "browserBundleObserved": bundle_present,
                     "downloadPackageObserved": package_present,
-                    "qaEvidenceDeclared": bool(row.get("qaReport")),
+                    "checkEvidenceDeclared": bool(row.get("qaReport")),
                 },
                 "relationshipToCanonical": "source-record",
             },
@@ -568,7 +577,7 @@ def build_registry(args: argparse.Namespace) -> dict[str, Any]:
                     "adapter": "browser-emulator",
                     "target": f"/mirrors/private-rom-wave-1/play.html?id={quote(game_id, safe='')}",
                 },
-                "readiness": readiness(state="vault-membership"),
+                "dimensions": inventory_dimensions(state="vault-membership"),
                 "evidence": {
                     "sameAsRecordId": vault_record_id,
                     "dedupeEvidence": "source-id-and-sha256-match",
@@ -626,7 +635,7 @@ def build_registry(args: argparse.Namespace) -> dict[str, Any]:
                     "adapter": "package-download",
                     "target": f"/mirrors/games/downloads/native/{quote(slug, safe='')}/",
                 },
-                "readiness": readiness(
+                "dimensions": inventory_dimensions(
                     local_payload=bool(local_assets),
                     local_package=bool(local_assets),
                     locally_installed=fully_installed,
@@ -721,27 +730,44 @@ def build_registry(args: argparse.Namespace) -> dict[str, Any]:
                 {
                     "target": target,
                     "adapter": record["launcher"].get("adapter", "unknown"),
-                    "readyNow": bool(record["readiness"]["playableNow"]),
+                    "localLaunchCandidate": bool(
+                        record["dimensions"]["localLaunchCandidate"]
+                    ),
                     "recordId": record["recordId"],
                 }
             )
         launcher_targets = sorted(
             {json.dumps(item, sort_keys=True): item for item in launcher_targets}.values(),
             key=lambda item: (
-                not item["readyNow"],
+                not item["localLaunchCandidate"],
                 item["adapter"] == "package-download",
                 item["target"],
                 item["recordId"],
             ),
         )
-        title_readiness = [record["readiness"] for record in title_records]
-        entity_readiness = {
-            "playableNow": any(record["readiness"]["playableNow"] for record in entity_records),
-            "localPayload": any(record["readiness"]["localPayload"] for record in entity_records),
-            "localPackage": any(record["readiness"]["localPackage"] for record in entity_records),
-            "locallyInstalled": any(record["readiness"]["locallyInstalled"] for record in entity_records),
-            "qaVerified": any(record["readiness"]["qaVerified"] for record in entity_records),
-            "researchOnly": bool(title_readiness) and all(value["researchOnly"] for value in title_readiness),
+        title_dimensions = [record["dimensions"] for record in title_records]
+        entity_dimensions = {
+            "localLaunchCandidate": any(
+                record["dimensions"]["localLaunchCandidate"] for record in entity_records
+            ),
+            "localPayload": any(
+                record["dimensions"]["localPayload"] for record in entity_records
+            ),
+            "localPackage": any(
+                record["dimensions"]["localPackage"] for record in entity_records
+            ),
+            "locallyInstalled": any(
+                record["dimensions"]["locallyInstalled"] for record in entity_records
+            ),
+            "checksRecorded": any(
+                record["dimensions"]["checksRecorded"] for record in entity_records
+            ),
+            "meaningfulActionEvidence": any(
+                record["dimensions"]["meaningfulActionEvidence"]
+                for record in entity_records
+            ),
+            "researchOnly": bool(title_dimensions)
+            and all(value["researchOnly"] for value in title_dimensions),
         }
         entities.append(
             {
@@ -773,7 +799,7 @@ def build_registry(args: argparse.Namespace) -> dict[str, Any]:
                 ),
                 "launcherTargets": launcher_targets,
                 "primaryLauncher": launcher_targets[0] if launcher_targets else None,
-                "readiness": entity_readiness,
+                "dimensions": entity_dimensions,
                 "canonicalConfidence": str(group.get("confidence") or "source-record"),
                 "canonicalNote": str(group.get("note") or ""),
                 "reviewFlags": sorted(
@@ -800,13 +826,24 @@ def build_registry(args: argparse.Namespace) -> dict[str, Any]:
         "canonicalCollectionWrappers": len(collection_entities),
         "canonicalEntities": len(entities),
         "topLevelLauncherCards": len(catalog),
-        "playableNowTitles": sum(entity["readiness"]["playableNow"] for entity in title_entities),
-        "locallyPackagedTitles": sum(entity["readiness"]["localPackage"] for entity in title_entities),
-        "localPackageRecords": sum(record["readiness"]["localPackage"] for record in records.values()),
-        "locallyInstalledNativeTitles": sum(
-            entity["readiness"]["locallyInstalled"] for entity in title_entities
+        "localLaunchCandidateTitles": sum(
+            entity["dimensions"]["localLaunchCandidate"] for entity in title_entities
         ),
-        "qaVerifiedTitles": sum(entity["readiness"]["qaVerified"] for entity in title_entities),
+        "localPayloadTitles": sum(
+            entity["dimensions"]["localPayload"] for entity in title_entities
+        ),
+        "localPayloadRecords": sum(
+            record["dimensions"]["localPayload"] for record in records.values()
+        ),
+        "locallyInstalledNativeTitles": sum(
+            entity["dimensions"]["locallyInstalled"] for entity in title_entities
+        ),
+        "checksRecordedTitles": sum(
+            entity["dimensions"]["checksRecorded"] for entity in title_entities
+        ),
+        "meaningfulActionEvidenceTitles": sum(
+            entity["dimensions"]["meaningfulActionEvidence"] for entity in title_entities
+        ),
         "collectionAndResearchRows": sum(
             record["recordType"] in {"collection-wrapper", "research-row"}
             for record in records.values()
@@ -876,10 +913,12 @@ def build_registry(args: argparse.Namespace) -> dict[str, Any]:
         "definitions": {
             "entityId": "Stable canonical identity. Title entities group only confirmed aliases or editions; collection wrappers use separate collection identities.",
             "recordId": "Stable identity for one source row, collection membership, launcher card, or package-evidence observation.",
-            "playableNow": "At least one direct player launcher is locally present and not blocked. Package-only native hubs do not qualify.",
-            "localPackage": "A ROM, Classic PC package/bundle, or native package-shelf payload declared by a manifest was observed locally. This does not imply playability.",
+            "localLaunchCandidate": "At least one local browser, ROM, package, or launcher target is present and its source state does not block a launch attempt. This inventory-routing dimension is not proof that play starts, gameplay works, or the title is ready.",
+            "localPayload": "A ROM, Classic PC package/bundle, or native package-shelf payload declared by a manifest was observed locally. This is file-presence evidence, not proof of play.",
+            "localPackage": "A local payload is represented as a ROM, Classic PC package/bundle, or native package-shelf asset.",
             "locallyInstalled": "All declared seed packages for at least one native package manifest are installed on this VM. Cache-only shelves do not qualify.",
-            "qaVerified": "A structured gameplay/service smoke state, a board playable-local state, or an explicit reviewed QA override exists. Inferred readiness does not qualify.",
+            "checksRecorded": "At least one structured check state is recorded. This mixed tier includes service smoke, board playable-local labels, the Lemmings canvas-start check, and meaningful-action evidence; it is not gameplay verification.",
+            "meaningfulActionEvidence": "A structured source record explicitly asserts a meaningful in-game action: a gameplay-smoked launcher state or a Classic PC smoke report with an evidence reference. Phase 3, not this Phase 2 inventory, is the readiness authority.",
             "reviewFlag": "The records remain separate until an operator confirms whether they are aliases, editions, or merely related games.",
         },
         "metricDefinitions": {
@@ -887,11 +926,12 @@ def build_registry(args: argparse.Namespace) -> dict[str, Any]:
             "canonicalCollectionWrappers": "Top-level launcher cards explicitly modelled as collections or research shelves rather than games.",
             "canonicalEntities": "Canonical title entities plus separately modelled collection-wrapper entities.",
             "topLevelLauncherCards": "Navigation cards in catalog.json, including collection wrappers. This is not the complete inventory count.",
-            "playableNowTitles": "Canonical title entities with at least one direct ready launcher. Nested Game Boy and non-blocked packaged Classic PC launchers are included.",
-            "locallyPackagedTitles": "Canonical title entities with an observed local ROM, Classic PC bundle/package, or native package-shelf payload.",
-            "localPackageRecords": "Source/evidence records with an observed local package payload before canonical edition grouping.",
+            "localLaunchCandidateTitles": "Canonical title entities with at least one local launch candidate. Nested Game Boy ROM targets and non-blocked packaged Classic PC targets are included. This is not a playable-now or gameplay-readiness count.",
+            "localPayloadTitles": "Canonical title entities with an observed local ROM, Classic PC bundle/package, or native package-shelf payload. Payload presence is not proof of play.",
+            "localPayloadRecords": "Source/evidence records with an observed local payload before canonical edition grouping.",
             "locallyInstalledNativeTitles": "Canonical title entities whose manifest-declared native seed package set is currently installed on this VM.",
-            "qaVerifiedTitles": "Canonical title entities with structured QA evidence under the qaVerified definition.",
+            "checksRecordedTitles": "Canonical title entities with any structured check under the mixed-tier checksRecorded definition; this is not a gameplay-verification count.",
+            "meaningfulActionEvidenceTitles": "Canonical title entities whose source evidence explicitly records a meaningful in-game action. Phase 3 will own readiness decisions.",
             "collectionAndResearchRows": "Collection-wrapper launcher records plus board-game research rows; this is a row count, not a game count.",
             "researchRows": "Rows from the board-game research collection, including rows that link to a local implementation.",
             "curatedGameBoyMemberships": "Curated subset memberships that point to existing Game Boy vault entities and do not create titles.",
@@ -925,10 +965,22 @@ def validate_registry(registry: dict[str, Any]) -> None:
     for record in records:
         if record["entityId"] not in known_entities:
             raise RegistryError(f"Record references unknown entity: {record['recordId']}")
+        if "readiness" in record:
+            raise RegistryError(f"Legacy readiness object in {record['recordId']}")
+        dimensions = record["dimensions"]
+        if dimensions["meaningfulActionEvidence"] and not dimensions["checksRecorded"]:
+            raise RegistryError(
+                f"Meaningful-action evidence lacks a recorded check: {record['recordId']}"
+            )
         target = record["launcher"].get("target", "")
         if target and not target.startswith("/mirrors/"):
             raise RegistryError(f"Non-local launcher target in {record['recordId']}: {target}")
     encoded = json.dumps(registry, ensure_ascii=True, sort_keys=True)
+    for forbidden_key in ('"playableNow"', '"qaVerified"', '"readyNow"'):
+        if forbidden_key in encoded:
+            raise RegistryError(
+                f"Public registry contains legacy readiness key: {forbidden_key}"
+            )
     for forbidden in ("http://", "https://", "/home/", "/var/www/"):
         if forbidden in encoded:
             raise RegistryError(f"Public registry contains forbidden operator/external text: {forbidden}")
