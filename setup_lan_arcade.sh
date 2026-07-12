@@ -511,7 +511,7 @@ mirror_content_is_complete() {
     [ -z "$ref" ] && continue
 
     case "$ref" in
-      \#*|data:*|javascript:*|mailto:*|tel:*|http://*|https://*|//*)
+      \#*|data:*|javascript:*|mailto:*|tel:*|http://*|https://*|//*|/browser-stream/*)
         continue
         ;;
     esac

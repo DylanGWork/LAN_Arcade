@@ -105,6 +105,7 @@ The full installer is still Apache-first and should be treated as beta. Existing
 - `local-games/` - browser games, LAN hubs, emulator shelf wrappers, and generated player-facing pages.
 - `services/arcade-api/` - local accounts, activity, favourites, save metadata, and social API.
 - `services/lan-tank-arena/` - browser LAN Tank Arena WebSocket service.
+- `services/browser-stream/` - isolated one-at-a-time browser player with per-account or guest saves for allowlisted Linux games.
 - `services/mindustry/`, `services/unciv/`, `deploy/*.compose.yml` - optional hosted LAN services.
 - `scripts/` - intake, mirror, package, QA, repair, and deployment helpers.
 - `qa/` - Playwright and focused regression checks.

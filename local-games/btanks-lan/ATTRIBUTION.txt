@@ -1,0 +1,9 @@
+Battle Tanks
+
+Upstream project: Battle Tanks by the Battle Tanks Team
+Debian package: btanks 0.9.8083-9
+Licence summary: Battle Tanks open-source licence with LGPL and other bundled components
+
+The player page intentionally contains no public internet links. The operator-only promotion manifest records the upstream source location.
+
+Gameplay artwork was captured by LAN Arcade during a network-disabled QA session.

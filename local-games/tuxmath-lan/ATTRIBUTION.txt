@@ -1,0 +1,9 @@
+TuxMath
+
+Upstream project: TuxMath by Tux4Kids
+Debian package: tuxmath 2.0.3-9
+Licence summary: GPL-3+ with public-domain components
+
+The player page intentionally contains no public internet links. The operator-only promotion manifest records the upstream source location.
+
+Gameplay artwork was captured by LAN Arcade during a network-disabled QA session.

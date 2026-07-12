@@ -1,0 +1,9 @@
+Sopwith
+
+Upstream project: SDL Sopwith by David L. Clark, Simon Howard, Jesse Smith and contributors
+Debian package: sopwith 2.1.1-1
+Licence summary: GPL-2 and compatible components
+
+The player page intentionally contains no public internet links. The operator-only promotion manifest records the upstream source location.
+
+Gameplay artwork was captured by LAN Arcade during a network-disabled QA session.

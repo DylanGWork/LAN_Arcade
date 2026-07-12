@@ -1,0 +1,261 @@
+{
+  "schema_version": 1,
+  "generated_for": "LAN Arcade open-source wave 1",
+  "offline_repository": "/mirrors/games/downloads/native/intake/open-source-wave1/debian-bookworm-pool/",
+  "games": [
+    {
+      "id": "ace-of-penguins-lan",
+      "title": "Ace of Penguins",
+      "subtitle": "A collection of classic card and puzzle games",
+      "package": "ace-of-penguins",
+      "package_file": "ace-of-penguins_1.5~rc2-5_amd64.deb",
+      "version": "1.5~rc2-5",
+      "launch_command": "/usr/games/ace-freecell",
+      "screenshot": "qa/reports/open-source-wave1-testbatch/screenshots/ace-02.png",
+      "source_name": "Ace of Penguins by DJ Delorie and contributors",
+      "source_url": "http://www.delorie.com/store/ace/",
+      "license": "GPL-2+ and LGPL-2+ components",
+      "genre": "Cards and puzzles",
+      "players": "1 player",
+      "input": "Mouse; keyboard for menus and help",
+      "age": "Ages 8+",
+      "session": "5-30 minutes",
+      "summary": "Play Freecell, Solitaire, Spider, Minesweeper, Taipei and several other compact classics with a penguin theme.",
+      "why_play": "A relaxed collection for short solo sessions. Freecell is the tested starting game, while the package includes eleven more card and puzzle games.",
+      "controls": [
+        [
+          "Move cards",
+          "Click or drag cards with the mouse. Build descending alternating-colour columns and move aces to the foundations."
+        ],
+        [
+          "Help",
+          "Press F1 for the built-in rules and game help."
+        ],
+        [
+          "Leave",
+          "Press Escape or Q to close the current game."
+        ]
+      ],
+      "quick_start": [
+        "Download and run the Linux install-and-play helper.",
+        "Freecell opens first. Move cards with the mouse.",
+        "Use the Game menu for a new deal; press F1 whenever you need the full rules.",
+        "Other included games appear in the Linux application menu under Games."
+      ],
+      "qa": "Freecell reached an active board and a card was moved to a foundation with networking disabled."
+    },
+    {
+      "id": "tuxmath-lan",
+      "title": "TuxMath",
+      "subtitle": "Arcade maths practice with Tux",
+      "package": "tuxmath",
+      "package_file": "tuxmath_2.0.3-9_amd64.deb",
+      "version": "2.0.3-9",
+      "launch_command": "/usr/games/tuxmath",
+      "screenshot": "qa/reports/open-source-wave1-testbatch/screenshots/tuxmath-04.png",
+      "source_name": "TuxMath by Tux4Kids",
+      "source_url": "https://github.com/tux4kids/tuxmath/",
+      "license": "GPL-3+ with public-domain components",
+      "genre": "Educational arcade",
+      "players": "1 player",
+      "input": "Keyboard; optional mouse in menus",
+      "age": "Ages 6+",
+      "session": "5-20 minutes",
+      "summary": "Protect penguin igloos by solving the maths problems carried by falling comets.",
+      "why_play": "It turns arithmetic practice into a quick arcade challenge, with modes ranging from number typing to addition, subtraction and multiplication.",
+      "controls": [
+        [
+          "Choose a mode",
+          "Use the arrow keys and Enter in the menus."
+        ],
+        [
+          "Answer",
+          "Type the answer with the number keys, then press Space or Enter."
+        ],
+        [
+          "Factoroids",
+          "In Factoroids, use number keys to steer and enter a valid factor to fire."
+        ]
+      ],
+      "quick_start": [
+        "Download and run the Linux install-and-play helper.",
+        "Choose Play Alone, then select an activity and difficulty.",
+        "Read the falling problem, type its answer and press Enter.",
+        "Keep answering before the comets reach the igloos."
+      ],
+      "qa": "Reached Number Typing gameplay, entered an answer and observed the active Wave 1 playfield with networking disabled."
+    },
+    {
+      "id": "sopwith-lan",
+      "title": "Sopwith",
+      "subtitle": "Classic side-scrolling biplane combat",
+      "package": "sopwith",
+      "package_file": "sopwith_2.1.1-1_amd64.deb",
+      "version": "2.1.1-1",
+      "launch_command": "/usr/games/sopwith -n",
+      "screenshot": "qa/reports/open-source-wave1-testbatch/screenshots/sopwith-04.png",
+      "source_name": "SDL Sopwith by David L. Clark, Simon Howard, Jesse Smith and contributors",
+      "source_url": "https://fragglet.github.io/sdl-sopwith/",
+      "license": "GPL-2 and compatible components",
+      "genre": "Arcade flight combat",
+      "players": "1 player; 2 over LAN with manual setup",
+      "input": "Keyboard",
+      "age": "Ages 10+",
+      "session": "10-30 minutes",
+      "summary": "Fly a First World War biplane, bomb ground targets and dogfight enemy aircraft in a deliberately old-school arcade game.",
+      "why_play": "Simple controls hide a demanding flight model. The helper starts novice mode with infinite ammunition and no stalls, which is the best first flight.",
+      "controls": [
+        [
+          "Fly",
+          "Comma pulls up, slash pulls down and period flips the plane."
+        ],
+        [
+          "Throttle",
+          "Z slows down and X speeds up."
+        ],
+        [
+          "Weapons",
+          "Space fires the machine gun and B drops a bomb."
+        ],
+        [
+          "Return home",
+          "Press H near your runway to ask the autopilot to land."
+        ]
+      ],
+      "quick_start": [
+        "Download and run the Linux install-and-play helper; it starts novice mode.",
+        "Hold X to accelerate along the runway, then use comma and slash to control the nose.",
+        "Use Space against aircraft and B while passing over ground targets.",
+        "Destroy all enemy targets while keeping enough height to return safely."
+      ],
+      "qa": "Reached a live novice flight with aircraft, terrain and HUD visible while networking was disabled."
+    },
+    {
+      "id": "btanks-lan",
+      "title": "Battle Tanks",
+      "subtitle": "Fast cartoon tank battles",
+      "package": "btanks",
+      "package_file": "btanks_0.9.8083-9_amd64.deb",
+      "version": "0.9.8083-9",
+      "launch_command": "/usr/games/btanks",
+      "screenshot": "qa/reports/open-source-wave1-testbatch/screenshots/btanks-07.png",
+      "source_name": "Battle Tanks by the Battle Tanks Team",
+      "source_url": "http://btanks.sourceforge.net",
+      "license": "Battle Tanks open-source licence with LGPL and other bundled components",
+      "genre": "Top-down action",
+      "players": "1 player; split-screen and LAN multiplayer",
+      "input": "Keyboard or gamepad",
+      "age": "Ages 10+",
+      "session": "10-30 minutes",
+      "summary": "Drive a tank, Shilka or rocket launcher through reactive arenas packed with weapons, vehicles and destructible scenery.",
+      "why_play": "It supports solo battles, same-computer split screen and LAN play. Deathmatch is the quickest way to learn.",
+      "controls": [
+        [
+          "Drive",
+          "Arrow keys move and steer with the default keyboard layout."
+        ],
+        [
+          "Fire",
+          "Ctrl fires the primary weapon; Alt fires the alternate weapon."
+        ],
+        [
+          "Change controls",
+          "Open Options from the main menu to inspect or change each player's keys or gamepad."
+        ]
+      ],
+      "quick_start": [
+        "Download and run the Linux install-and-play helper.",
+        "Enter a player name, then choose Start Game.",
+        "Choose Deathmatch, a vehicle and a map.",
+        "Use the arrow keys to drive, Ctrl for the main weapon and Alt for the alternate weapon."
+      ],
+      "qa": "Created a player, selected a deathmatch map and reached a live arena with a controllable tank and HUD while networking was disabled."
+    },
+    {
+      "id": "liquidwar-lan",
+      "title": "Liquid War",
+      "subtitle": "Guide a flowing army with one cursor",
+      "package": "liquidwar",
+      "package_file": "liquidwar_5.6.5-2_amd64.deb",
+      "version": "5.6.5-2",
+      "launch_command": "/usr/games/liquidwar",
+      "screenshot": "qa/reports/open-source-wave1-testbatch-2/screenshots/liquidwar-03.png",
+      "source_name": "Liquid War by Christian Mauduit and contributors",
+      "source_url": "https://ufoot.org/liquidwar/v5",
+      "license": "GPL family licence as packaged by Debian",
+      "genre": "Abstract action strategy",
+      "players": "1 player; local and network multiplayer",
+      "input": "Mouse or configured keyboard controls",
+      "age": "Ages 8+",
+      "session": "5-20 minutes",
+      "summary": "Move a single cursor and watch hundreds of tiny fighters flow around walls, surround opponents and consume rival armies.",
+      "why_play": "The rules are immediate but the movement feels unlike a conventional strategy game. It is especially lively with several local players.",
+      "controls": [
+        [
+          "Lead the army",
+          "Move your coloured cursor. Your entire swarm continuously tries to reach it."
+        ],
+        [
+          "Fight",
+          "Guide your swarm around obstacles and through enemy colours; touching fighters consume one another."
+        ],
+        [
+          "Win",
+          "Keep more of your colour alive and surround separated enemy groups."
+        ]
+      ],
+      "quick_start": [
+        "Download and run the Linux install-and-play helper.",
+        "Choose Play, then begin with a single-player match.",
+        "Move your cursor across the battlefield and let your coloured army follow.",
+        "Sweep around walls to surround enemy colours instead of pushing straight through them."
+      ],
+      "qa": "Reached an active multicolour battlefield, moved the player cursor and observed the battlefield change while networking was disabled."
+    },
+    {
+      "id": "freedroidrpg-lan",
+      "title": "FreedroidRPG",
+      "subtitle": "A story-rich action RPG about rebel robots",
+      "package": "freedroidrpg",
+      "package_file": "freedroidrpg_1.0-1_amd64.deb",
+      "version": "1.0-1",
+      "launch_command": "/usr/games/freedroidRPG",
+      "screenshot": "qa/reports/open-source-wave1-testbatch-2/screenshots/freedroidrpg-09.png",
+      "source_name": "FreedroidRPG Development Team",
+      "source_url": "https://www.freedroid.org/",
+      "license": "GPL-2+ with GPL-3, Expat, BSD and CC0 components",
+      "genre": "Action role-playing game",
+      "players": "1 player",
+      "input": "Mouse and keyboard",
+      "age": "Ages 10+",
+      "session": "20 minutes to several hours",
+      "summary": "Play as Tux in a ruined future, fight rebel robots, complete quests and take control of enemy machines.",
+      "why_play": "This is the deepest game in the batch, with dialogue, real-time combat, equipment, skills and a campaign designed for many sessions.",
+      "controls": [
+        [
+          "Move and attack",
+          "Left-click the ground to move. Left-click an enemy to approach and attack."
+        ],
+        [
+          "Run and skills",
+          "Hold Ctrl while moving to run. Right-click uses the selected skill or program."
+        ],
+        [
+          "Panels",
+          "I opens inventory, C opens character details, S opens skills and Q opens the quest log."
+        ],
+        [
+          "Save",
+          "F3 quicksaves and F4 quickloads. Use the main menu for named saves."
+        ]
+      ],
+      "quick_start": [
+        "Download and run the Linux install-and-play helper.",
+        "Choose Play, New Hero, enter a name and continue through the opening story.",
+        "Follow the first conversation and use its response choices to begin the tutorial.",
+        "Left-click to move or attack; press F1 at any time for the full key chart."
+      ],
+      "qa": "Created ArcadeQA, entered the opening story and reached interactive dialogue choices while networking was disabled."
+    }
+  ]
+}

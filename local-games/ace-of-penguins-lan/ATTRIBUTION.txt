@@ -1,0 +1,9 @@
+Ace of Penguins
+
+Upstream project: Ace of Penguins by DJ Delorie and contributors
+Debian package: ace-of-penguins 1.5~rc2-5
+Licence summary: GPL-2+ and LGPL-2+ components
+
+The player page intentionally contains no public internet links. The operator-only promotion manifest records the upstream source location.
+
+Gameplay artwork was captured by LAN Arcade during a network-disabled QA session.

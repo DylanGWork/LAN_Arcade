@@ -1,0 +1,106 @@
+{
+  "schemaVersion": 1,
+  "service": {
+    "containerName": "lan-arcade-browser-stream",
+    "networkName": "lan-arcade-browser-stream-internal",
+    "image": "lan-arcade/browser-stream:bookworm",
+    "controlHost": "172.18.0.1",
+    "controlPort": 6081,
+    "publicBasePath": "/browser-stream/",
+    "accountValidationUrl": "http://172.18.0.1/arcade-api/auth/me",
+    "saveRoot": "/srv/lan-arcade/native-downloads/browser-stream/saves",
+    "memory": "1536m",
+    "cpus": "2.0",
+    "pidsLimit": 256,
+    "shmSize": "256m",
+    "startupTimeoutSeconds": 75,
+    "idleTimeoutSeconds": 1800
+  },
+  "games": {
+    "ace-of-penguins-lan": {
+      "title": "Ace of Penguins: Freecell",
+      "packages": [
+        "ace-of-penguins"
+      ],
+      "command": [
+        "/usr/games/ace-freecell"
+      ],
+      "windowHint": "The Ace of Penguins",
+      "display": [
+        800,
+        600
+      ]
+    },
+    "tuxmath-lan": {
+      "title": "TuxMath",
+      "packages": [
+        "tuxmath"
+      ],
+      "command": [
+        "/usr/games/tuxmath",
+        "--nosound"
+      ],
+      "windowHint": "TuxMath",
+      "display": [
+        800,
+        600
+      ]
+    },
+    "sopwith-lan": {
+      "title": "Sopwith",
+      "packages": [
+        "sopwith"
+      ],
+      "command": [
+        "/usr/games/sopwith"
+      ],
+      "windowHint": "Sopwith",
+      "display": [
+        800,
+        600
+      ]
+    },
+    "btanks-lan": {
+      "title": "Battle Tanks",
+      "packages": [
+        "btanks"
+      ],
+      "command": [
+        "/usr/games/btanks"
+      ],
+      "windowHint": "Battle Tanks",
+      "display": [
+        800,
+        600
+      ]
+    },
+    "liquidwar-lan": {
+      "title": "Liquid War",
+      "packages": [
+        "liquidwar"
+      ],
+      "command": [
+        "/usr/games/liquidwar"
+      ],
+      "windowHint": "Liquid War",
+      "display": [
+        800,
+        600
+      ]
+    },
+    "freedroidrpg-lan": {
+      "title": "FreedroidRPG",
+      "packages": [
+        "freedroidrpg"
+      ],
+      "command": [
+        "/usr/games/freedroidRPG"
+      ],
+      "windowHint": "FreedroidRPG",
+      "display": [
+        1024,
+        768
+      ]
+    }
+  }
+}

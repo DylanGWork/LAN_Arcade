@@ -29,3 +29,6 @@ game-intake/.scratch/
 game-intake/downloads/
 game-intake/raw/
 game-intake/tmp/
+# Python bytecode
+__pycache__/
+*.py[cod]

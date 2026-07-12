@@ -1,0 +1,23 @@
+[Unit]
+Description=LAN Arcade private browser-stream launcher
+After=docker.service network-online.target remote-fs.target
+Requires=docker.service
+
+[Service]
+Type=simple
+User=dylan
+WorkingDirectory=/home/dylan/LAN_Arcade
+ExecStart=/usr/bin/python3 /home/dylan/LAN_Arcade/services/browser-stream/control_server.py
+ExecStopPost=/usr/bin/python3 /home/dylan/LAN_Arcade/scripts/browser_stream_admin.py cleanup
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/home/dylan/.docker
+ReadWritePaths=/srv/lan-arcade/native-downloads/browser-stream/saves
+TimeoutStopSec=30
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,9 @@
+Liquid War
+
+Upstream project: Liquid War by Christian Mauduit and contributors
+Debian package: liquidwar 5.6.5-2
+Licence summary: GPL family licence as packaged by Debian
+
+The player page intentionally contains no public internet links. The operator-only promotion manifest records the upstream source location.
+
+Gameplay artwork was captured by LAN Arcade during a network-disabled QA session.
