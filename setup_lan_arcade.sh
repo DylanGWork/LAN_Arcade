@@ -249,6 +249,16 @@ ADMIN_APACHE_CONF="/etc/apache2/conf-available/lan-arcade-admin.conf"
 DEFAULT_ADMIN_USER="arcadeadmin"
 READY_MARKER=".mirror_ok"
 MIRROR_MISSING_REF_FAIL_THRESHOLD="${MIRROR_MISSING_REF_FAIL_THRESHOLD:-3}"
+DEPLOY_GUARD="$SCRIPT_DIR/scripts/assert_safe_deploy_target.sh"
+
+require_safe_deploy_target() {
+  local target="$1"
+  [ -x "$DEPLOY_GUARD" ] || {
+    echo "Deployment target guard is missing: $DEPLOY_GUARD" >&2
+    exit 1
+  }
+  "$DEPLOY_GUARD" "$target" "$MIRRORS_DIR"
+}
 
 # ---------- Arcade name prompt ----------
 DEFAULT_ARCADE_NAME="GannanNet"
@@ -324,7 +334,7 @@ fi
 
 mkdir -p "$MIRRORS_DIR" "$INDEX_DIR" "$WIKI_DIR" "$ACCOUNT_DIR" "$ADMIN_DIR"
 if [ "$RUNNING_AS_ROOT" -eq 1 ]; then
-  chown -R "$LOCAL_USER:$LOCAL_USER" "$MIRRORS_DIR"
+  find "$MIRRORS_DIR" -xdev -exec chown "$LOCAL_USER:$LOCAL_USER" {} +
 fi
 
 # ---------- Helper to flatten wget mirror ----------
@@ -332,6 +342,7 @@ flatten_mirror() {
   local url="$1"
   local target="$2"
 
+  require_safe_deploy_target "$target"
   local domain relpath root_dir src
   domain="$(echo "$url" | sed -E 's#https?://([^/]+)/?.*#\1#')"
   relpath="$(echo "$url" | sed -E "s#https?://$domain/##")"
@@ -3480,12 +3491,11 @@ deploy_shared_local_assets() {
   fi
 
   echo "===== Deploying shared browser game assets into $SHARED_ASSETS_DIR ====="
+  require_safe_deploy_target "$SHARED_ASSETS_DIR"
   mkdir -p "$SHARED_ASSETS_DIR"
   if command -v rsync >/dev/null 2>&1; then
-    rsync -a --delete "$LOCAL_SHARED_ASSETS_DIR"/ "$SHARED_ASSETS_DIR"/
+    rsync -a "$LOCAL_SHARED_ASSETS_DIR"/ "$SHARED_ASSETS_DIR"/
   else
-    rm -rf "$SHARED_ASSETS_DIR"
-    mkdir -p "$SHARED_ASSETS_DIR"
     shopt -s dotglob nullglob
     cp -a "$LOCAL_SHARED_ASSETS_DIR"/* "$SHARED_ASSETS_DIR"/ 2>/dev/null || true
     shopt -u dotglob nullglob
@@ -3511,12 +3521,11 @@ deploy_local_bundled_games() {
     fi
 
     echo "Local deploy $GAME"
+    require_safe_deploy_target "$TARGET"
     mkdir -p "$TARGET"
     if command -v rsync >/dev/null 2>&1; then
-      rsync -a --delete --exclude "$READY_MARKER" "$local_source_dir"/ "$TARGET"/
+      rsync -a --exclude "$READY_MARKER" "$local_source_dir"/ "$TARGET"/
     else
-      rm -rf "$TARGET"
-      mkdir -p "$TARGET"
       shopt -s dotglob nullglob
       cp -a "$local_source_dir"/* "$TARGET"/ 2>/dev/null || true
       shopt -u dotglob nullglob
@@ -3572,6 +3581,13 @@ else
     URL="${GAMES[$GAME]}"
     TARGET="$MIRRORS_DIR/$GAME"
     MARKER="$TARGET/$READY_MARKER"
+    case "$GAME" in
+      ""|games|wiki|account|admin|downloads|shared)
+        echo "Refusing reserved or empty game target: $GAME" >&2
+        exit 1
+        ;;
+    esac
+    require_safe_deploy_target "$TARGET"
 
     if [ -f "$MARKER" ]; then
       if [[ "$URL" == LOCAL_DIR::* ]]; then
@@ -3764,7 +3780,7 @@ else
     fi
 
     if [ "$RUNNING_AS_ROOT" -eq 1 ]; then
-      chown -R www-data:www-data "$TARGET"
+      find "$TARGET" -xdev -exec chown www-data:www-data {} +
     fi
     # IdleAnt expects to be hosted at /IdleAnt/ (GitHub Pages base path); provide an alias.
     if [ "$RUNNING_AS_ROOT" -eq 1 ] && [ "$GAME" = "IdleAnt" ]; then
@@ -3804,7 +3820,7 @@ fi
 configure_tank_arena_service
 
 if [ "$RUNNING_AS_ROOT" -eq 1 ]; then
-  chown -R www-data:www-data "$INDEX_DIR"
+  find "$INDEX_DIR" -xdev -exec chown www-data:www-data {} +
 fi
 chmod 755 "$WIKI_DIR"
 chmod 755 "$ACCOUNT_DIR"

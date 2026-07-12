@@ -6,6 +6,7 @@ import argparse
 import hashlib
 import html
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -14,9 +15,10 @@ import time
 from pathlib import Path
 
 from native_batch_three_data import BATCH_THREE, BY_DOWNLOAD_SLUG
+from validate_staging_root import replace_latest_symlink, require_local_staging_root
 
-DOWNLOAD_ROOT = Path('/var/www/html/mirrors/games/downloads/native')
-DOCS_ROOT = Path('/var/www/html/mirrors')
+DOWNLOAD_ROOT = Path(os.environ.get('LAN_ARCADE_NATIVE_DOWNLOAD_ROOT', '/var/www/html/mirrors/games/downloads/native')).expanduser().resolve()
+DOCS_ROOT = Path(os.environ.get('LAN_ARCADE_DOCS_ROOT', '/var/www/html/mirrors')).expanduser().resolve()
 USER_AGENT = 'LAN-Arcade-Native-Batch-Three/1.0'
 DEP_RE = re.compile(r'^\s*\|?\s*(?:Pre)?Depends:\s+([^<\s][A-Za-z0-9+_.:-]+)')
 
@@ -86,6 +88,11 @@ def apt_download(pkg: str, target: Path) -> Path:
     existing = sorted(target.glob(f'{pkg}_*.deb'))
     if existing:
         return existing[-1]
+    cached = sorted(Path('/var/cache/apt/archives').glob(f'{pkg}_*.deb'))
+    if cached:
+        dest = target / cached[-1].name
+        shutil.copy2(cached[-1], dest)
+        return dest
     print(f'APT_DOWNLOAD {pkg}', flush=True)
     subprocess.run(['apt-get', 'download', pkg], cwd=target, check=True)
     files = sorted(target.glob(f'{pkg}_*.deb'))
@@ -145,12 +152,7 @@ def write_index(slug: str, game: dict, assets: list[dict], package_set: list[str
     (version_dir / 'manifest.json').write_text(json.dumps(manifest, indent=2) + '\n', encoding='utf-8')
     (version_dir / 'SHA256SUMS.txt').write_text(''.join(f"{a['sha256']}  {a['name']}\n" for a in assets), encoding='utf-8')
     latest = root / 'latest'
-    if latest.exists() or latest.is_symlink():
-        if latest.is_dir() and not latest.is_symlink():
-            shutil.rmtree(latest)
-        else:
-            latest.unlink()
-    latest.symlink_to(version_dir.name, target_is_directory=True)
+    replace_latest_symlink(latest, version_dir.name, DOWNLOAD_ROOT)
 
 
 def cache_game(game: dict) -> None:
@@ -213,6 +215,14 @@ def main() -> int:
     parser.add_argument('--skip-downloads', action='store_true')
     parser.add_argument('--skip-docs', action='store_true')
     args = parser.parse_args()
+    if not args.skip_downloads:
+        validated = require_local_staging_root(os.environ.get('LAN_ARCADE_NATIVE_DOWNLOAD_ROOT'), label='native batch-three cache')
+        if validated != DOWNLOAD_ROOT:
+            raise SystemExit(f'native batch-three root mismatch: {validated} != {DOWNLOAD_ROOT}')
+    if not args.skip_docs:
+        validated_docs = require_local_staging_root(os.environ.get('LAN_ARCADE_DOCS_ROOT'), label='native batch-three docs')
+        if validated_docs != DOCS_ROOT:
+            raise SystemExit(f'native batch-three docs root mismatch: {validated_docs} != {DOCS_ROOT}')
     selected = [BY_DOWNLOAD_SLUG[x] for x in args.games] if args.games else BATCH_THREE
     for game in selected:
         if not args.skip_downloads:

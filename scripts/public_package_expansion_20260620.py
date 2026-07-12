@@ -15,13 +15,14 @@ import time
 import zlib
 from dataclasses import dataclass
 from pathlib import Path
+from validate_staging_root import replace_latest_symlink, require_local_staging_root
 
 ROOT = Path(__file__).resolve().parents[1]
 CSV_PATH = ROOT / 'scripts/public_package_expansion_20260620.csv'
 LOCAL_GAMES = ROOT / 'local-games'
 REPORT_ROOT = ROOT / 'qa/reports/public-package-expansion-20260620'
-DOWNLOAD_ROOT = Path('/var/www/html/mirrors/games/downloads/native')
-POOL_ROOT = DOWNLOAD_ROOT / 'debian-bookworm-pool'
+DOWNLOAD_ROOT = Path(os.environ.get('LAN_ARCADE_NATIVE_DOWNLOAD_ROOT', '/var/www/html/mirrors/games/downloads/native')).expanduser().resolve()
+POOL_ROOT = Path(os.environ.get('LAN_ARCADE_DEB_POOL_ROOT', str(DOWNLOAD_ROOT / 'debian-bookworm-pool'))).expanduser().resolve()
 DOC_PATH = ROOT / 'docs/PUBLIC_PACKAGE_EXPANSION_2026-06-20.md'
 DEP_RE = re.compile(r'^\s*\|?\s*(?:Pre)?Depends:\s+([^<\s][A-Za-z0-9+_.:-]+)')
 
@@ -184,12 +185,7 @@ def cache_game(game: Game) -> None:
     root.mkdir(parents=True, exist_ok=True)
     (root / 'index.html').write_text(page, encoding='utf-8')
     latest = root / 'latest'
-    if latest.exists() or latest.is_symlink():
-        if latest.is_dir() and not latest.is_symlink():
-            shutil.rmtree(latest)
-        else:
-            latest.unlink()
-    latest.symlink_to(ver.name, target_is_directory=True)
+    replace_latest_symlink(latest, ver.name, DOWNLOAD_ROOT)
     print(f'CACHE_READY {game.id} {len(assets)} {hsize(sum(a["size"] for a in assets))}')
 
 
@@ -472,6 +468,9 @@ def main() -> None:
             print(f'{g.id}\t{g.pkg}\t{g.title}')
         return
     if args.action in {'cache', 'all'}:
+        validated = require_local_staging_root(os.environ.get('LAN_ARCADE_NATIVE_DOWNLOAD_ROOT'), label='native package expansion')
+        if validated != DOWNLOAD_ROOT:
+            raise SystemExit(f'native package expansion root mismatch: {validated} != {DOWNLOAD_ROOT}')
         for g in items:
             cache_game(g)
     if args.action in {'smoke', 'all'}:

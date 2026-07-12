@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 from __future__ import annotations
-import argparse, csv, hashlib, html, json, re, shutil, subprocess, time
+import argparse, csv, hashlib, html, json, os, re, shutil, subprocess, time
 from pathlib import Path
+from validate_staging_root import replace_latest_symlink, require_local_staging_root
 
 ROOT = Path(__file__).resolve().parents[1]
 LOCAL_GAMES = ROOT / 'local-games'
 REPORT_ROOT = ROOT / 'qa/reports/public-package-smoke'
-DOWNLOAD_ROOT = Path('/var/www/html/mirrors/games/downloads/native')
-POOL_ROOT = DOWNLOAD_ROOT / 'debian-bookworm-pool'
+DOWNLOAD_ROOT = Path(os.environ.get('LAN_ARCADE_NATIVE_DOWNLOAD_ROOT', '/var/www/html/mirrors/games/downloads/native')).expanduser().resolve()
+POOL_ROOT = Path(os.environ.get('LAN_ARCADE_DEB_POOL_ROOT', str(DOWNLOAD_ROOT / 'debian-bookworm-pool'))).expanduser().resolve()
 DEP_RE = re.compile(r'^\s*\|?\s*(?:Pre)?Depends:\s+([^<\s][A-Za-z0-9+_.:-]+)')
 
 PUBLIC_GAMES = [
@@ -102,8 +103,7 @@ def cache_game(g):
     page=f"""<!doctype html><html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>{html.escape(g['title'])} Install Files</title><style>:root{{color-scheme:dark;--bg:#101316;--panel:#171f25;--line:#33424b;--text:#f4f8f8;--muted:#c4d0d4;--accent:#72d39b;--ink:#06110d}}*{{box-sizing:border-box}}body{{margin:0;font-family:system-ui,-apple-system,Segoe UI,sans-serif;background:var(--bg);color:var(--text)}}main{{width:min(1100px,94vw);margin:auto;padding:30px 0 48px}}a{{color:#9ee6b4}}.button{{display:inline-flex;margin:6px 8px 6px 0;padding:10px 12px;border-radius:8px;background:var(--accent);color:var(--ink);font-weight:850;text-decoration:none}}.secondary{{background:#22303a;color:var(--text)}}.panel,article{{border:1px solid var(--line);border-radius:8px;background:var(--panel);padding:16px;margin:12px 0}}p,li{{color:var(--muted);line-height:1.5}}.grid{{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px}}summary{{cursor:pointer;font-weight:850;font-size:18px;margin:8px 0}}code{{background:#090d10;border:1px solid rgba(255,255,255,.12);border-radius:5px;padding:2px 5px}}.small{{font-size:14px}}</style></head><body><main><p><a class='button secondary' href='../../../'>Back to Game Library</a> <a class='button secondary' href='{html.escape(game_url)}'>Back to game page</a></p><h1>{html.escape(g['title'])} Install Files</h1><section class='panel'><h2>For players</h2><p>Use the game page first. It explains what the game is and how to start it. This page keeps the Linux offline install files for computers that need them.</p><p><a class='button' href='{html.escape(game_url)}'>Open game page</a></p></section><section class='panel'><h2>Linux install files</h2><p>This folder contains the local Linux install files, about {total_size}. On a matching Debian 12 computer, download or copy this version folder, then install from that folder:</p><p><code>sudo apt install ./*.deb</code></p><p><a class='button secondary' href='manifest.json'>Technical file list</a> <a class='button secondary' href='{html.escape(version)}/SHA256SUMS.txt'>Checksums</a></p></section><details class='panel'><summary>Advanced file list</summary><p>Most players do not need to choose individual files. These are the technical pieces that make offline install possible.</p><section class='grid'>{cards}</section></details></main></body></html>"""
     root.mkdir(parents=True, exist_ok=True); (root/'index.html').write_text(page)
     latest=root/'latest'
-    if latest.exists() or latest.is_symlink(): latest.unlink() if latest.is_symlink() or latest.is_file() else shutil.rmtree(latest)
-    latest.symlink_to(ver.name, target_is_directory=True)
+    replace_latest_symlink(latest, ver.name, DOWNLOAD_ROOT)
     print('CACHE_READY', g['id'], len(assets), hsize(sum(a['size'] for a in assets)))
 def latest_report(game_id):
     reports=sorted(REPORT_ROOT.glob(f'{game_id}-*/report.txt'))
@@ -162,6 +162,9 @@ def write_summary():
 def main():
     ap=argparse.ArgumentParser(); ap.add_argument('action', choices=['cache','generate','all','candidates'], nargs='?', default='all'); args=ap.parse_args()
     if args.action in {'cache','all'}:
+        validated = require_local_staging_root(os.environ.get('LAN_ARCADE_NATIVE_DOWNLOAD_ROOT'), label='native package cache')
+        if validated != DOWNLOAD_ROOT:
+            raise SystemExit(f'native package cache root mismatch: {validated} != {DOWNLOAD_ROOT}')
         for g in PUBLIC_GAMES: cache_game(g)
     if args.action in {'generate','all'}:
         for g in PUBLIC_GAMES: render(g)

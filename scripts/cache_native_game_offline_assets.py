@@ -12,6 +12,8 @@ import hashlib
 import html
 import json
 from pathlib import Path
+import os
+from validate_staging_root import replace_latest_symlink, require_local_staging_root
 import shutil
 import subprocess
 import tempfile
@@ -19,8 +21,8 @@ import time
 import urllib.request
 
 USER_AGENT = "LAN-Arcade-Native-Cache/1.0"
-DOWNLOAD_ROOT = Path("/var/www/html/mirrors/games/downloads/native")
-DOCS_ROOT = Path("/var/www/html/mirrors")
+DOWNLOAD_ROOT = Path(os.environ.get("LAN_ARCADE_NATIVE_DOWNLOAD_ROOT", "/var/www/html/mirrors/games/downloads/native")).expanduser().resolve()
+DOCS_ROOT = Path(os.environ.get("LAN_ARCADE_DOCS_ROOT", "/var/www/html/mirrors")).expanduser().resolve()
 
 GAMES = {
     "mindustry": {
@@ -291,12 +293,7 @@ def write_index(slug: str, game: dict, assets: list[dict]) -> None:
     (version_dir / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
     (version_dir / "SHA256SUMS.txt").write_text("".join(f"{a['sha256']}  {a['name']}\n" for a in assets), encoding="utf-8")
     latest = root / "latest"
-    if latest.exists() or latest.is_symlink():
-        if latest.is_dir() and not latest.is_symlink():
-            shutil.rmtree(latest)
-        else:
-            latest.unlink()
-    latest.symlink_to(version_dir.name, target_is_directory=True)
+    replace_latest_symlink(latest, version_dir.name, DOWNLOAD_ROOT)
 
 
 def cache_game(slug: str) -> None:
@@ -358,10 +355,21 @@ def mirror_docs(slug: str) -> None:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Cache native game downloads and docs for LAN Arcade")
-    parser.add_argument("games", nargs="*", choices=sorted(GAMES), help="Game slugs to cache; default all")
+    parser.add_argument("games", nargs="*", help="Game slugs to cache; default all")
     parser.add_argument("--skip-downloads", action="store_true")
     parser.add_argument("--skip-docs", action="store_true")
     args = parser.parse_args()
+    unknown = sorted(set(args.games) - set(GAMES))
+    if unknown:
+        parser.error(f"unknown game slug(s): {', '.join(unknown)}")
+    if not args.skip_downloads:
+        validated = require_local_staging_root(os.environ.get("LAN_ARCADE_NATIVE_DOWNLOAD_ROOT"), label="native game cache")
+        if validated != DOWNLOAD_ROOT:
+            raise SystemExit(f"native game cache root mismatch: {validated} != {DOWNLOAD_ROOT}")
+    if not args.skip_docs:
+        validated_docs = require_local_staging_root(os.environ.get("LAN_ARCADE_DOCS_ROOT"), label="native docs cache")
+        if validated_docs != DOCS_ROOT:
+            raise SystemExit(f"native docs root mismatch: {validated_docs} != {DOCS_ROOT}")
     selected = args.games or sorted(GAMES)
     for slug in selected:
         if not args.skip_downloads:

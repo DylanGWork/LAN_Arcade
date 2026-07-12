@@ -12,7 +12,7 @@ This repo is Dylan's LAN Arcade project on the GannanNet VM.
 - Downloads: `http://192.168.1.106/mirrors/games/downloads/`
 - Tank Arena page: `http://192.168.1.106/mirrors/lan-tank-arena/`
 
-Read `docs/AGENT_HANDOVER.md` and `docs/VM_DEVELOPMENT_AND_QA.md` before changing deployment or running setup scripts.
+Read `docs/AGENT_HANDOVER.md`, `docs/VM_DEVELOPMENT_AND_QA.md`, and `docs/RECOVERY_AND_DEPLOYMENT_SAFETY.md` before changing deployment, native storage, or running setup scripts.
 
 ## VM-Specific Warning
 
@@ -50,7 +50,9 @@ Do not stop Docker globally.
 - Approved LAN Arcade commit identity on GannanNet is currently `DylanGWork LAN Arcade Agent <dylan.gannan@pestsense.com>`. Do not use VM host-derived emails such as `dylan@GannanNet.GannanNet`.
 - If GitHub shows a surprising contributor, first check commit author emails and repo collaborator permissions. GitHub contributor attribution can come from commit metadata even when the account has no write access.
 - Do not revert Dylan's or another agent's changes.
-- Keep deployment changes backed up.
+- Keep deployment changes backed up. Verify a usable pre-change snapshot exists before touching shared game payloads.
+- Never use raw `rsync --delete`, recursive deletion, or recursive ownership changes on a deployment root or any ancestor of a mount. Use the mount-aware guard and run `qa/deployment-safety.sh`.
+- Never place remote shell variables or loops inside a double-quoted PowerShell SSH command. Use a checked-in VM script or a reviewed uploaded script instead.
 - Use the existing QA scripts where practical.
 - Keep the arcade offline-friendly: no trackers, signups, remote fonts, or required internet dependencies in playable games.
 - Public player-facing pages must not contain external `http(s)` links, images, scripts, forms, fonts, embeds, or visible source URLs. Keep upstream/source URLs in non-public operator manifests, attribution files, or operator docs; expose only local saved websites/guides/downloads to players. Run `npm run qa:offline-links` after deployment changes that touch public HTML.

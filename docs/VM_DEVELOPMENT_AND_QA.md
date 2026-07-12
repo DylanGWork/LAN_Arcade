@@ -1,5 +1,7 @@
 # VM Development and QA
 
+Before payload, NFS, or broad deployment work, read `docs/RECOVERY_AND_DEPLOYMENT_SAFETY.md` and run `qa/deployment-safety.sh`. The native-download NFS is writable only at `/srv/lan-arcade/native-downloads`; its player-facing bind under the web tree must remain read-only.
+
 ## 2026-07-11 Current Authority
 
 - The public library is generated from 1,106 canonical game titles plus 7 collection wrappers. The 153 top-level cards are launchers and shelves, not the total game count.

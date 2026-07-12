@@ -7,7 +7,7 @@ STAGE=$(mktemp -d /tmp/lan-arcade-browser-stream-cache.XXXXXX)
 trap 'rm -rf "$STAGE"' EXIT
 
 packages=(
-  ace-of-penguins btanks freedroidrpg liquidwar novnc openbox procps scrot
+  ace-of-penguins btanks freedroidrpg frozen-bubble micropolis numptyphysics pingus supertux liquidwar novnc openbox procps scrot
   sopwith tuxmath websockify x11-utils x11vnc xdotool xvfb
 )
 
@@ -35,6 +35,8 @@ rsync -a --ignore-existing "$STAGE/" "$CACHE_DIR/"
   gzip -9c Packages >Packages.gz
   sha256sum ./*.deb Packages Packages.gz >SHA256SUMS
 )
+chmod 0755 "$CACHE_DIR"
+find "$CACHE_DIR" -maxdepth 1 -type f -exec chmod 0644 {} +
 
 printf 'Cached %s packages (%s) in %s\n' \
   "$(find "$CACHE_DIR" -maxdepth 1 -type f -name '*.deb' | wc -l)" \

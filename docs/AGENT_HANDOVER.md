@@ -1,5 +1,7 @@
 # Current Platform Authority - 2026-07-11
 
+Mandatory deployment safety rules are in `docs/RECOVERY_AND_DEPLOYMENT_SAFETY.md`. The player-facing native-download bind is read-only, package builders must use VM-local staging, and raw deletion-enabled syncs are prohibited.
+
 Read this section before the dated history below.
 
 - Main repository: `/home/dylan/LAN_Arcade`.

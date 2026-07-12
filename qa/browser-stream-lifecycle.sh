@@ -4,7 +4,7 @@ set -euo pipefail
 ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 REPORT_DIR="${1:-$ROOT/qa/reports/browser-stream-lifecycle}"
 SCOPE=operator-qa000001
-GAMES=(ace-of-penguins-lan tuxmath-lan sopwith-lan btanks-lan liquidwar-lan freedroidrpg-lan)
+mapfile -t GAMES < <(python3 -c 'import json; print(chr(10).join(sorted(json.load(open("config/browser-stream-games.json"))["games"])))')
 
 mkdir -p "$REPORT_DIR/status" "$REPORT_DIR/screenshots"
 cleanup() {
@@ -45,5 +45,7 @@ PY
 done
 
 test -z "$(docker ps -aq --filter name=^/lan-arcade-browser-stream$)"
-printf '\nAll six sessions were stopped and removed after QA.\n' >>"$REPORT_DIR/report.md"
+printf '
+All %s sessions were stopped and removed after QA.
+' "${#GAMES[@]}" >>"$REPORT_DIR/report.md"
 echo "BROWSER_STREAM_LIFECYCLE_PASS"

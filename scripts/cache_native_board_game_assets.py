@@ -2,12 +2,13 @@
 """Cache native board-game package shelves and minimal offline docs."""
 from __future__ import annotations
 
-import argparse, hashlib, html, json, re, shutil, subprocess, tempfile, time
+import argparse, hashlib, html, json, os, re, shutil, subprocess, tempfile, time
 from pathlib import Path
+from validate_staging_root import replace_latest_symlink, require_local_staging_root
 from native_board_game_data import BOARD_GAMES, BY_DOWNLOAD_SLUG
 
-DOWNLOAD_ROOT = Path('/var/www/html/mirrors/games/downloads/native')
-DOCS_ROOT = Path('/var/www/html/mirrors')
+DOWNLOAD_ROOT = Path(os.environ.get('LAN_ARCADE_NATIVE_DOWNLOAD_ROOT', '/var/www/html/mirrors/games/downloads/native')).expanduser().resolve()
+DOCS_ROOT = Path(os.environ.get('LAN_ARCADE_DOCS_ROOT', '/var/www/html/mirrors')).expanduser().resolve()
 DEP_RE = re.compile(r'^\s*\|?\s*(?:Pre)?Depends:\s+([^<\s][A-Za-z0-9+_.:-]+)')
 UA = 'LAN-Arcade-Board-Game-Cache/1.0'
 
@@ -65,6 +66,11 @@ def apt_download(pkg: str, target: Path) -> Path:
     existing = sorted(target.glob(f'{pkg}_*.deb'))
     if existing:
         return existing[-1]
+    cached = sorted(Path('/var/cache/apt/archives').glob(f'{pkg}_*.deb'))
+    if cached:
+        dest = target / cached[-1].name
+        shutil.copy2(cached[-1], dest)
+        return dest
     print(f'APT_DOWNLOAD {pkg}', flush=True)
     subprocess.run(['apt-get', 'download', pkg], cwd=target, check=True)
     files = sorted(target.glob(f'{pkg}_*.deb'))
@@ -88,10 +94,7 @@ def write_index(game: dict, assets: list[dict], package_set: list[str], version:
         p.write_text(json.dumps(manifest, indent=2) + '\n', encoding='utf-8')
     (version_dir / 'SHA256SUMS.txt').write_text(''.join(f"{a['sha256']}  {a['name']}\n" for a in assets), encoding='utf-8')
     latest = root / 'latest'
-    if latest.exists() or latest.is_symlink():
-        if latest.is_dir() and not latest.is_symlink(): shutil.rmtree(latest)
-        else: latest.unlink()
-    latest.symlink_to(version_dir.name, target_is_directory=True)
+    replace_latest_symlink(latest, version_dir.name, DOWNLOAD_ROOT)
     print(f'DOWNLOADS_READY={root} packages={len(package_set)}', flush=True)
 
 def cache_game(game: dict) -> None:
@@ -160,6 +163,14 @@ def main() -> int:
     ap.add_argument('--skip-downloads', action='store_true')
     ap.add_argument('--skip-docs', action='store_true')
     args = ap.parse_args()
+    if not args.skip_downloads:
+        validated = require_local_staging_root(os.environ.get('LAN_ARCADE_NATIVE_DOWNLOAD_ROOT'), label='native board-game cache')
+        if validated != DOWNLOAD_ROOT:
+            raise SystemExit(f'native board-game cache root mismatch: {validated} != {DOWNLOAD_ROOT}')
+    if not args.skip_docs:
+        validated_docs = require_local_staging_root(os.environ.get('LAN_ARCADE_DOCS_ROOT'), label='board-game docs cache')
+        if validated_docs != DOCS_ROOT:
+            raise SystemExit(f'board-game docs root mismatch: {validated_docs} != {DOCS_ROOT}')
     selected = [BY_DOWNLOAD_SLUG[x] for x in args.games] if args.games else BOARD_GAMES
     for game in selected:
         if not args.skip_downloads: cache_game(game)

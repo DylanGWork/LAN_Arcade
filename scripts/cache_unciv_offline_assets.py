@@ -10,7 +10,9 @@ import argparse
 import hashlib
 import html
 import json
+import os
 from pathlib import Path
+from validate_staging_root import replace_latest_symlink, require_local_staging_root
 import shutil
 import subprocess
 import tempfile
@@ -161,12 +163,7 @@ def write_download_index(root: Path, version: str, release: dict, assets: list[d
     sums = "".join(f"{asset['sha256']}  {asset['name']}\n" for asset in assets)
     (version_dir / "SHA256SUMS.txt").write_text(sums, encoding="utf-8")
     latest = root / "latest"
-    if latest.is_symlink() or latest.exists():
-        if latest.is_dir() and not latest.is_symlink():
-            shutil.rmtree(latest)
-        else:
-            latest.unlink()
-    latest.symlink_to(version_dir.name, target_is_directory=True)
+    replace_latest_symlink(latest, version_dir.name, root)
 
 
 def mirror_docs(dest: Path) -> None:
@@ -230,6 +227,10 @@ def main() -> int:
     args = parser.parse_args()
 
     if not args.skip_downloads:
+        staging_root = require_local_staging_root(os.environ.get("LAN_ARCADE_NATIVE_DOWNLOAD_ROOT"), label="Unciv cache")
+        destination = Path(args.dest).expanduser().resolve()
+        if destination != staging_root and staging_root not in destination.parents:
+            raise SystemExit(f"Unciv destination escaped staging root: {destination}")
         release = request_json(API_LATEST if args.version == "latest" else API_RELEASE_BY_TAG.format(tag=args.version))
         version = str(release.get("tag_name") or args.version).lstrip("v")
         assets_by_name = {asset.get("name"): asset for asset in release.get("assets", [])}
@@ -254,6 +255,10 @@ def main() -> int:
         print(f"DOWNLOADS_READY={Path(args.dest)}")
 
     if not args.skip_docs:
+        docs_root = require_local_staging_root(os.environ.get("LAN_ARCADE_DOCS_ROOT"), label="Unciv docs cache")
+        docs_destination = Path(args.docs_dest).expanduser().resolve()
+        if docs_destination != docs_root and docs_root not in docs_destination.parents:
+            raise SystemExit(f"Unciv docs destination escaped staging root: {docs_destination}")
         print(f"Mirroring official docs from {DOCS_URL}", flush=True)
         mirror_docs(Path(args.docs_dest))
         print(f"DOCS_READY={Path(args.docs_dest)}")

@@ -5,11 +5,13 @@ from __future__ import annotations
 import hashlib
 import html
 import json
+import os
 import subprocess
 import time
 from pathlib import Path
+from validate_staging_root import require_local_staging_root
 
-DOWNLOAD_ROOT = Path('/var/www/html/mirrors/games/downloads/native/travian-like')
+DOWNLOAD_ROOT = Path(os.environ.get('LAN_ARCADE_TRAVIAN_SOURCE_ROOT', '/var/www/html/mirrors/games/downloads/native/travian-like')).expanduser().resolve()
 USER_AGENT = 'LAN-Arcade-Travian-Like-Cache/1.0'
 
 CANDIDATES = [
@@ -111,7 +113,7 @@ def write_index(records: list[dict]) -> None:
             <dt>License</dt><dd>{html.escape(record['license'])}</dd>
             <dt>Commit</dt><dd><code>{html.escape(record['commit'])}</code></dd>
             <dt>Archive</dt><dd><a href="{slug}/{html.escape(record['archive'])}">{html.escape(record['archive'])}</a> ({html.escape(record['size_human'])})</dd>
-            <dt>Upstream</dt><dd><a href="{html.escape(record['repo'])}">{html.escape(record['repo'])}</a></dd>
+            <dt>Source details</dt><dd>Saved in the local source manifest for operators.</dd>
           </dl>
           <p>{html.escape(record['notes'])}</p>
         </article>""")
@@ -145,6 +147,9 @@ code {{ color:#ffe28a; }}
 
 
 def main() -> None:
+    parent = require_local_staging_root(os.environ.get('LAN_ARCADE_NATIVE_DOWNLOAD_ROOT'), label='Travian-like source cache')
+    if DOWNLOAD_ROOT != parent and parent not in DOWNLOAD_ROOT.parents:
+        raise SystemExit(f'Travian-like source destination escaped staging root: {DOWNLOAD_ROOT}')
     DOWNLOAD_ROOT.mkdir(parents=True, exist_ok=True)
     records: list[dict] = []
     checksums: list[str] = []

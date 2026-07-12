@@ -209,9 +209,17 @@ def ensure_jsdos_runtime(mirrors_root):
     if tmp.exists():
         shutil.rmtree(tmp)
     shutil.copytree(JSDOS_RUNTIME_SRC, tmp)
+    backup = runtime_root / f'.{JSDOS_RUNTIME_VERSION}.previous-{int(time.time())}'
     if target.exists():
-        shutil.rmtree(target)
-    tmp.rename(target)
+        target.rename(backup)
+    try:
+        tmp.rename(target)
+    except Exception:
+        if backup.exists():
+            backup.rename(target)
+        raise
+    if backup.exists():
+        print(f'Previous js-dos runtime retained at {backup}')
 
 def copy_docs(game, root, dest):
     out=[]; d=dest/'manuals'/game['id']; d.mkdir(parents=True, exist_ok=True)
@@ -413,10 +421,18 @@ def publish(staged, dest):
             backup.rename(dest)
         raise
     if backup.exists():
-        shutil.rmtree(backup)
+        print(f'Previous DOS vault retained at {backup}')
 
 def main():
-    ap=argparse.ArgumentParser(); ap.add_argument('--dest',type=Path,default=DEST); args=ap.parse_args(); safe(args.dest)
+    global SRC, JSDOS_RUNTIME_SRC
+    ap = argparse.ArgumentParser()
+    ap.add_argument('--dest', type=Path, default=DEST)
+    ap.add_argument('--src', type=Path, default=SRC)
+    ap.add_argument('--runtime-src', type=Path, default=JSDOS_RUNTIME_SRC)
+    args = ap.parse_args()
+    safe(args.dest)
+    SRC = args.src.resolve()
+    JSDOS_RUNTIME_SRC = args.runtime_src.resolve()
     missing = preflight_sources()
     if missing:
         print('Warning: missing private old-PC game files; building metadata-only entries where packages are unavailable.')

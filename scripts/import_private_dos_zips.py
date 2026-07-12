@@ -63,13 +63,13 @@ def sha256(path: Path) -> str:
     return h.hexdigest()
 
 
-def copy_raw(game_id: str, filename: str) -> tuple[Path | None, dict]:
-    src = INCOMING / filename
+def copy_raw(game_id: str, filename: str, root: Path, incoming: Path) -> tuple[Path | None, dict]:
+    src = incoming / filename
     record = dict(id=game_id, file=filename, imported=False, packagePrepared=False, reason='')
     if not src.exists():
         record['reason'] = 'incoming ZIP not found'
         return None, record
-    raw = SRC / game_id / 'raw'
+    raw = root / game_id / 'raw'
     raw.mkdir(parents=True, exist_ok=True)
     target = raw / filename
     if not target.exists() or target.stat().st_size != src.stat().st_size:
@@ -113,8 +113,8 @@ def write_play_files(root: Path, command: str) -> None:
     (root / 'dosbox.conf').write_text('\r\n'.join(conf_lines) + '\r\n', encoding='ascii')
 
 
-def prepare_dosroot(game_id: str, archive: Path, command: str, root_prefix: str, stamp: str) -> dict:
-    work = SRC / game_id / 'work'
+def prepare_dosroot(game_id: str, archive: Path, command: str, root_prefix: str, stamp: str, root: Path) -> dict:
+    work = root / game_id / 'work'
     extract_dir = work / f'import-extract-{stamp}'
     dosroot = work / f'{root_prefix}-{stamp}'
     work.mkdir(parents=True, exist_ok=True)
@@ -134,17 +134,21 @@ def prepare_dosroot(game_id: str, archive: Path, command: str, root_prefix: str,
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument('--games', nargs='*', help='Optional game ids to import')
+    ap.add_argument('--root', default=str(SRC), help='Private DOS intake root')
+    ap.add_argument('--incoming', help='Incoming ZIP directory (defaults to ROOT/_incoming)')
     args = ap.parse_args()
     selected = set(args.games or [])
+    root = Path(args.root).resolve()
+    incoming = Path(args.incoming).resolve() if args.incoming else root / '_incoming'
     stamp = time.strftime('%Y%m%dT%H%M%SZ', time.gmtime())
     records = []
 
     for game_id, cfg in GAMES.items():
         if selected and game_id not in selected:
             continue
-        archive, record = copy_raw(game_id, cfg['file'])
+        archive, record = copy_raw(game_id, cfg['file'], root, incoming)
         if archive and not cfg.get('raw_only'):
-            record.update(prepare_dosroot(game_id, archive, cfg['cmd'], cfg.get('root_prefix', 'start-dosroot'), stamp))
+            record.update(prepare_dosroot(game_id, archive, cfg['cmd'], cfg.get('root_prefix', 'start-dosroot'), stamp, root))
         elif archive:
             record.update(packagePrepared=False, reason='raw archive copied; existing builder handles this recipe')
         records.append(record)
@@ -152,12 +156,12 @@ def main() -> int:
     for game_id, filename in RAW_ONLY.items():
         if selected and game_id not in selected:
             continue
-        _archive, record = copy_raw(game_id, filename)
+        _archive, record = copy_raw(game_id, filename, root, incoming)
         if record.get('imported'):
             record.update(packagePrepared=False, reason='raw-only for now: ISO, Win3x, installer-only, or needs game-specific recipe')
         records.append(record)
 
-    out = SRC / f'import-manifest-{stamp}.json'
+    out = root / f'import-manifest-{stamp}.json'
     out.write_text(json.dumps(dict(generatedAt=stamp, records=records), indent=2), encoding='utf-8')
     print(f'wrote {out}')
     for r in records:

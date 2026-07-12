@@ -119,13 +119,18 @@ def main() -> int:
     parser.add_argument('--root', type=Path, default=Path('/var/www/html/mirrors'))
     parser.add_argument('--report', type=Path)
     parser.add_argument('--dry-run', action='store_true')
+    parser.add_argument('--exclude', type=Path, action='append', default=[])
+    parser.add_argument('--skip-assets', action='store_true')
     args = parser.parse_args()
     root = args.root.resolve()
     if not root.exists():
         raise SystemExit(f'root not found: {root}')
-    ensure_assets(root)
-    report = {'root': str(root), 'generatedAt': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()), 'dryRun': args.dry_run, 'filesChanged': [], 'counts': {'attributeRefs': 0, 'srcsetRefs': 0, 'cssRefs': 0, 'rawRefs': 0}}
-    for path in sorted(p for p in root.rglob('*') if p.is_file() and p.suffix.lower() in SCAN_SUFFIXES):
+    excludes = [path.resolve() for path in args.exclude]
+    if not args.skip_assets:
+        ensure_assets(root)
+    report = {'root': str(root), 'excluded': [str(path) for path in excludes], 'generatedAt': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()), 'dryRun': args.dry_run, 'filesChanged': [], 'counts': {'attributeRefs': 0, 'srcsetRefs': 0, 'cssRefs': 0, 'rawRefs': 0}}
+    candidates = (p for p in root.rglob('*') if p.is_file() and p.suffix.lower() in SCAN_SUFFIXES)
+    for path in sorted(p for p in candidates if not any(p.is_relative_to(excluded) for excluded in excludes)):
         text = path.read_text(encoding='utf-8', errors='ignore')
         updated = sanitize_text(text, report['counts'])
         if updated != text:
