@@ -9,6 +9,6 @@
   "releasePath": "/home/dylan/backups/lan-arcade/pillage-first-extraction/release-62fa0964",
   "basePath": "/mirrors/pillage-first/",
   "liveTarget": "/var/www/html/mirrors/pillage-first",
-  "deploymentStatus": "preview-verified-not-deployed",
-  "cutoverGate": "Export s-dd7a from Chrome Profile 2, verify two copies, and pass a disposable-profile import drill before an atomic live cutover"
+  "deploymentStatus": "live-verified-additive-2026-07-12",
+  "cutoverGate": "Dylan authorized an additive live deployment without an OPFS export. The VM cannot back up browser-local s-dd7a; the pre-deploy static tree is retained and all old hashed assets remain live so an open game tab is not interrupted."
 }
